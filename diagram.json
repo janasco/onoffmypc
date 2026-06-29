@@ -4,7 +4,7 @@
   "editor": "wokwi",
   "parts": [
     {
-      "type": "board-esp32-devkit-v1",
+      "type": "wokwi-esp32-devkit-v1",
       "id": "esp",
       "top": 0,
       "left": 0,
@@ -63,20 +63,20 @@
   "connections": [
     ["esp:GND.1",    "dht:GND",        "black",  []],
     ["esp:3V3",      "dht:VCC",        "red",    []],
-    ["esp:IO4",      "dht:SDA",        "green",  []],
+    ["esp:D4",       "dht:SDA",        "green",  []],
 
-    ["esp:IO2",      "r1:1",           "yellow", []],
+    ["esp:D2",       "r1:1",           "yellow", []],
     ["r1:2",         "led-status:A",   "yellow", []],
-    ["led-status:K", "esp:GND.2",      "black",  []],
+    ["led-status:C", "esp:GND.2",      "black",  []],
 
-    ["esp:IO34",     "led-pc:A",       "green",  []],
-    ["led-pc:K",     "r2:1",           "green",  []],
+    ["esp:D34",      "led-pc:A",       "green",  []],
+    ["led-pc:C",     "r2:1",           "green",  []],
     ["r2:2",         "esp:GND.2",      "black",  []],
 
-    ["esp:IO26",     "btn-power:1.l",  "red",    []],
+    ["esp:D26",      "btn-power:1.l",  "red",    []],
     ["btn-power:2.l","esp:GND.2",      "black",  []],
 
-    ["esp:IO27",     "btn-reset:1.l",  "orange", []],
+    ["esp:D27",      "btn-reset:1.l",  "orange", []],
     ["btn-reset:2.l","esp:GND.2",      "black",  []]
   ]
 }
