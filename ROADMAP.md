@@ -1,43 +1,63 @@
 # ESP32 Firmware Roadmap
 
-Status as of 2026-06-30. Bugs are marked **[BUG]**, security issues **[SEC]**, missing features **[FEAT]**, and improvements **[IMPROVE]**.
+Status as of 2026-06-30. Tags: **[BUG]** defects, **[SEC]** security, **[FEAT]** missing features, **[IMPROVE]** improvements.
+
+Firmware `1.1.0`. PlatformIO / Arduino framework on `esp32dev`. Connects over WSS to `api.onoffmypc.com`, relays power commands (WoL + momentary button pulses) and pushes telemetry every 5 s. Provisioned via a captive-portal AP (`OnOffMyPC-XXXXXX`) that stores config in NVS.
 
 ---
 
-## Bugs
+## Bugs & Reliability
 
-- **[BUG]** WiFi connection timeout (30 s) immediately falls back to provisioning mode — if the home network is temporarily down and the device reboots, it enters AP mode and requires the user to reconfigure. Should retry WiFi a configurable number of times before falling back to provisioning.
-- **[BUG]** DHT22 read failures silently drop the fields — `isnan()` check omits `room_temp` / `room_humidity` from telemetry. Backend shows `—` with no indication of a sensor fault. Should send `"sensor_error": true` or a failure counter so the dashboard can warn the user.
-- **[BUG]** MAC address from the provisioning form is stored as-is with no format validation — malformed MAC strings (wrong separator, wrong length) cause `sendWoL()` to silently parse garbage bytes and send an invalid magic packet.
-
----
+- **[BUG] CRITICAL reliability** — In `WIFI_CONNECTING`, after `WIFI_TIMEOUT_MS` (30 s) the device calls `startProvisioning()` and drops into AP setup mode. A router reboot or WiFi outage longer than 30 s — at boot or runtime — kicks an unattended device into setup mode, losing all remote control until someone is physically present to reconfigure. Devices must retry WiFi indefinitely (with backoff) and only enter provisioning on an explicit factory reset or a genuine first boot with no stored config.
+- **[BUG]** `WS_CONNECTING` never calls `ws.poll()`, and `wsDisconnectedAt` starts at `0`, so the first reconnect timing is off and incoming frames aren't serviced in that state. Reconnection currently leans on the blocking `ws.connect()`.
+- **[BUG]** No watchdog timer — if `loop()` stalls (blocking DHT read, WS library hang) the device locks up until power-cycled. Enable and feed the ESP32 task watchdog (`esp_task_wdt_init()`) or a hardware WDT.
+- **[BUG]** DHT22 read failures silently drop fields — the `isnan()` check omits `room_temp`/`room_humidity`, so the backend shows `—` with no indication of a sensor fault. Send a `sensor_error` flag or failure counter so the dashboard can warn the user.
+- **[BUG]** `ws.send()` return value is ignored for telemetry and acks — failed sends go undetected (no retry, no logging).
+- **[BUG]** WoL only broadcasts to `255.255.255.255` (limited broadcast) on port 9 — does not traverse subnets/VLANs and may be dropped by some routers. No directed-broadcast or target-IP option, so WoL silently fails when the PC isn't on the same broadcast domain.
+- **[BUG]** MAC parse via `sscanf(...%hhx...)` is not validated — a malformed `pc_mac` produces a garbage magic packet with no error surfaced.
+- **[BUG]** Open-loop commands — after `power_on`/`power_off`/`reset` the firmware never confirms `PIN_POWER_SENSE` changed; the UI reports "sent" with no verification the PC responded.
+- **[BUG]** `/save` truncates fields with `substring(0, N)` — a token/password longer than the cap is silently truncated, corrupting config with no error to the user.
+- **[BUG]** DHT read (~250 ms, blocking) runs every 5 s on the main loop, briefly starving `ws.poll()`.
 
 ## Security
 
-- **[SEC]** `ws.setInsecure()` disables TLS certificate verification — the WebSocket connection to `wss://api.onoffmypc.com` is encrypted but the device does not verify the server certificate. A MITM can intercept commands. Fix: pin the root CA certificate for `api.onoffmypc.com` using `WiFiClientSecure::setCACert()`.
-- **[SEC]** Device token stored in NVS in plaintext — if physical access to the ESP32 is obtained, the token can be read via the serial monitor using a modified firmware or NVS dump tool. Low practical risk for home use.
-
----
+- **[SEC]** `ws.setInsecure()` disables TLS certificate validation on the WSS connection. The device token (`X-Device-Token`) is sent over an unauthenticated channel — vulnerable to MITM (token theft, command injection). Pin the server/root CA (ISRG Root X1 / Cloudflare chain) with `WiFiClientSecure::setCACert()`.
+- **[SEC]** Provisioning AP is **open** (no WPA2 password). Anyone in range during setup can join, load the setup page, and submit config. Use a random per-device WPA2 password (shown on serial or a device label).
+- **[SEC]** Setup credentials (WiFi password, device token) are submitted over plain HTTP on the local AP. Acceptable for a short local-only setup window but should be documented.
+- **[SEC]** Device token is stored in NVS in plaintext — with physical access it can be dumped. Low practical risk for home use; note it.
 
 ## Missing Features
 
-- **[FEAT]** OTA firmware update — no mechanism to update firmware over-the-air. Users must reflash via USB cable. Implement `ArduinoOTA` or a custom HTTP endpoint for OTA delivery.
-- **[FEAT]** Hardware factory-reset button — the only reset path is sending `r` over the serial monitor. Add a long-press on a GPIO button (e.g. BOOT button on most ESP32 dev boards) to trigger factory reset without a computer.
-- **[FEAT]** Wi-Fi reconnect with backoff instead of provisioning fallback — exponential backoff with a max retry count before falling back to AP mode.
-- **[FEAT]** Multiple PC MAC addresses / Wake-on-LAN targets — currently one MAC per device. Some users have multiple machines on the same network.
-- **[FEAT]** Temperature unit preference (Celsius / Fahrenheit) — always reports Celsius; unit preference could be stored in NVS.
-- **[FEAT]** Hardware watchdog — no watchdog timer; if the main loop hangs the device locks up until power-cycled. Enable `esp_task_wdt_init()`.
-- **[FEAT]** Directed broadcast for WoL — `255.255.255.255` (limited broadcast) may be blocked by some routers. Also send WoL to the subnet directed broadcast address (e.g. `192.168.1.255`) computed from the device's own IP and subnet mask.
-- **[FEAT]** NTP time sync — the device has no real-time clock. Timestamps in log output are `millis()`-relative. Syncing NTP would allow accurate local logging.
-
----
+- **[FEAT]** OTA firmware updates (HTTPS pull or pushed) — today the only update path is a USB reflash, which does not scale to a deployed fleet. Highest-value firmware feature. Implement `ArduinoOTA` or a signed HTTP OTA endpoint.
+- **[FEAT]** Physical factory-reset button (long-press, e.g. BOOT/GPIO0) — reset is currently only via the serial `r` command, unusable for non-technical users.
+- **[FEAT]** Report power-state changes / command outcome back to the server (close the open loop).
+- **[FEAT]** WiFi reconnect with bounded backoff instead of provisioning fallback (see the critical bug above).
+- **[FEAT]** Multiple WoL targets and/or stored target IP; directed subnet broadcast (e.g. `192.168.1.255`) computed from the device IP + netmask.
+- **[FEAT]** Server-pushed configurable telemetry interval.
+- **[FEAT]** Temperature unit preference (°C/°F) stored in NVS.
+- **[FEAT]** mDNS hostname for local discovery.
+- **[FEAT]** NTP time sync (needed if on-device scheduling is added; also enables accurate local logging).
+- **[FEAT]** Persist last-known PC state across reboots.
+- **[FEAT]** Brown-out / power-loss detection and reporting.
+- **[FEAT]** Optional relay-based hard power cut in addition to momentary button pulses.
+- **[FEAT]** Swappable sensor abstraction (DHT22 optional; support BME280 etc.).
+- **[FEAT]** Diagnostics in telemetry: boot reason, uptime, free heap.
 
 ## Improvements
 
-- **[IMPROVE]** Firmware version is now sent in telemetry (`firmware_version` field) so the backend can display it in the admin dashboard. **Implemented in this session.**
-- **[IMPROVE]** Boot log references version as `FIRMWARE_VERSION` constant instead of a hardcoded string literal. **Implemented in this session.**
-- **[IMPROVE]** Provisioning page has no input validation beyond `required` attribute — adding client-side checks for MAC format and UUID format would reduce misconfiguration errors.
-- **[IMPROVE]** `WS_RECONNECT_DELAY_MS` is a fixed 5 s — exponential backoff would be kinder to the server under mass reconnects.
-- **[IMPROVE]** LED blink patterns are only two speeds (fast = provisioning, slow = WS reconnecting, solid = connected) — adding a distinct "WiFi connected, WS connecting" pattern would help users diagnose where the connection is stalling.
-- **[IMPROVE]** `udp.begin(9)` in `setup()` binds UDP to port 9 permanently. WoL only needs the UDP socket to send, not receive on port 9. Call `udp.begin(0)` (ephemeral port) to avoid holding port 9.
-- **[IMPROVE]** No separate firmware release build process — the released `.bin` must be built manually with PlatformIO. Add a GitHub Actions CI workflow that builds and uploads the release binary automatically on a version tag.
+- **[IMPROVE]** `config.example.h` is stale and misleading — it implies a compile-time config flow (`WIFI_SSID`, `DEVICE_TOKEN`, etc.), but the firmware actually provisions via the captive portal into NVS. Reconcile with reality or remove it.
+- **[IMPROVE]** Exponential backoff (with jitter) on WS reconnect instead of a fixed `WS_RECONNECT_DELAY_MS` 5 s, to avoid a thundering herd after a server/network outage.
+- **[IMPROVE]** Add jitter to the telemetry interval for the same reason.
+- **[IMPROVE]** `udp.begin(9)` permanently binds UDP port 9; WoL only needs to *send*. Use `udp.begin(0)` (ephemeral) so the device doesn't hold port 9.
+- **[IMPROVE]** Add a distinct LED pattern for "WiFi connected, WS connecting" (currently fast=provisioning, slow=WS reconnect, solid=connected) and an explicit auth-failure pattern, to help users diagnose where a connection stalls.
+- **[IMPROVE]** Provisioning page validation is `required`-only — add client-side MAC-format and UUID-format checks to reduce misconfiguration.
+- **[IMPROVE]** Centralize timing/pin/version constants; `FIRMWARE_VERSION` and pins live in `main.cpp` while `config.example.h` duplicates pin defs.
+- **[IMPROVE]** Unit tests cover only the WoL/command/telemetry builders. Add tests (or Wokwi simulation) for the WiFi/WS state machine, especially the reconnect/provisioning-fallback logic.
+- **[IMPROVE]** No CI release build — the released `.bin` is built manually. Add a GitHub Actions workflow that builds and uploads the binary on a version tag.
+
+## Hardware notes
+- **[IMPROVE]** `PIN_POWER_SENSE` (GPIO34) is input-only with no internal pull — correct readings depend entirely on external level-shifting/opto conditioning from the PC power LED. Document the required circuit so builders don't get floating reads.
+
+## Done
+- **[IMPROVE]** Firmware version is sent in telemetry (`firmware_version`) so the backend can display it. **Done.**
+- **[IMPROVE]** Boot log uses the `FIRMWARE_VERSION` constant instead of a string literal. **Done.**
