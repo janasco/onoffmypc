@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- Release automation: `tools/release.sh` builds and packages the flashable image, app image, checksums, ESP Web Tools manifest, and release notes; `.github/workflows/release.yml` runs it on a version tag to publish the GitHub Release and update + deploy the web flasher. See `RELEASE.md`.
+
 ## [1.2.0] - 2026-06-30
 
 ### Changed
