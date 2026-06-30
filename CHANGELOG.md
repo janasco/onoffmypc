@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-06-30
+
+### Changed
+- WebSocket connection no longer puts device token in the URL — token is now sent as `X-Device-Token` request header so it does not appear in server access logs
+
 ## [1.0.0] - 2026-06-30
 
 ### Added

@@ -327,8 +327,9 @@ void connectWs() {
     }
   });
 
-  String url = "wss://api.onoffmypc.com/ws/" + cfgDeviceId + "?token=" + cfgDeviceToken;
-  Serial.printf("[ws] connecting to %s...\n", url.substring(0, 50).c_str());
+  ws.addHeader("X-Device-Token", cfgDeviceToken);
+  String url = "wss://api.onoffmypc.com/ws/" + cfgDeviceId;
+  Serial.printf("[ws] connecting to %s\n", url.c_str());
   ws.connect(url);
 }
 
