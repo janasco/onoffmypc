@@ -11,6 +11,8 @@
 
 using namespace websockets;
 
+#define FIRMWARE_VERSION "1.1.0"
+
 // ── Pin definitions ───────────────────────────────────────────────────────────
 #define PIN_POWER_SENSE 34
 #define PIN_POWER_BTN   26
@@ -279,10 +281,11 @@ void sendTelemetry() {
   int   rssi     = WiFi.RSSI();
 
   JsonDocument doc;
-  doc["type"]      = "telemetry";
-  doc["device_id"] = cfgDeviceId;
-  doc["pc_on"]     = pcOn;
-  doc["rssi"]      = rssi;
+  doc["type"]             = "telemetry";
+  doc["device_id"]        = cfgDeviceId;
+  doc["firmware_version"] = FIRMWARE_VERSION;
+  doc["pc_on"]            = pcOn;
+  doc["rssi"]             = rssi;
   if (!isnan(temp))     doc["room_temp"]     = serialized(String(temp, 1));
   if (!isnan(humidity)) doc["room_humidity"] = serialized(String(humidity, 1));
 
@@ -339,7 +342,7 @@ void connectWs() {
 void setup() {
   Serial.begin(115200);
   delay(300);
-  Serial.println("\n[boot] OnOffMyPC v1.1.0");
+  Serial.printf("\n[boot] OnOffMyPC %s\n", FIRMWARE_VERSION);
 
   pinMode(PIN_POWER_SENSE, INPUT);
   pinMode(PIN_POWER_BTN,   OUTPUT);
