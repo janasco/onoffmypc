@@ -11,7 +11,7 @@
 
 using namespace websockets;
 
-#define FIRMWARE_VERSION "1.1.0"
+#define FIRMWARE_VERSION "1.2.0"
 
 // ── Pin definitions ───────────────────────────────────────────────────────────
 #define PIN_POWER_SENSE 34
@@ -21,9 +21,11 @@ using namespace websockets;
 #define PIN_LED          2
 
 // ── Timing ───────────────────────────────────────────────────────────────────
-#define TELEMETRY_INTERVAL_MS  5000
-#define WS_RECONNECT_DELAY_MS  5000
-#define WIFI_TIMEOUT_MS       30000
+#define TELEMETRY_INTERVAL_MS    5000
+#define WS_RECONNECT_DELAY_MS    5000
+#define WIFI_ATTEMPT_TIMEOUT_MS 30000   // wait this long for a single connect attempt
+#define WIFI_RETRY_MIN_MS        5000   // backoff after a failed attempt (doubles each time)
+#define WIFI_RETRY_MAX_MS       60000   // backoff ceiling
 
 // ── Provisioning portal ───────────────────────────────────────────────────────
 
@@ -107,7 +109,7 @@ WebServer        httpServer(80);
 DNSServer        dnsServer;
 WebsocketsClient ws;
 DHT              dht(PIN_DHT, DHT22);
-WiFiUdp          udp;
+WiFiUDP          udp;
 
 String cfgSsid, cfgPass, cfgDeviceId, cfgDeviceToken, cfgPcMac;
 
@@ -119,6 +121,8 @@ State state = WIFI_CONNECTING;
 unsigned long lastTelemetry    = 0;
 unsigned long lastLedToggle    = 0;
 unsigned long wifiStarted      = 0;
+unsigned long wifiRetryAt      = 0;   // when to begin the next attempt (0 = attempt in progress)
+uint32_t      wifiAttempts     = 0;   // consecutive failed attempts (for backoff)
 unsigned long wsDisconnectedAt = 0;
 bool          ledState         = false;
 
@@ -299,10 +303,11 @@ void sendTelemetry() {
 // ── WiFi & WebSocket ──────────────────────────────────────────────────────────
 
 void connectWifi() {
-  Serial.printf("[wifi] connecting to %s\n", cfgSsid.c_str());
+  Serial.printf("[wifi] connecting to %s (attempt %u)\n", cfgSsid.c_str(), wifiAttempts + 1);
   WiFi.mode(WIFI_STA);
   WiFi.begin(cfgSsid.c_str(), cfgPass.c_str());
   wifiStarted = millis();
+  wifiRetryAt = 0;
 }
 
 void connectWs() {
@@ -384,14 +389,31 @@ void loop() {
 
     case WIFI_CONNECTING:
       blinkLed(150);
+
+      // Waiting out a backoff delay before the next attempt
+      if (wifiRetryAt != 0) {
+        if (millis() >= wifiRetryAt) connectWifi();
+        break;
+      }
+
       if (WiFi.status() == WL_CONNECTED) {
+        wifiAttempts = 0;
         Serial.printf("[wifi] IP: %s\n", WiFi.localIP().toString().c_str());
         state = WS_CONNECTING;
         connectWs();
-      } else if (millis() - wifiStarted >= WIFI_TIMEOUT_MS) {
-        // Wrong credentials or network gone — let user reconfigure
-        Serial.println("[wifi] timeout — returning to setup mode");
-        startProvisioning();
+      } else if (millis() - wifiStarted >= WIFI_ATTEMPT_TIMEOUT_MS) {
+        // Attempt timed out. Back off and retry indefinitely — a provisioned
+        // device must NEVER fall back to AP setup mode on its own, or a brief
+        // network outage (router reboot, ISP blip) would strand an unattended
+        // device until someone is physically present to reconfigure it.
+        // Reconfiguration for a permanent network change is an explicit factory
+        // reset ('r' over serial), not an automatic fallback.
+        wifiAttempts++;
+        unsigned long backoff = WIFI_RETRY_MIN_MS << (wifiAttempts > 4 ? 4 : wifiAttempts - 1);
+        if (backoff > WIFI_RETRY_MAX_MS) backoff = WIFI_RETRY_MAX_MS;
+        Serial.printf("[wifi] attempt timed out — retrying in %lus\n", backoff / 1000);
+        WiFi.disconnect();
+        wifiRetryAt = millis() + backoff;
       }
       break;
 
