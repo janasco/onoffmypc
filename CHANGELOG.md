@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-30
+
+### Added
+- `power_off_force` command: holds the power button pin HIGH for 6 seconds to force a hard shutdown (use when normal `power_off` has no effect)
+- Simulator: handles `power_off_force` — sets `pc_on = False` and logs "FORCE OFF"
+
+### Fixed
+- Captive portal: `WiFi.softAPConfig()` now called **before** `WiFi.softAP()` (correct order per ESP32 SDK docs) to ensure the custom IP is applied before the AP starts accepting clients
+
 ## [1.0.2] - 2026-06-30
 
 ### Fixed

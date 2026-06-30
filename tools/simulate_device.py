@@ -81,6 +81,9 @@ async def run(device_id: str, token: str) -> None:
                     elif cmd_type == "power_off":
                         pc_on = False
                         print("[cmd] PC powered OFF (button press)")
+                    elif cmd_type == "power_off_force":
+                        pc_on = False
+                        print("[cmd] PC FORCE OFF (6s hold)")
                     elif cmd_type == "reset":
                         print("[cmd] PC RESET (button press)")
                     else:

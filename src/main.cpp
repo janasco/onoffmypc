@@ -172,10 +172,10 @@ void startProvisioning() {
   char apSsid[24];
   snprintf(apSsid, sizeof(apSsid), "OnOffMyPC-%02X%02X%02X", mac[3], mac[4], mac[5]);
 
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(apSsid);
   IPAddress apIp(192, 168, 4, 1);
+  WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(apIp, apIp, IPAddress(255, 255, 255, 0));
+  WiFi.softAP(apSsid);
 
   dnsServer.start(53, "*", apIp);
 
@@ -262,9 +262,10 @@ void sendAck(const String& commandId) {
 
 void handleCommand(const String& commandId, const String& type) {
   Serial.printf("[cmd] %s (%s)\n", type.c_str(), commandId.c_str());
-  if      (type == "power_on")  { sendWoL(); }
-  else if (type == "power_off") { pulsePin(PIN_POWER_BTN, 200); }
-  else if (type == "reset")     { pulsePin(PIN_RESET_BTN, 200); }
+  if      (type == "power_on")        { sendWoL(); }
+  else if (type == "power_off")       { pulsePin(PIN_POWER_BTN, 200); }
+  else if (type == "power_off_force") { pulsePin(PIN_POWER_BTN, 6000); }
+  else if (type == "reset")           { pulsePin(PIN_RESET_BTN, 200); }
   else { Serial.printf("[cmd] unknown: %s\n", type.c_str()); return; }
   sendAck(commandId);
 }
@@ -338,7 +339,7 @@ void connectWs() {
 void setup() {
   Serial.begin(115200);
   delay(300);
-  Serial.println("\n[boot] OnOffMyPC v1.0.0");
+  Serial.println("\n[boot] OnOffMyPC v1.1.0");
 
   pinMode(PIN_POWER_SENSE, INPUT);
   pinMode(PIN_POWER_BTN,   OUTPUT);
