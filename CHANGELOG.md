@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-30
+
+### Added
+- WiFi provisioning via captive portal: on first boot (or after factory reset), device creates an AP named `OnOffMyPC-XXXXXX` and serves a setup page at `http://192.168.4.1`
+- NVS storage via `Preferences`: SSID, password, device ID, device token, and PC MAC saved to ESP32 flash and survive reboots
+- Factory reset: send `r` over Serial to clear NVS config and restart into setup mode
+- WiFi timeout (30 s): if STA connection fails, device returns to setup AP for reconfiguration
+- Captive portal OS detection: redirects iOS (`/hotspot-detect.html`), Android (`/generate_204`), and Windows (`/ncsi.txt`, `/connecttest.txt`, `/fwlink`) portal checks automatically
+
+### Changed
+- Configuration no longer requires editing `config.h` — all credentials entered via browser at `http://192.168.4.1`
+- Button press duration hardcoded to 200 ms inline (removed `POWER_BTN_PRESS_MS` define)
+- Version string in boot message updated to `v1.0.0`
+
 ## [0.2.0] - 2026-06-29
 
 ### Added
