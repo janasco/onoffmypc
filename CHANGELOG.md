@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-06-30
+
+### Fixed
+- Simulator (`tools/simulate_device.py`): updated to send token as `X-Device-Token` header instead of URL query param, matching the firmware change in v1.0.1
+
 ## [1.0.1] - 2026-06-30
 
 ### Changed

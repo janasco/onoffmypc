@@ -41,12 +41,12 @@ def make_telemetry(device_id: str, pc_on: bool, t: float) -> dict:
 
 
 async def run(device_id: str, token: str) -> None:
-    url = f"wss://{API_HOST}/ws/{device_id}?token={token}"
+    url = f"wss://{API_HOST}/ws/{device_id}"
     print(f"[sim] connecting to {url}")
 
     pc_on = False  # simulated PC state
 
-    async with websockets.connect(url) as ws:
+    async with websockets.connect(url, extra_headers={"X-Device-Token": token}) as ws:
         print("[sim] connected")
         last_telemetry = 0.0
 
