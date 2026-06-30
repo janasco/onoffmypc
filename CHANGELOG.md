@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-30
+
+### Changed
+- WiFi reconnection: a provisioned device now retries WiFi indefinitely with exponential backoff (5 → 10 → 20 → 40 → 60 s cap) instead of falling back to the setup AP after a 30 s timeout. A router reboot or temporary outage no longer strands an unattended device in provisioning mode. Provisioning is now entered only on first boot with no stored config or via explicit factory reset (`r` over Serial); reconfiguring for a permanent network change requires a factory reset.
+
+### Fixed
+- Build error: `WiFiUdp` is not a type on the current ESP32 Arduino core — corrected to `WiFiUDP`. The firmware now compiles (`pio run -e esp32dev`) and all 12 native unit tests pass.
+
 ## [1.1.0] - 2026-06-30
 
 ### Added
