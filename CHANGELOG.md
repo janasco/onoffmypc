@@ -4,6 +4,7 @@
 
 ### Added
 - Release automation: `tools/release.sh` builds and packages the flashable image, app image, checksums, ESP Web Tools manifest, and release notes; `.github/workflows/release.yml` runs it on a version tag to publish the GitHub Release and update + deploy the web flasher. See `RELEASE.md`.
+- Release workflow now verifies the tag's base version matches `FIRMWARE_VERSION` before building (fails fast on a mismatched tag), and supports a pre-release rehearsal path: a hyphenated tag (e.g. `v1.3.0-rc1`) builds and publishes a GitHub pre-release only, skipping the web-flasher update and marketing deploy so the full build + publish path can be exercised without touching production.
 
 ## [1.2.0] - 2026-06-30
 
