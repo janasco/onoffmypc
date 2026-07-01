@@ -1,0 +1,82 @@
+name: Release firmware
+
+# On a version tag (e.g. v1.3.0):
+#   1. Build + merge the flashable image and checksums (tools/release.sh)
+#   2. Publish a GitHub Release with the binaries on the public release repo
+#   3. Update the web flasher (manifest + binary) and deploy the marketing site
+#
+# Required repository secrets:
+#   RELEASE_REPO_TOKEN     PAT with contents:write on onoffmypc/onoffmypc-firmware-release
+#   WEB_REPO_TOKEN         PAT with contents:write on onoffmypc/onoffmypc-web
+#   CLOUDFLARE_API_TOKEN   Cloudflare token with Pages:Edit
+#   CLOUDFLARE_ACCOUNT_ID  Cloudflare account id
+#
+# The git tag must match FIRMWARE_VERSION in src/main.cpp (the workflow verifies this).
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PlatformIO and esptool
+        run: pip install --upgrade platformio esptool
+
+      - name: Build release artifacts
+        run: ./tools/release.sh
+
+      - name: Verify tag matches FIRMWARE_VERSION
+        run: |
+          VERSION="$(grep -oE '#define FIRMWARE_VERSION "[^"]+"' src/main.cpp | sed -E 's/.*"([^"]+)".*/\1/')"
+          if [ "v$VERSION" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match FIRMWARE_VERSION v$VERSION" >&2
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Publish GitHub Release (public release repo)
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+        run: |
+          gh release create "v${VERSION}" \
+            --repo onoffmypc/onoffmypc-firmware-release \
+            --title "v${VERSION}" \
+            --notes-file dist/RELEASE_NOTES.md \
+            "dist/onoffmypc-firmware-${VERSION}.bin" \
+            "dist/onoffmypc-firmware-${VERSION}-app.bin" \
+            "dist/SHA256SUMS-${VERSION}.txt"
+
+      - name: Update web flasher (manifest + binary)
+        env:
+          WEB_REPO_TOKEN: ${{ secrets.WEB_REPO_TOKEN }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${WEB_REPO_TOKEN}@github.com/onoffmypc/onoffmypc-web.git" web
+          cd web
+          rm -f firmware/onoffmypc-firmware-*.bin
+          cp "../dist/onoffmypc-firmware-${VERSION}.bin" firmware/
+          cp ../dist/manifest.json firmware/manifest.json
+          git config user.name  "onoffmypc"
+          git config user.email "github@onoffmypc.com"
+          if git diff --quiet; then
+            echo "web flasher already up to date"
+          else
+            git add firmware
+            git commit -m "chore: update flasher to firmware v${VERSION}"
+            git push
+          fi
+
+      - name: Deploy marketing site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          cd web
+          npx --yes wrangler@latest pages deploy . --project-name onoffmypc-web --branch main
