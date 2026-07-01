@@ -15,10 +15,25 @@ the one-click web flasher on the marketing site, so users always get the latest 
    ```
 
 The tag push triggers `.github/workflows/release.yml`, which:
-1. builds + merges the flashable image, app image, and checksums (`tools/release.sh`);
-2. verifies the tag matches `FIRMWARE_VERSION`;
+1. verifies the tag's base version matches `FIRMWARE_VERSION` (fails fast, before building);
+2. builds + merges the flashable image, app image, and checksums (`tools/release.sh`);
 3. creates the GitHub Release on `onoffmypc/onoffmypc-firmware-release`;
 4. updates `onoffmypc/onoffmypc-web` (`firmware/manifest.json` + the new `.bin`) and deploys the marketing site.
+
+## Rehearsing safely (pre-release tags)
+
+A tag with a hyphen suffix is treated as a **pre-release**: it builds and publishes a
+GitHub pre-release, but **skips** the web-flasher update and marketing deploy — so you
+can exercise the full build + publish path without touching the live flasher. The base
+version must still match `FIRMWARE_VERSION` (e.g. `FIRMWARE_VERSION = "1.3.0"` → tag
+`v1.3.0-rc1`).
+
+```bash
+git tag v1.3.0-rc1 && git push origin v1.3.0-rc1
+# publishes a pre-release only; delete it and the tag afterwards if it was just a test
+```
+
+A clean tag (`v1.3.0`, no suffix) runs the full pipeline including the web flasher and deploy.
 
 ### Required repository secrets
 | Secret | Purpose |

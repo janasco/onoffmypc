@@ -1,17 +1,19 @@
 name: Release firmware
 
-# On a version tag (e.g. v1.3.0):
-#   1. Build + merge the flashable image and checksums (tools/release.sh)
-#   2. Publish a GitHub Release with the binaries on the public release repo
-#   3. Update the web flasher (manifest + binary) and deploy the marketing site
+# On a version tag:
+#   - Clean tag  vX.Y.Z        full release: build -> publish -> update web flasher -> deploy
+#   - Pre-release vX.Y.Z-rc1   rehearsal:   build -> publish GitHub pre-release ONLY
+#     (a hyphen in the tag marks a pre-release; the web flasher and marketing site
+#      are left untouched, so you can exercise the whole build+publish path safely)
+#
+# The tag's base version (before any '-suffix') must match FIRMWARE_VERSION in
+# src/main.cpp; this is checked first, before the build, so bad tags fail fast.
 #
 # Required repository secrets:
 #   RELEASE_REPO_TOKEN     PAT with contents:write on onoffmypc/onoffmypc-firmware-release
 #   WEB_REPO_TOKEN         PAT with contents:write on onoffmypc/onoffmypc-web
 #   CLOUDFLARE_API_TOKEN   Cloudflare token with Pages:Edit
 #   CLOUDFLARE_ACCOUNT_ID  Cloudflare account id
-#
-# The git tag must match FIRMWARE_VERSION in src/main.cpp (the workflow verifies this).
 
 on:
   push:
@@ -23,6 +25,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Determine version and release type
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          FW="$(grep -oE '#define FIRMWARE_VERSION "[^"]+"' src/main.cpp | sed -E 's/.*"([^"]+)".*/\1/')"
+          case "$TAG" in
+            *-*) PRERELEASE=true;  BASE="${TAG#v}"; BASE="${BASE%%-*}" ;;
+            *)   PRERELEASE=false; BASE="${TAG#v}" ;;
+          esac
+          if [ "$BASE" != "$FW" ]; then
+            echo "::error::Tag $TAG (base $BASE) does not match FIRMWARE_VERSION $FW"
+            exit 1
+          fi
+          echo "VERSION=$FW" >> "$GITHUB_ENV"
+          echo "PRERELEASE=$PRERELEASE" >> "$GITHUB_ENV"
+          echo "Tag $TAG -> version $FW, prerelease=$PRERELEASE"
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
@@ -33,28 +51,23 @@ jobs:
       - name: Build release artifacts
         run: ./tools/release.sh
 
-      - name: Verify tag matches FIRMWARE_VERSION
-        run: |
-          VERSION="$(grep -oE '#define FIRMWARE_VERSION "[^"]+"' src/main.cpp | sed -E 's/.*"([^"]+)".*/\1/')"
-          if [ "v$VERSION" != "${GITHUB_REF_NAME}" ]; then
-            echo "Tag ${GITHUB_REF_NAME} does not match FIRMWARE_VERSION v$VERSION" >&2
-            exit 1
-          fi
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-
       - name: Publish GitHub Release (public release repo)
         env:
           GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
         run: |
-          gh release create "v${VERSION}" \
+          FLAG=""
+          [ "${PRERELEASE}" = "true" ] && FLAG="--prerelease"
+          gh release create "${GITHUB_REF_NAME}" \
             --repo onoffmypc/onoffmypc-firmware-release \
-            --title "v${VERSION}" \
+            --title "${GITHUB_REF_NAME}" \
             --notes-file dist/RELEASE_NOTES.md \
+            $FLAG \
             "dist/onoffmypc-firmware-${VERSION}.bin" \
             "dist/onoffmypc-firmware-${VERSION}-app.bin" \
             "dist/SHA256SUMS-${VERSION}.txt"
 
       - name: Update web flasher (manifest + binary)
+        if: env.PRERELEASE == 'false'
         env:
           WEB_REPO_TOKEN: ${{ secrets.WEB_REPO_TOKEN }}
         run: |
@@ -74,6 +87,7 @@ jobs:
           fi
 
       - name: Deploy marketing site
+        if: env.PRERELEASE == 'false'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
