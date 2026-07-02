@@ -10,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.onoffmypc.android.Graph
 import com.onoffmypc.android.data.remote.AuthEvents
+import com.onoffmypc.android.ui.account.AccountScreen
 import com.onoffmypc.android.ui.auth.ForgotPasswordScreen
 import com.onoffmypc.android.ui.auth.LoginScreen
 import com.onoffmypc.android.ui.auth.RegisterScreen
@@ -20,6 +21,7 @@ private const val ROUTE_LOGIN = "login"
 private const val ROUTE_REGISTER = "register"
 private const val ROUTE_FORGOT = "forgot"
 private const val ROUTE_DEVICES = "devices"
+private const val ROUTE_ACCOUNT = "account"
 
 @Composable
 fun AppNav() {
@@ -65,9 +67,20 @@ fun AppNav() {
         composable(ROUTE_DEVICES) {
             DevicesScreen(
                 onOpen = { device -> navController.navigate("device/${device.id}") },
+                onAccount = { navController.navigate(ROUTE_ACCOUNT) },
                 onLoggedOut = {
                     navController.navigate(ROUTE_LOGIN) {
                         popUpTo(ROUTE_DEVICES) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(ROUTE_ACCOUNT) {
+            AccountScreen(
+                onBack = { navController.popBackStack() },
+                onSignedOut = {
+                    navController.navigate(ROUTE_LOGIN) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                     }
                 },
             )

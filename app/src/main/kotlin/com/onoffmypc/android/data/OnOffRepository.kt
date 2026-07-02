@@ -3,6 +3,8 @@ package com.onoffmypc.android.data
 import com.onoffmypc.android.data.model.ApiError
 import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
+import com.onoffmypc.android.data.model.ChangeEmailRequest
+import com.onoffmypc.android.data.model.ChangePasswordRequest
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.DeviceNameRequest
@@ -40,6 +42,16 @@ class OnOffRepository(
     }
 
     suspend fun me(): Result<MeResponse> = call { api.me() }
+
+    suspend fun changeEmail(newEmail: String, password: String): Result<Unit> =
+        call { api.changeEmail(ChangeEmailRequest(newEmail.trim(), password)) }.map { }
+
+    suspend fun changePassword(current: String, new: String): Result<Unit> =
+        call { api.changePassword(ChangePasswordRequest(current, new)) }.map { }
+
+    suspend fun resendVerify(): Result<Unit> = call { api.resendVerify() }.map { }
+
+    suspend fun deleteAccount(): Result<Unit> = call { api.deleteAccount() }.map { }
 
     suspend fun devices(): Result<List<Device>> = call { api.devices() }
 

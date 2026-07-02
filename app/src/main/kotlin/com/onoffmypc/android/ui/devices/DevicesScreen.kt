@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -46,11 +47,13 @@ import com.onoffmypc.android.ui.components.PowerControls
 import com.onoffmypc.android.ui.components.deviceStatusFromLastSeen
 import com.onoffmypc.android.ui.theme.Muted
 import com.onoffmypc.android.ui.theme.Red
+import com.onoffmypc.android.ui.theme.Yellow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DevicesScreen(
     onOpen: (Device) -> Unit,
+    onAccount: () -> Unit,
     onLoggedOut: () -> Unit,
     vm: DevicesViewModel = viewModel(),
 ) {
@@ -73,6 +76,7 @@ fun DevicesScreen(
             TopAppBar(
                 title = { Text("Your Devices") },
                 actions = {
+                    TextButton(onClick = onAccount) { Text("Account") }
                     TextButton(onClick = { vm.logout(onLoggedOut) }) { Text("Sign out") }
                 },
             )
@@ -109,6 +113,10 @@ fun DevicesScreen(
                         contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
+                        val user = state.user
+                        if (user != null && !user.email_verified) {
+                            item { VerifyEmailBanner(onResend = vm::resendVerification) }
+                        }
                         if (state.devices.isEmpty()) {
                             item {
                                 Text(
@@ -210,6 +218,26 @@ private fun DeviceCard(
             PowerControls(onCommand = onCommand)
             Spacer(Modifier.height(4.dp))
             TextButton(onClick = onOpen) { Text("View details →") }
+        }
+    }
+}
+
+@Composable
+private fun VerifyEmailBanner(onResend: () -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = Yellow.copy(alpha = 0.15f))) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Verify your email to secure your account.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onResend) { Text("Resend") }
         }
     }
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.onoffmypc.android.Graph
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
+import com.onoffmypc.android.data.model.MeResponse
 import com.onoffmypc.android.data.model.NewDevice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,7 @@ data class DevicesUiState(
     val loading: Boolean = true,
     val refreshing: Boolean = false,
     val devices: List<Device> = emptyList(),
+    val user: MeResponse? = null,
     val error: String? = null,
     val message: String? = null,
     val createdDevice: NewDevice? = null,
@@ -34,9 +36,10 @@ class DevicesViewModel : ViewModel() {
     fun load() {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
+            val me = repo.me().getOrNull()
             repo.devices().fold(
-                onSuccess = { list -> _state.update { it.copy(loading = false, devices = list, error = null) } },
-                onFailure = { e -> _state.update { it.copy(loading = false, error = e.message ?: "Failed to load devices") } },
+                onSuccess = { list -> _state.update { it.copy(loading = false, devices = list, user = me ?: it.user, error = null) } },
+                onFailure = { e -> _state.update { it.copy(loading = false, user = me ?: it.user, error = e.message ?: "Failed to load devices") } },
             )
         }
     }
@@ -46,9 +49,19 @@ class DevicesViewModel : ViewModel() {
     fun refresh() {
         _state.update { it.copy(refreshing = true) }
         viewModelScope.launch {
+            val me = repo.me().getOrNull()
             repo.devices().fold(
-                onSuccess = { list -> _state.update { it.copy(refreshing = false, devices = list, error = null) } },
+                onSuccess = { list -> _state.update { it.copy(refreshing = false, devices = list, user = me ?: it.user, error = null) } },
                 onFailure = { e -> _state.update { it.copy(refreshing = false, message = e.message ?: "Refresh failed") } },
+            )
+        }
+    }
+
+    fun resendVerification() {
+        viewModelScope.launch {
+            repo.resendVerify().fold(
+                onSuccess = { _state.update { it.copy(message = "Verification email sent — check your inbox.") } },
+                onFailure = { e -> _state.update { it.copy(message = e.message ?: "Couldn't resend the email.") } },
             )
         }
     }

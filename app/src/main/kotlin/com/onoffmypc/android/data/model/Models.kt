@@ -12,6 +12,12 @@ data class RegisterRequest(val email: String, val password: String, val invite_c
 data class ForgotPasswordRequest(val email: String)
 
 @Serializable
+data class ChangeEmailRequest(val new_email: String, val password: String)
+
+@Serializable
+data class ChangePasswordRequest(val current_password: String, val new_password: String)
+
+@Serializable
 data class RegisterResponse(
     val id: String? = null,
     val email: String? = null,

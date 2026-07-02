@@ -1,5 +1,7 @@
 package com.onoffmypc.android.data.remote
 
+import com.onoffmypc.android.data.model.ChangeEmailRequest
+import com.onoffmypc.android.data.model.ChangePasswordRequest
 import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
 import com.onoffmypc.android.data.model.DeletedResponse
@@ -36,6 +38,18 @@ interface ApiService {
 
     @GET("auth/me")
     suspend fun me(): Response<MeResponse>
+
+    @POST("auth/change-email")
+    suspend fun changeEmail(@Body body: ChangeEmailRequest): Response<OkResponse>
+
+    @POST("auth/change-password")
+    suspend fun changePassword(@Body body: ChangePasswordRequest): Response<OkResponse>
+
+    @POST("auth/resend-verify")
+    suspend fun resendVerify(): Response<OkResponse>
+
+    @DELETE("auth/account")
+    suspend fun deleteAccount(): Response<OkResponse>
 
     @POST("auth/logout")
     suspend fun logout(): Response<OkResponse>
