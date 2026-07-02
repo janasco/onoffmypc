@@ -21,6 +21,7 @@ object ApiClient {
         }
         val client = OkHttpClient.Builder()
             .cookieJar(SessionCookieJar(store))
+            .addInterceptor(UnauthorizedInterceptor(store))
             .addInterceptor(logging)
             .build()
 

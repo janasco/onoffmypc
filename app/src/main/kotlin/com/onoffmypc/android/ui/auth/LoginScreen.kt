@@ -14,8 +14,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -28,6 +30,7 @@ import com.onoffmypc.android.ui.theme.Muted
 @Composable
 fun LoginScreen(
     onLoggedIn: () -> Unit,
+    onRegister: () -> Unit,
     vm: AuthViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -98,6 +101,14 @@ fun LoginScreen(
             } else {
                 Text("Sign in")
             }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        TextButton(
+            onClick = onRegister,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Text("Don't have an account? Register")
         }
     }
 }

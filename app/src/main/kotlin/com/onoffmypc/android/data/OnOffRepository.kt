@@ -7,6 +7,7 @@ import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
+import com.onoffmypc.android.data.model.RegisterRequest
 import com.onoffmypc.android.data.remote.ApiService
 import kotlinx.serialization.json.Json
 import retrofit2.Response
@@ -19,6 +20,13 @@ class OnOffRepository(
 
     suspend fun login(email: String, password: String): Result<Unit> =
         call { api.login(LoginRequest(email.trim(), password)) }.map { }
+
+    /** Register, then sign in (registration doesn't set a session cookie; login does). */
+    suspend fun register(email: String, password: String, inviteCode: String): Result<Unit> {
+        val reg = call { api.register(RegisterRequest(email.trim(), password, inviteCode.trim())) }
+        if (reg.isFailure) return Result.failure(reg.exceptionOrNull() ?: Exception("Registration failed"))
+        return login(email, password)
+    }
 
     suspend fun me(): Result<MeResponse> = call { api.me() }
 
