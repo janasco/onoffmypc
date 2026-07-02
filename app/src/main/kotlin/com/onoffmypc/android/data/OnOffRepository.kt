@@ -7,6 +7,7 @@ import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.DeviceNameRequest
 import com.onoffmypc.android.data.model.DeviceStatus
+import com.onoffmypc.android.data.model.ForgotPasswordRequest
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
@@ -25,6 +26,11 @@ class OnOffRepository(
 
     suspend fun login(email: String, password: String): Result<Unit> =
         call { api.login(LoginRequest(email.trim(), password)) }.map { }
+
+    /** Request a password-reset email. The API is intentionally silent about
+     *  whether the address exists, so any 2xx is treated as success. */
+    suspend fun forgotPassword(email: String): Result<Unit> =
+        call { api.forgotPassword(ForgotPasswordRequest(email.trim())) }.map { }
 
     /** Register, then sign in (registration doesn't set a session cookie; login does). */
     suspend fun register(email: String, password: String, inviteCode: String): Result<Unit> {

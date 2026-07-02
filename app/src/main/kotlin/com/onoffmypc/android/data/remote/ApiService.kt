@@ -6,6 +6,7 @@ import com.onoffmypc.android.data.model.DeletedResponse
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.DeviceNameRequest
 import com.onoffmypc.android.data.model.DeviceStatus
+import com.onoffmypc.android.data.model.ForgotPasswordRequest
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.model.LoginRequest
@@ -29,6 +30,9 @@ interface ApiService {
 
     @POST("auth/register")
     suspend fun register(@Body body: RegisterRequest): Response<RegisterResponse>
+
+    @POST("auth/forgot-password")
+    suspend fun forgotPassword(@Body body: ForgotPasswordRequest): Response<OkResponse>
 
     @GET("auth/me")
     suspend fun me(): Response<MeResponse>

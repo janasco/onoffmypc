@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 
 data class DevicesUiState(
     val loading: Boolean = true,
+    val refreshing: Boolean = false,
     val devices: List<Device> = emptyList(),
     val error: String? = null,
     val message: String? = null,
@@ -34,8 +35,20 @@ class DevicesViewModel : ViewModel() {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
             repo.devices().fold(
-                onSuccess = { list -> _state.update { it.copy(loading = false, devices = list) } },
+                onSuccess = { list -> _state.update { it.copy(loading = false, devices = list, error = null) } },
                 onFailure = { e -> _state.update { it.copy(loading = false, error = e.message ?: "Failed to load devices") } },
+            )
+        }
+    }
+
+    /** Pull-to-refresh / post-mutation reload — updates the list without the
+     *  full-screen spinner, and keeps the current list on failure. */
+    fun refresh() {
+        _state.update { it.copy(refreshing = true) }
+        viewModelScope.launch {
+            repo.devices().fold(
+                onSuccess = { list -> _state.update { it.copy(refreshing = false, devices = list, error = null) } },
+                onFailure = { e -> _state.update { it.copy(refreshing = false, message = e.message ?: "Refresh failed") } },
             )
         }
     }
@@ -57,7 +70,7 @@ class DevicesViewModel : ViewModel() {
             repo.addDevice(name).fold(
                 onSuccess = { created ->
                     _state.update { it.copy(createdDevice = created) }
-                    load()
+                    refresh()
                 },
                 onFailure = { e -> _state.update { it.copy(message = e.message ?: "Couldn't add device") } },
             )
@@ -69,7 +82,7 @@ class DevicesViewModel : ViewModel() {
             repo.renameDevice(id, name).fold(
                 onSuccess = {
                     _state.update { it.copy(message = "Device renamed") }
-                    load()
+                    refresh()
                 },
                 onFailure = { e -> _state.update { it.copy(message = e.message ?: "Rename failed") } },
             )
@@ -81,7 +94,7 @@ class DevicesViewModel : ViewModel() {
             repo.deleteDevice(id).fold(
                 onSuccess = {
                     _state.update { it.copy(message = "Device removed") }
-                    load()
+                    refresh()
                 },
                 onFailure = { e -> _state.update { it.copy(message = e.message ?: "Delete failed") } },
             )

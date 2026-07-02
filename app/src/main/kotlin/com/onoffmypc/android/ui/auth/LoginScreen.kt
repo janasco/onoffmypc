@@ -31,6 +31,7 @@ import com.onoffmypc.android.ui.theme.Muted
 fun LoginScreen(
     onLoggedIn: () -> Unit,
     onRegister: () -> Unit,
+    onForgotPassword: () -> Unit,
     vm: AuthViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -103,7 +104,12 @@ fun LoginScreen(
             }
         }
 
-        Spacer(Modifier.height(8.dp))
+        TextButton(
+            onClick = onForgotPassword,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Text("Forgot password?")
+        }
         TextButton(
             onClick = onRegister,
             modifier = Modifier.align(Alignment.CenterHorizontally),

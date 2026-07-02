@@ -10,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.onoffmypc.android.Graph
 import com.onoffmypc.android.data.remote.AuthEvents
+import com.onoffmypc.android.ui.auth.ForgotPasswordScreen
 import com.onoffmypc.android.ui.auth.LoginScreen
 import com.onoffmypc.android.ui.auth.RegisterScreen
 import com.onoffmypc.android.ui.devices.DeviceDetailScreen
@@ -17,6 +18,7 @@ import com.onoffmypc.android.ui.devices.DevicesScreen
 
 private const val ROUTE_LOGIN = "login"
 private const val ROUTE_REGISTER = "register"
+private const val ROUTE_FORGOT = "forgot"
 private const val ROUTE_DEVICES = "devices"
 
 @Composable
@@ -44,7 +46,11 @@ fun AppNav() {
                     }
                 },
                 onRegister = { navController.navigate(ROUTE_REGISTER) },
+                onForgotPassword = { navController.navigate(ROUTE_FORGOT) },
             )
+        }
+        composable(ROUTE_FORGOT) {
+            ForgotPasswordScreen(onBackToLogin = { navController.popBackStack() })
         }
         composable(ROUTE_REGISTER) {
             RegisterScreen(

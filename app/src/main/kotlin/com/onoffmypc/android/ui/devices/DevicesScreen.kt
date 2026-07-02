@@ -26,6 +26,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -97,26 +99,38 @@ fun DevicesScreen(
                     Button(onClick = vm::load) { Text("Retry") }
                 }
 
-                state.devices.isEmpty() -> Text(
-                    text = "No devices yet. Tap “Add device” to create one.",
-                    color = Muted,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(24.dp),
-                )
-
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                else -> PullToRefreshBox(
+                    isRefreshing = state.refreshing,
+                    onRefresh = vm::refresh,
+                    modifier = Modifier.fillMaxSize(),
                 ) {
-                    items(state.devices, key = { it.id }) { device ->
-                        DeviceCard(
-                            device = device,
-                            onOpen = { onOpen(device) },
-                            onCommand = { type -> vm.sendCommand(device, type) },
-                            onRename = { renaming = device },
-                            onDelete = { deleting = device },
-                        )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        if (state.devices.isEmpty()) {
+                            item {
+                                Text(
+                                    text = "No devices yet. Tap “Add device” to create one.",
+                                    color = Muted,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 48.dp),
+                                )
+                            }
+                        } else {
+                            items(state.devices, key = { it.id }) { device ->
+                                DeviceCard(
+                                    device = device,
+                                    onOpen = { onOpen(device) },
+                                    onCommand = { type -> vm.sendCommand(device, type) },
+                                    onRename = { renaming = device },
+                                    onDelete = { deleting = device },
+                                )
+                            }
+                        }
                     }
                 }
             }

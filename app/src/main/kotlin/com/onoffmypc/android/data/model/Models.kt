@@ -9,6 +9,9 @@ data class LoginRequest(val email: String, val password: String)
 data class RegisterRequest(val email: String, val password: String, val invite_code: String)
 
 @Serializable
+data class ForgotPasswordRequest(val email: String)
+
+@Serializable
 data class RegisterResponse(
     val id: String? = null,
     val email: String? = null,
