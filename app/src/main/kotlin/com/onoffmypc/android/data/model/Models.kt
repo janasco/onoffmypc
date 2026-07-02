@@ -36,6 +36,31 @@ data class Device(
 )
 
 @Serializable
+data class DeviceStatus(
+    val online: Boolean = false,
+    val last_seen_at: String? = null,
+)
+
+@Serializable
+data class Telemetry(
+    val recorded_at: String? = null,
+    val pc_on: Int? = null,
+    val room_temp: Double? = null,
+    val room_humidity: Double? = null,
+    val rssi: Int? = null,
+)
+
+@Serializable
+data class HistoryPoint(
+    val hour: String? = null,
+    val temp_avg: Double? = null,
+    val temp_min: Double? = null,
+    val temp_max: Double? = null,
+    val humidity_avg: Double? = null,
+    val rssi_avg: Double? = null,
+)
+
+@Serializable
 data class CommandRequest(val type: String)
 
 @Serializable

@@ -3,13 +3,16 @@ package com.onoffmypc.android.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.onoffmypc.android.Graph
 import com.onoffmypc.android.data.remote.AuthEvents
 import com.onoffmypc.android.ui.auth.LoginScreen
 import com.onoffmypc.android.ui.auth.RegisterScreen
+import com.onoffmypc.android.ui.devices.DeviceDetailScreen
 import com.onoffmypc.android.ui.devices.DevicesScreen
 
 private const val ROUTE_LOGIN = "login"
@@ -55,12 +58,25 @@ fun AppNav() {
         }
         composable(ROUTE_DEVICES) {
             DevicesScreen(
+                onOpen = { device -> navController.navigate("device/${device.id}") },
                 onLoggedOut = {
                     navController.navigate(ROUTE_LOGIN) {
                         popUpTo(ROUTE_DEVICES) { inclusive = true }
                     }
                 },
             )
+        }
+        composable(
+            route = "device/{deviceId}",
+            arguments = listOf(navArgument("deviceId") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val deviceId = backStackEntry.arguments?.getString("deviceId")
+            if (deviceId != null) {
+                DeviceDetailScreen(
+                    deviceId = deviceId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
     }
 }

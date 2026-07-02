@@ -3,6 +3,9 @@ package com.onoffmypc.android.data.remote
 import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
 import com.onoffmypc.android.data.model.Device
+import com.onoffmypc.android.data.model.DeviceStatus
+import com.onoffmypc.android.data.model.HistoryPoint
+import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
 import com.onoffmypc.android.data.model.OkResponse
@@ -13,6 +16,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
     @POST("auth/login")
@@ -29,6 +33,18 @@ interface ApiService {
 
     @GET("devices")
     suspend fun devices(): Response<List<Device>>
+
+    @GET("devices/{id}")
+    suspend fun device(@Path("id") id: String): Response<Device>
+
+    @GET("devices/{id}/status")
+    suspend fun deviceStatus(@Path("id") id: String): Response<DeviceStatus>
+
+    @GET("telemetry/{id}")
+    suspend fun telemetry(@Path("id") id: String): Response<List<Telemetry>>
+
+    @GET("telemetry/{id}/history")
+    suspend fun history(@Path("id") id: String, @Query("days") days: Int): Response<List<HistoryPoint>>
 
     @POST("commands/{id}")
     suspend fun sendCommand(@Path("id") id: String, @Body body: CommandRequest): Response<CommandResponse>

@@ -5,9 +5,12 @@ import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
+import com.onoffmypc.android.data.model.DeviceStatus
+import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
 import com.onoffmypc.android.data.model.RegisterRequest
+import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.remote.ApiService
 import kotlinx.serialization.json.Json
 import retrofit2.Response
@@ -31,6 +34,14 @@ class OnOffRepository(
     suspend fun me(): Result<MeResponse> = call { api.me() }
 
     suspend fun devices(): Result<List<Device>> = call { api.devices() }
+
+    suspend fun device(id: String): Result<Device> = call { api.device(id) }
+
+    suspend fun deviceStatus(id: String): Result<DeviceStatus> = call { api.deviceStatus(id) }
+
+    suspend fun telemetry(id: String): Result<List<Telemetry>> = call { api.telemetry(id) }
+
+    suspend fun history(id: String, days: Int = 7): Result<List<HistoryPoint>> = call { api.history(id, days) }
 
     suspend fun sendCommand(id: String, type: CommandType): Result<CommandResponse> =
         call { api.sendCommand(id, CommandRequest(type.wire)) }
