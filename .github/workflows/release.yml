@@ -1,0 +1,47 @@
+name: Release APK
+
+# On an app version tag (app-vX.Y.Z), build the APK and publish it to the shared
+# public release repo onoffmypc/onoffmypc-release (which also hosts the firmware
+# binaries). App tags are prefixed 'app-v' so they don't collide with the
+# firmware's 'fw-v' tags.
+#
+# Required repository secret:
+#   RELEASE_REPO_TOKEN  — PAT with contents:write on onoffmypc/onoffmypc-release
+#
+# This currently ships the debug-signed APK (installable for testing). For a
+# proper signed release build, add a signingConfig in app/build.gradle.kts and
+# these secrets, then switch the build step to assembleRelease:
+#   ANDROID_KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+
+on:
+  push:
+    tags: ['app-v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Build APK
+        run: ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Publish to the release repo
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#app-v}"
+          APK="$(ls app/build/outputs/apk/debug/*.apk | head -1)"
+          cp "$APK" "onoffmypc-android-${VERSION}.apk"
+          gh release create "${GITHUB_REF_NAME}" \
+            --repo onoffmypc/onoffmypc-release \
+            --title "Android ${GITHUB_REF_NAME}" \
+            --notes "OnOffMyPC Android ${VERSION} (debug build). Install on a device with 'Install unknown apps' enabled." \
+            "onoffmypc-android-${VERSION}.apk"
