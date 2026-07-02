@@ -1,23 +1,24 @@
 name: Release firmware
 
-# On a version tag:
-#   - Clean tag  vX.Y.Z        full release: build -> publish -> update web flasher -> deploy
-#   - Pre-release vX.Y.Z-rc1   rehearsal:   build -> publish GitHub pre-release ONLY
-#     (a hyphen in the tag marks a pre-release; the web flasher and marketing site
-#      are left untouched, so you can exercise the whole build+publish path safely)
+# On a firmware version tag (prefixed 'fw-v' so it doesn't collide with the
+# Android app's 'app-v' tags in the shared release repo):
+#   - Clean tag  fw-vX.Y.Z        full release: build -> publish -> update web flasher -> deploy
+#   - Pre-release fw-vX.Y.Z-rc1   rehearsal:   build -> publish GitHub pre-release ONLY
+#     (a hyphen after the version marks a pre-release; the web flasher and marketing
+#      site are left untouched, so you can exercise the whole build+publish path safely)
 #
 # The tag's base version (before any '-suffix') must match FIRMWARE_VERSION in
 # src/main.cpp; this is checked first, before the build, so bad tags fail fast.
 #
 # Required repository secrets:
-#   RELEASE_REPO_TOKEN     PAT with contents:write on onoffmypc/onoffmypc-firmware-release
+#   RELEASE_REPO_TOKEN     PAT with contents:write on onoffmypc/onoffmypc-release
 #   WEB_REPO_TOKEN         PAT with contents:write on onoffmypc/onoffmypc-web
 #   CLOUDFLARE_API_TOKEN   Cloudflare token with Pages:Edit
 #   CLOUDFLARE_ACCOUNT_ID  Cloudflare account id
 
 on:
   push:
-    tags: ['v*']
+    tags: ['fw-v*']
 
 jobs:
   release:
@@ -29,9 +30,10 @@ jobs:
         run: |
           TAG="${GITHUB_REF_NAME}"
           FW="$(grep -oE '#define FIRMWARE_VERSION "[^"]+"' src/main.cpp | sed -E 's/.*"([^"]+)".*/\1/')"
-          case "$TAG" in
-            *-*) PRERELEASE=true;  BASE="${TAG#v}"; BASE="${BASE%%-*}" ;;
-            *)   PRERELEASE=false; BASE="${TAG#v}" ;;
+          REST="${TAG#fw-v}"   # strip the fw-v prefix -> "1.3.0" or "1.3.0-rc1"
+          case "$REST" in
+            *-*) PRERELEASE=true;  BASE="${REST%%-*}" ;;
+            *)   PRERELEASE=false; BASE="$REST" ;;
           esac
           if [ "$BASE" != "$FW" ]; then
             echo "::error::Tag $TAG (base $BASE) does not match FIRMWARE_VERSION $FW"
@@ -58,7 +60,7 @@ jobs:
           FLAG=""
           [ "${PRERELEASE}" = "true" ] && FLAG="--prerelease"
           gh release create "${GITHUB_REF_NAME}" \
-            --repo onoffmypc/onoffmypc-firmware-release \
+            --repo onoffmypc/onoffmypc-release \
             --title "${GITHUB_REF_NAME}" \
             --notes-file dist/RELEASE_NOTES.md \
             $FLAG \
