@@ -2,18 +2,23 @@ package com.onoffmypc.android.data.remote
 
 import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
+import com.onoffmypc.android.data.model.DeletedResponse
 import com.onoffmypc.android.data.model.Device
+import com.onoffmypc.android.data.model.DeviceNameRequest
 import com.onoffmypc.android.data.model.DeviceStatus
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
+import com.onoffmypc.android.data.model.NewDevice
 import com.onoffmypc.android.data.model.OkResponse
 import com.onoffmypc.android.data.model.RegisterRequest
 import com.onoffmypc.android.data.model.RegisterResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -33,6 +38,15 @@ interface ApiService {
 
     @GET("devices")
     suspend fun devices(): Response<List<Device>>
+
+    @POST("devices")
+    suspend fun addDevice(@Body body: DeviceNameRequest): Response<NewDevice>
+
+    @PATCH("devices/{id}")
+    suspend fun renameDevice(@Path("id") id: String, @Body body: DeviceNameRequest): Response<Device>
+
+    @DELETE("devices/{id}")
+    suspend fun deleteDevice(@Path("id") id: String): Response<DeletedResponse>
 
     @GET("devices/{id}")
     suspend fun device(@Path("id") id: String): Response<Device>

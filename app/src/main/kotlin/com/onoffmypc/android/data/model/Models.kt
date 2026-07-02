@@ -61,6 +61,21 @@ data class HistoryPoint(
 )
 
 @Serializable
+data class DeviceNameRequest(val name: String)
+
+/** Response of POST /devices — includes the raw token, shown to the user once. */
+@Serializable
+data class NewDevice(
+    val id: String? = null,
+    val name: String? = null,
+    val token: String? = null,
+    val created_at: String? = null,
+)
+
+@Serializable
+data class DeletedResponse(val deleted: Boolean = false)
+
+@Serializable
 data class CommandRequest(val type: String)
 
 @Serializable

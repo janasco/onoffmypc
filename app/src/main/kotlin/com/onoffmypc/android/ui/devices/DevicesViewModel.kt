@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.onoffmypc.android.Graph
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
+import com.onoffmypc.android.data.model.NewDevice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,7 @@ data class DevicesUiState(
     val devices: List<Device> = emptyList(),
     val error: String? = null,
     val message: String? = null,
+    val createdDevice: NewDevice? = null,
 )
 
 class DevicesViewModel : ViewModel() {
@@ -49,6 +51,44 @@ class DevicesViewModel : ViewModel() {
             )
         }
     }
+
+    fun addDevice(name: String) {
+        viewModelScope.launch {
+            repo.addDevice(name).fold(
+                onSuccess = { created ->
+                    _state.update { it.copy(createdDevice = created) }
+                    load()
+                },
+                onFailure = { e -> _state.update { it.copy(message = e.message ?: "Couldn't add device") } },
+            )
+        }
+    }
+
+    fun renameDevice(id: String, name: String) {
+        viewModelScope.launch {
+            repo.renameDevice(id, name).fold(
+                onSuccess = {
+                    _state.update { it.copy(message = "Device renamed") }
+                    load()
+                },
+                onFailure = { e -> _state.update { it.copy(message = e.message ?: "Rename failed") } },
+            )
+        }
+    }
+
+    fun deleteDevice(id: String) {
+        viewModelScope.launch {
+            repo.deleteDevice(id).fold(
+                onSuccess = {
+                    _state.update { it.copy(message = "Device removed") }
+                    load()
+                },
+                onFailure = { e -> _state.update { it.copy(message = e.message ?: "Delete failed") } },
+            )
+        }
+    }
+
+    fun dismissCreatedDevice() = _state.update { it.copy(createdDevice = null) }
 
     fun consumeMessage() = _state.update { it.copy(message = null) }
 

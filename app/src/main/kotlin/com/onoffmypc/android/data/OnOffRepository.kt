@@ -5,10 +5,12 @@ import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
+import com.onoffmypc.android.data.model.DeviceNameRequest
 import com.onoffmypc.android.data.model.DeviceStatus
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
+import com.onoffmypc.android.data.model.NewDevice
 import com.onoffmypc.android.data.model.RegisterRequest
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.remote.ApiService
@@ -34,6 +36,14 @@ class OnOffRepository(
     suspend fun me(): Result<MeResponse> = call { api.me() }
 
     suspend fun devices(): Result<List<Device>> = call { api.devices() }
+
+    suspend fun addDevice(name: String): Result<NewDevice> =
+        call { api.addDevice(DeviceNameRequest(name.trim())) }
+
+    suspend fun renameDevice(id: String, name: String): Result<Device> =
+        call { api.renameDevice(id, DeviceNameRequest(name.trim())) }
+
+    suspend fun deleteDevice(id: String): Result<Unit> = call { api.deleteDevice(id) }.map { }
 
     suspend fun device(id: String): Result<Device> = call { api.device(id) }
 

@@ -15,7 +15,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -26,7 +29,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +43,7 @@ import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.ui.components.PowerControls
 import com.onoffmypc.android.ui.components.deviceStatusFromLastSeen
 import com.onoffmypc.android.ui.theme.Muted
+import com.onoffmypc.android.ui.theme.Red
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +54,10 @@ fun DevicesScreen(
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+
+    var showAdd by remember { mutableStateOf(false) }
+    var renaming by remember { mutableStateOf<Device?>(null) }
+    var deleting by remember { mutableStateOf<Device?>(null) }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -66,6 +76,9 @@ fun DevicesScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(onClick = { showAdd = true }) { Text("+ Add device") }
+        },
     ) { padding ->
         Box(
             modifier = Modifier
@@ -85,7 +98,7 @@ fun DevicesScreen(
                 }
 
                 state.devices.isEmpty() -> Text(
-                    text = "No devices yet. Add one from the web dashboard.",
+                    text = "No devices yet. Tap “Add device” to create one.",
                     color = Muted,
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -93,7 +106,7 @@ fun DevicesScreen(
                 )
 
                 else -> LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(state.devices, key = { it.id }) { device ->
@@ -101,11 +114,46 @@ fun DevicesScreen(
                             device = device,
                             onOpen = { onOpen(device) },
                             onCommand = { type -> vm.sendCommand(device, type) },
+                            onRename = { renaming = device },
+                            onDelete = { deleting = device },
                         )
                     }
                 }
             }
         }
+    }
+
+    if (showAdd) {
+        AddDeviceDialog(
+            onDismiss = { showAdd = false },
+            onCreate = { name ->
+                showAdd = false
+                vm.addDevice(name)
+            },
+        )
+    }
+    renaming?.let { device ->
+        RenameDeviceDialog(
+            device = device,
+            onDismiss = { renaming = null },
+            onSave = { name ->
+                renaming = null
+                vm.renameDevice(device.id, name)
+            },
+        )
+    }
+    deleting?.let { device ->
+        DeleteDeviceDialog(
+            device = device,
+            onDismiss = { deleting = null },
+            onConfirm = {
+                deleting = null
+                vm.deleteDevice(device.id)
+            },
+        )
+    }
+    state.createdDevice?.let { created ->
+        TokenRevealDialog(device = created, onDismiss = { vm.dismissCreatedDevice() })
     }
 }
 
@@ -114,21 +162,37 @@ private fun DeviceCard(
     device: Device,
     onOpen: () -> Unit,
     onCommand: (CommandType) -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val (statusText, statusColor) = deviceStatusFromLastSeen(device)
+    var menuOpen by remember { mutableStateOf(false) }
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(device.name, fontWeight = FontWeight.SemiBold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = device.name,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
                 Text(statusText, color = statusColor, style = MaterialTheme.typography.labelMedium)
+                Box {
+                    TextButton(onClick = { menuOpen = true }) { Text("⋮") }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Rename") },
+                            onClick = { menuOpen = false; onRename() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete", color = Red) },
+                            onClick = { menuOpen = false; onDelete() },
+                        )
+                    }
+                }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
             PowerControls(onCommand = onCommand)
             Spacer(Modifier.height(4.dp))
             TextButton(onClick = onOpen) { Text("View details →") }
