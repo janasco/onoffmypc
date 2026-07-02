@@ -7,7 +7,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 object ApiClient {
     private val json = Json {
@@ -28,7 +27,7 @@ object ApiClient {
         return Retrofit.Builder()
             .baseUrl(Api.BASE_URL.trimEnd('/') + "/")
             .client(client)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .addConverterFactory(KotlinxJsonConverterFactory(json, "application/json".toMediaType()))
             .build()
             .create(ApiService::class.java)
     }
