@@ -8,10 +8,12 @@
 #include <ArduinoWebsockets.h>
 #include <ArduinoJson.h>
 #include <DHT.h>
+#include <esp_random.h>
+#include "certs.h"
 
 using namespace websockets;
 
-#define FIRMWARE_VERSION "1.2.0"
+#define FIRMWARE_VERSION "1.3.0"
 
 // ── Pin definitions ───────────────────────────────────────────────────────────
 #define PIN_POWER_SENSE 34
@@ -178,10 +180,24 @@ void startProvisioning() {
   char apSsid[24];
   snprintf(apSsid, sizeof(apSsid), "OnOffMyPC-%02X%02X%02X", mac[3], mac[4], mac[5]);
 
+  // WPA2-protect the provisioning AP with a random per-device password (R26).
+  // Generated once from the hardware RNG and kept in NVS so it's stable across
+  // reboots; printed on serial (visible in the ESP Web Tools console) for the
+  // user to join. A factory reset ('r') clears NVS and regenerates it.
+  prefs.begin("onoffmypc", false);
+  String apPass = prefs.getString("ap_pass", "");
+  if (apPass.length() < 8) {
+    static const char charset[] = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
+    apPass = "";
+    for (int i = 0; i < 10; i++) apPass += charset[esp_random() % (sizeof(charset) - 1)];
+    prefs.putString("ap_pass", apPass);
+  }
+  prefs.end();
+
   IPAddress apIp(192, 168, 4, 1);
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(apIp, apIp, IPAddress(255, 255, 255, 0));
-  WiFi.softAP(apSsid);
+  WiFi.softAP(apSsid, apPass.c_str());
 
   dnsServer.start(53, "*", apIp);
 
@@ -222,7 +238,7 @@ void startProvisioning() {
   });
 
   httpServer.begin();
-  Serial.printf("[prov] AP: %s  open http://192.168.4.1\n", apSsid);
+  Serial.printf("[prov] AP: %s  password: %s  → http://192.168.4.1\n", apSsid, apPass.c_str());
 }
 
 // ── Wake-on-LAN ──────────────────────────────────────────────────────────────
@@ -311,7 +327,9 @@ void connectWifi() {
 }
 
 void connectWs() {
-  ws.setInsecure();
+  // Validate the server against pinned root CAs (R25) so the device token in the
+  // X-Device-Token header can't be captured by a MITM presenting a rogue cert.
+  ws.setCACert(ONOFFMYPC_ROOT_CA);
 
   ws.onMessage([](WebsocketsMessage msg) {
     JsonDocument doc;

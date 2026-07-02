@@ -6,6 +6,10 @@
 - Release automation: `tools/release.sh` builds and packages the flashable image, app image, checksums, ESP Web Tools manifest, and release notes; `.github/workflows/release.yml` runs it on a version tag to publish the GitHub Release and update + deploy the web flasher. See `RELEASE.md`.
 - Release workflow now verifies the tag's base version matches `FIRMWARE_VERSION` before building (fails fast on a mismatched tag), and supports a pre-release rehearsal path: a hyphenated tag (e.g. `v1.3.0-rc1`) builds and publishes a GitHub pre-release only, skipping the web-flasher update and marketing deploy so the full build + publish path can be exercised without touching production.
 
+### Security
+- **TLS certificate validation** on the `wss://api.onoffmypc.com` connection (`FIRMWARE_VERSION` → 1.3.0). Replaced `ws.setInsecure()` (which accepted any certificate) with `ws.setCACert()` pinned to a bundle of the two roots Cloudflare Universal SSL issues from — GTS Root R4 (Google Trust Services) and ISRG Root X1 (Let's Encrypt) — so the `X-Device-Token` header can no longer be captured by a MITM. Both roots are bundled so a routine CA rotation between them doesn't brick fielded devices (`src/certs.h`).
+- **Provisioning AP is now WPA2-protected** with a random per-device password generated from the hardware RNG, stored in NVS (stable across reboots, regenerated on factory reset), and printed on serial / the ESP Web Tools console for the user to join. Previously the setup AP was open to anyone in range.
+
 ## [1.2.0] - 2026-06-30
 
 ### Changed

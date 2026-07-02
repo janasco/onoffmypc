@@ -22,8 +22,8 @@ Firmware `1.1.0`. PlatformIO / Arduino framework on `esp32dev`. Connects over WS
 
 ## Security
 
-- **[SEC]** `ws.setInsecure()` disables TLS certificate validation on the WSS connection. The device token (`X-Device-Token`) is sent over an unauthenticated channel — vulnerable to MITM (token theft, command injection). Pin the server/root CA (ISRG Root X1 / Cloudflare chain) with `WiFiClientSecure::setCACert()`.
-- **[SEC]** Provisioning AP is **open** (no WPA2 password). Anyone in range during setup can join, load the setup page, and submit config. Use a random per-device WPA2 password (shown on serial or a device label).
+- **[SEC]** ~~`ws.setInsecure()` disables TLS certificate validation~~ **Fixed 2026-07-02** — `ws.setCACert()` now pins a bundle of GTS Root R4 + ISRG Root X1 (`src/certs.h`), the two roots Cloudflare Universal SSL issues from, so the `X-Device-Token` can't be MITM'd; bundling both survives a CA rotation without OTA. Compile-verified for `esp32dev`; still needs an on-device connect test.
+- **[SEC]** ~~Provisioning AP is **open**~~ **Fixed 2026-07-02** — the setup AP is WPA2-protected with a random per-device password (hardware RNG, stored in NVS, printed on serial / ESP Web Tools console; regenerated on factory reset).
 - **[SEC]** Setup credentials (WiFi password, device token) are submitted over plain HTTP on the local AP. Acceptable for a short local-only setup window but should be documented.
 - **[SEC]** Device token is stored in NVS in plaintext — with physical access it can be dumped. Low practical risk for home use; note it.
 
