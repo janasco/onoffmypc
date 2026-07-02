@@ -1,9 +1,22 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
+
+// Release signing credentials come from CI env vars, or a local (gitignored)
+// keystore.properties for local release builds. When neither is present (e.g. a
+// clean checkout), the release build is simply left unsigned — debug is unaffected.
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) FileInputStream(keystorePropsFile).use { load(it) }
+}
+fun signingValue(env: String, prop: String): String? =
+    System.getenv(env) ?: keystoreProps.getProperty(prop)
 
 android {
     namespace = "com.onoffmypc.android"
@@ -18,9 +31,26 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        create("release") {
+            val storePath = signingValue("KEYSTORE_FILE", "storeFile")
+            if (storePath != null) {
+                storeFile = file(storePath)
+                storePassword = signingValue("KEYSTORE_PASSWORD", "storePassword")
+                keyAlias = signingValue("KEY_ALIAS", "keyAlias")
+                keyPassword = signingValue("KEY_PASSWORD", "keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = true
+            // Sign only when a keystore was configured; otherwise stay unsigned.
+            signingConfig = signingConfigs.getByName("release").takeIf { it.storeFile != null }
+            // R8 disabled for the first release to avoid mis-stripping the
+            // reflection-based networking stack; enable with the keep rules in
+            // proguard-rules.pro once verified on a device.
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

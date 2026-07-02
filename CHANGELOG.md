@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 ### Added
+- **Release signing**: `app/build.gradle.kts` signs `assembleRelease` from CI env vars or a local (gitignored) `keystore.properties` (unsigned when absent, so debug is unaffected). The `app-v*` release workflow now decodes a keystore secret and builds/publishes a **signed** APK, and verifies the tag matches `versionName`. See `RELEASE.md`.
+
 - Initial project scaffold: Kotlin + Jetpack Compose (Material 3), Gradle Kotlin DSL with a version catalog, Gradle 8.9 wrapper; brand-matched dark theme.
 - **Networking layer**: Retrofit + OkHttp + kotlinx.serialization (`data/remote`). Cookie-based auth — a `SessionCookieJar` persists the API's `session` cookie (the API also accepts it, so no token in the response body is needed), stored in app-private prefs (`SessionStore`); backups disabled so it isn't extracted.
 - **Auth**: login screen wired to `POST /auth/login` with error handling (`ui/auth`).
