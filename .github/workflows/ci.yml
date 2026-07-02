@@ -1,0 +1,25 @@
+name: CI
+
+# Compiles the app on every push/PR so build breakages surface immediately
+# (no signing secrets needed — debug build).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Assemble debug
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
