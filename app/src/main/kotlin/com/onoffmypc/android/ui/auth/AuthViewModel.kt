@@ -3,6 +3,7 @@ package com.onoffmypc.android.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onoffmypc.android.Graph
+import com.onoffmypc.android.push.PushManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +37,7 @@ class AuthViewModel : ViewModel() {
             repo.login(current.email, current.password).fold(
                 onSuccess = {
                     _state.update { it.copy(loading = false) }
+                    PushManager.registerIfPossible()
                     onSuccess()
                 },
                 onFailure = { e ->

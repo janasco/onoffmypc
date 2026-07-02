@@ -2,7 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+- **Login/screen contrast**: the app now always renders its dark theme and paints its own background. Previously it fell back to an incomplete light color scheme on light-mode phones, producing black text on the dark window background.
+
 ### Added
+- **Push notifications (FCM, client)**: `firebase-messaging` with a conditionally-applied google-services plugin (builds without config), a messaging service, notification channel + Android 13 permission request, and FCM-token registration with the backend (`POST /push/register` on login/refresh). Inert until `app/google-services.json` is added — see `PUSH.md`. Notifies on device offline/online and command delivered/failed.
 - **Release signing**: `app/build.gradle.kts` signs `assembleRelease` from CI env vars or a local (gitignored) `keystore.properties` (unsigned when absent, so debug is unaffected). The `app-v*` release workflow now decodes a keystore secret and builds/publishes a **signed** APK, and verifies the tag matches `versionName`. See `RELEASE.md`.
 
 - Initial project scaffold: Kotlin + Jetpack Compose (Material 3), Gradle Kotlin DSL with a version catalog, Gradle 8.9 wrapper; brand-matched dark theme.

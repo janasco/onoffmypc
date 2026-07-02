@@ -15,6 +15,7 @@ import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
 import com.onoffmypc.android.data.model.NewDevice
+import com.onoffmypc.android.data.model.PushRegisterRequest
 import com.onoffmypc.android.data.model.RegisterRequest
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.remote.ApiService
@@ -51,6 +52,12 @@ class OnOffRepository(
         call { api.changePassword(ChangePasswordRequest(current, new)) }.map { }
 
     suspend fun resendVerify(): Result<Unit> = call { api.resendVerify() }.map { }
+
+    suspend fun registerPush(token: String): Result<Unit> =
+        call { api.registerPush(PushRegisterRequest(token)) }.map { }
+
+    suspend fun unregisterPush(token: String): Result<Unit> =
+        call { api.unregisterPush(PushRegisterRequest(token)) }.map { }
 
     suspend fun deleteAccount(): Result<Unit> = call { api.deleteAccount() }.map { }
 

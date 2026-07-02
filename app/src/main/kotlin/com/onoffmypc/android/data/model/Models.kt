@@ -18,6 +18,9 @@ data class ChangeEmailRequest(val new_email: String, val password: String)
 data class ChangePasswordRequest(val current_password: String, val new_password: String)
 
 @Serializable
+data class PushRegisterRequest(val token: String, val platform: String = "android")
+
+@Serializable
 data class RegisterResponse(
     val id: String? = null,
     val email: String? = null,

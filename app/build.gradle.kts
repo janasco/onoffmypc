@@ -8,6 +8,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Apply the Firebase google-services plugin only when a config file is present,
+// so the project still builds without it (CI, fresh checkout). Add your
+// app/google-services.json from the Firebase console to enable FCM. See PUSH.md.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // Release signing credentials come from CI env vars, or a local (gitignored)
 // keystore.properties for local release builds. When neither is present (e.g. a
 // clean checkout), the release build is simply left unsigned — debug is unaffected.
@@ -89,6 +96,10 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)
+
+    // Firebase Cloud Messaging (push). Runtime is inert until app/google-services.json is added.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

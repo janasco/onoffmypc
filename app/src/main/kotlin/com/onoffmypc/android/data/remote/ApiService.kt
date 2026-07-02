@@ -16,6 +16,7 @@ import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
 import com.onoffmypc.android.data.model.NewDevice
 import com.onoffmypc.android.data.model.OkResponse
+import com.onoffmypc.android.data.model.PushRegisterRequest
 import com.onoffmypc.android.data.model.RegisterRequest
 import com.onoffmypc.android.data.model.RegisterResponse
 import retrofit2.Response
@@ -36,6 +37,12 @@ interface ApiService {
 
     @POST("auth/forgot-password")
     suspend fun forgotPassword(@Body body: ForgotPasswordRequest): Response<OkResponse>
+
+    @POST("push/register")
+    suspend fun registerPush(@Body body: PushRegisterRequest): Response<OkResponse>
+
+    @POST("push/unregister")
+    suspend fun unregisterPush(@Body body: PushRegisterRequest): Response<OkResponse>
 
     @GET("auth/me")
     suspend fun me(): Response<MeResponse>
