@@ -84,6 +84,15 @@ data class NewDevice(
 @Serializable
 data class DeletedResponse(val deleted: Boolean = false)
 
+/** A row from GET /commands/:deviceId (recent command history). */
+@Serializable
+data class Command(
+    val id: String? = null,
+    val created_at: String? = null,
+    val type: String? = null,
+    val status: String? = null,
+)
+
 @Serializable
 data class CommandRequest(val type: String)
 

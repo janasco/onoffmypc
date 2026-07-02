@@ -5,6 +5,7 @@ import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
 import com.onoffmypc.android.data.model.ChangeEmailRequest
 import com.onoffmypc.android.data.model.ChangePasswordRequest
+import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.DeviceNameRequest
@@ -70,6 +71,8 @@ class OnOffRepository(
     suspend fun telemetry(id: String): Result<List<Telemetry>> = call { api.telemetry(id) }
 
     suspend fun history(id: String, days: Int = 7): Result<List<HistoryPoint>> = call { api.history(id, days) }
+
+    suspend fun commands(id: String): Result<List<Command>> = call { api.commands(id) }
 
     suspend fun sendCommand(id: String, type: CommandType): Result<CommandResponse> =
         call { api.sendCommand(id, CommandRequest(type.wire)) }

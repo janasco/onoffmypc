@@ -3,6 +3,7 @@ package com.onoffmypc.android.ui.devices
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onoffmypc.android.Graph
+import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.HistoryPoint
@@ -20,6 +21,7 @@ data class DeviceDetailUiState(
     val online: Boolean = false,
     val latest: Telemetry? = null,
     val history: List<HistoryPoint> = emptyList(),
+    val commands: List<Command> = emptyList(),
     val error: String? = null,
     val message: String? = null,
 )
@@ -52,6 +54,7 @@ class DeviceDetailViewModel : ViewModel() {
         val statusRes = repo.deviceStatus(id)
         val telemetryRes = repo.telemetry(id)
         val historyRes = repo.history(id, 7)
+        val commandsRes = repo.commands(id)
 
         deviceRes.fold(
             onSuccess = { device ->
@@ -63,6 +66,7 @@ class DeviceDetailViewModel : ViewModel() {
                         online = statusRes.getOrNull()?.online ?: false,
                         latest = telemetryRes.getOrNull()?.firstOrNull(),
                         history = historyRes.getOrNull() ?: it.history,
+                        commands = commandsRes.getOrNull() ?: it.commands,
                     )
                 }
             },

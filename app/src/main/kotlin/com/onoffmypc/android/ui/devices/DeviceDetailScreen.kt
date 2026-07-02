@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.ui.components.PowerControls
 import com.onoffmypc.android.ui.theme.Accent
@@ -44,7 +45,10 @@ import com.onoffmypc.android.ui.theme.Green
 import com.onoffmypc.android.ui.theme.Muted
 import com.onoffmypc.android.ui.theme.OnBackground
 import com.onoffmypc.android.ui.theme.Red
+import com.onoffmypc.android.ui.theme.Yellow
 import java.time.Instant
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -143,6 +147,56 @@ private fun DetailContent(state: DeviceDetailUiState, onCommand: (com.onoffmypc.
         Text("Temperature — last 7 days", style = MaterialTheme.typography.titleSmall, color = Muted)
         Spacer(Modifier.height(8.dp))
         TemperatureChart(state.history.mapNotNull { it.temp_avg })
+
+        Spacer(Modifier.height(24.dp))
+        Text("Command history", style = MaterialTheme.typography.titleSmall, color = Muted)
+        Spacer(Modifier.height(8.dp))
+        if (state.commands.isEmpty()) {
+            Text("No commands yet.", color = Muted, style = MaterialTheme.typography.bodySmall)
+        } else {
+            state.commands.forEach { CommandRow(it) }
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun CommandRow(command: Command) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(commandLabel(command.type), style = MaterialTheme.typography.bodyMedium)
+            Text(fmtDateTime(command.created_at), style = MaterialTheme.typography.labelSmall, color = Muted)
+        }
+        Text(command.status ?: "—", color = statusColor(command.status), style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+private fun commandLabel(type: String?): String = when (type) {
+    "power_on" -> "Power On"
+    "power_off" -> "Power Off"
+    "power_off_force" -> "Force Off"
+    "reset" -> "Reset"
+    else -> type ?: "—"
+}
+
+private fun statusColor(status: String?): Color = when (status) {
+    "delivered" -> Green
+    "expired" -> Muted
+    else -> Yellow // pending / sent
+}
+
+private fun fmtDateTime(iso: String?): String {
+    if (iso == null) return ""
+    return try {
+        OffsetDateTime.parse(iso).toLocalDateTime().format(DateTimeFormatter.ofPattern("MMM d, HH:mm"))
+    } catch (_: Exception) {
+        ""
     }
 }
 

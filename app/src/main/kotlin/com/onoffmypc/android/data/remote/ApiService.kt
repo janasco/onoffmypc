@@ -2,6 +2,7 @@ package com.onoffmypc.android.data.remote
 
 import com.onoffmypc.android.data.model.ChangeEmailRequest
 import com.onoffmypc.android.data.model.ChangePasswordRequest
+import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
 import com.onoffmypc.android.data.model.DeletedResponse
@@ -77,6 +78,9 @@ interface ApiService {
 
     @GET("telemetry/{id}/history")
     suspend fun history(@Path("id") id: String, @Query("days") days: Int): Response<List<HistoryPoint>>
+
+    @GET("commands/{id}")
+    suspend fun commands(@Path("id") id: String): Response<List<Command>>
 
     @POST("commands/{id}")
     suspend fun sendCommand(@Path("id") id: String, @Body body: CommandRequest): Response<CommandResponse>
