@@ -1,10 +1,11 @@
 package com.onoffmypc.android.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface as AppSurface
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
 private val DarkColors = darkColorScheme(
@@ -14,23 +15,23 @@ private val DarkColors = darkColorScheme(
     onBackground = OnBackground,
     surface = Surface,
     onSurface = OnBackground,
+    surfaceVariant = Surface,
+    onSurfaceVariant = Muted,
     error = Red,
+    onError = Color.White,
     outline = Border,
 )
 
-private val LightColors = lightColorScheme(
-    primary = Accent,
-    onPrimary = Color.White,
-)
-
 @Composable
-fun OnOffMyPCTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
-) {
-    // Dark-first, mirroring the web app; light mode falls back to Material defaults.
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        content = content,
-    )
+fun OnOffMyPCTheme(content: @Composable () -> Unit) {
+    // Dark-first, mirroring the web app — always dark, regardless of the system
+    // light/dark setting, and the background is painted by Compose (not just the
+    // platform window) so text contrast is always correct.
+    MaterialTheme(colorScheme = DarkColors) {
+        AppSurface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background,
+            content = content,
+        )
+    }
 }
