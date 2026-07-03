@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" font-family="DejaVu Sans">
+  <rect width="1080" height="1920" fill="#0F0F0F"/>
+  <text x="48" y="60" font-size="30" fill="#888888">9:41</text>
+  <text x="1032" y="60" font-size="30" fill="#888888" text-anchor="end">5G  100%</text>
+
+  <!-- top bar -->
+  <text x="48" y="150" font-size="56" font-weight="bold" fill="#F0F0F0">Your Devices</text>
+  <text x="560" y="145" font-size="34" fill="#3B82F6">Account</text>
+  <text x="1032" y="145" font-size="34" fill="#888888" text-anchor="end">Sign out</text>
+
+  <!-- ===== Card 1 ===== -->
+  <g transform="translate(0,210)">
+    <rect x="40" y="0" width="1000" height="560" rx="28" fill="#1A1A1A" stroke="#2A2A2A" stroke-width="2"/>
+    <text x="80" y="82" font-size="46" font-weight="bold" fill="#F0F0F0">Gaming PC</text>
+    <circle cx="742" cy="66" r="10" fill="#22C55E"/>
+    <text x="766" y="80" font-size="34" fill="#22C55E">Online</text>
+    <circle cx="972" cy="54" r="6" fill="#888888"/><circle cx="972" cy="74" r="6" fill="#888888"/><circle cx="972" cy="94" r="6" fill="#888888"/>
+    <!-- power buttons -->
+    <rect x="80"  y="150" width="440" height="140" rx="16" fill="#22C55E"/>
+    <text x="300" y="238" font-size="42" font-weight="bold" fill="#ffffff" text-anchor="middle">Power On</text>
+    <rect x="560" y="150" width="440" height="140" rx="16" fill="#EF4444"/>
+    <text x="780" y="238" font-size="42" font-weight="bold" fill="#ffffff" text-anchor="middle">Power Off</text>
+    <rect x="80"  y="310" width="440" height="140" rx="16" fill="#F59E0B"/>
+    <text x="300" y="398" font-size="42" font-weight="bold" fill="#111111" text-anchor="middle">Force Off</text>
+    <rect x="560" y="310" width="440" height="140" rx="16" fill="#1A1A1A" stroke="#2A2A2A" stroke-width="2"/>
+    <text x="780" y="398" font-size="42" font-weight="bold" fill="#F0F0F0" text-anchor="middle">Reset</text>
+    <text x="80" y="520" font-size="36" fill="#3B82F6">View details →</text>
+  </g>
+
+  <!-- ===== Card 2 ===== -->
+  <g transform="translate(0,800)">
+    <rect x="40" y="0" width="1000" height="560" rx="28" fill="#1A1A1A" stroke="#2A2A2A" stroke-width="2"/>
+    <text x="80" y="82" font-size="46" font-weight="bold" fill="#F0F0F0">Home Server</text>
+    <circle cx="726" cy="66" r="10" fill="#888888"/>
+    <text x="750" y="80" font-size="34" fill="#888888">Offline</text>
+    <circle cx="972" cy="54" r="6" fill="#888888"/><circle cx="972" cy="74" r="6" fill="#888888"/><circle cx="972" cy="94" r="6" fill="#888888"/>
+    <rect x="80"  y="150" width="440" height="140" rx="16" fill="#22C55E"/>
+    <text x="300" y="238" font-size="42" font-weight="bold" fill="#ffffff" text-anchor="middle">Power On</text>
+    <rect x="560" y="150" width="440" height="140" rx="16" fill="#EF4444"/>
+    <text x="780" y="238" font-size="42" font-weight="bold" fill="#ffffff" text-anchor="middle">Power Off</text>
+    <rect x="80"  y="310" width="440" height="140" rx="16" fill="#F59E0B"/>
+    <text x="300" y="398" font-size="42" font-weight="bold" fill="#111111" text-anchor="middle">Force Off</text>
+    <rect x="560" y="310" width="440" height="140" rx="16" fill="#1A1A1A" stroke="#2A2A2A" stroke-width="2"/>
+    <text x="780" y="398" font-size="42" font-weight="bold" fill="#F0F0F0" text-anchor="middle">Reset</text>
+    <text x="80" y="520" font-size="36" fill="#3B82F6">View details →</text>
+  </g>
+
+  <!-- FAB -->
+  <rect x="620" y="1740" width="400" height="120" rx="60" fill="#3B82F6"/>
+  <text x="820" y="1815" font-size="40" font-weight="bold" fill="#ffffff" text-anchor="middle">+ Add device</text>
+</svg>
