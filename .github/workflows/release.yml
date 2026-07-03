@@ -56,6 +56,17 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew :app:assembleRelease --no-daemon
 
+      - name: Build release notes from CHANGELOG
+        run: |
+          NOTES="$RUNNER_TEMP/notes.md"
+          bash scripts/release-notes.sh "$VERSION" > "$NOTES" || true
+          if [ ! -s "$NOTES" ]; then
+            echo "OnOffMyPC Android ${VERSION}." > "$NOTES"
+          fi
+          printf '\n---\nInstall on a device with "Install unknown apps" enabled.\n' >> "$NOTES"
+          echo "NOTES_FILE=$NOTES" >> "$GITHUB_ENV"
+          echo "----- release notes -----"; cat "$NOTES"
+
       - name: Publish to the release repo
         env:
           GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
@@ -65,5 +76,5 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" \
             --repo onoffmypc/onoffmypc-release \
             --title "Android ${GITHUB_REF_NAME}" \
-            --notes "OnOffMyPC Android ${VERSION}. Install on a device with 'Install unknown apps' enabled." \
+            --notes-file "$NOTES_FILE" \
             "onoffmypc-android-${VERSION}.apk"

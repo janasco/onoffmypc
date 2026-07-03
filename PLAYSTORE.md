@@ -45,6 +45,14 @@ Every upload needs a higher **`versionCode`**. We're at `versionCode 2`
 (`versionName 0.1.1`). Bump `versionCode` in `app/build.gradle.kts` for each Play
 upload (and `versionName` when the user-facing version changes).
 
+## Release notes
+- **GitHub release** (the `app-v*` APK release) — auto-generated from the matching
+  version section of `CHANGELOG.md` (`scripts/release-notes.sh`). Just keep
+  `CHANGELOG.md` up to date and the release body writes itself.
+- **Play "What's new"** — the short, user-facing note in
+  `distribution/whatsnew/whatsnew-en-US` (≤ 500 chars/locale). Edit this per
+  release to a plain-language summary; the Play upload workflow attaches it.
+
 ## Automated uploads
 The **Upload to Google Play** workflow (`.github/workflows/play.yml`) builds a
 signed `.aab` and pushes it to a Play track via the Play Developer API. It's
