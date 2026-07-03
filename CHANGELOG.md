@@ -1,14 +1,20 @@
 # Changelog
 
-## [Unreleased]
+## [0.1.1] - 2026-07-03
+
+### Added
+- **Push notifications (FCM)**: registers the device's FCM token on login and shows notifications for **device offline/online** and **command delivered/failed** (`firebase-messaging` + a conditionally-applied google-services plugin; notification channel + Android 13 permission request; `POST /push/register`). See `PUSH.md`.
+
+### Changed
+- **App icon + notification icon** now use the OnOffMyPC toggle logo — an adaptive launcher icon (beige background + mark) replacing the default Android icon, and a white notification silhouette.
 
 ### Fixed
 - **Login/screen contrast**: the app now always renders its dark theme and paints its own background. Previously it fell back to an incomplete light color scheme on light-mode phones, producing black text on the dark window background.
 
-### Added
-- **Push notifications (FCM, client)**: `firebase-messaging` with a conditionally-applied google-services plugin (builds without config), a messaging service, notification channel + Android 13 permission request, and FCM-token registration with the backend (`POST /push/register` on login/refresh). Inert until `app/google-services.json` is added — see `PUSH.md`. Notifies on device offline/online and command delivered/failed.
-- **Release signing**: `app/build.gradle.kts` signs `assembleRelease` from CI env vars or a local (gitignored) `keystore.properties` (unsigned when absent, so debug is unaffected). The `app-v*` release workflow now decodes a keystore secret and builds/publishes a **signed** APK, and verifies the tag matches `versionName`. See `RELEASE.md`.
+## [0.1.0] - 2026-07-02
 
+### Added
+- **Release signing**: `app/build.gradle.kts` signs `assembleRelease` from CI env vars or a local (gitignored) `keystore.properties` (unsigned when absent, so debug is unaffected). The `app-v*` release workflow decodes a keystore secret and builds/publishes a **signed** APK, and verifies the tag matches `versionName`. See `RELEASE.md`.
 - Initial project scaffold: Kotlin + Jetpack Compose (Material 3), Gradle Kotlin DSL with a version catalog, Gradle 8.9 wrapper; brand-matched dark theme.
 - **Networking layer**: Retrofit + OkHttp + kotlinx.serialization (`data/remote`). Cookie-based auth — a `SessionCookieJar` persists the API's `session` cookie (the API also accepts it, so no token in the response body is needed), stored in app-private prefs (`SessionStore`); backups disabled so it isn't extracted.
 - **Auth**: login screen wired to `POST /auth/login` with error handling (`ui/auth`).
