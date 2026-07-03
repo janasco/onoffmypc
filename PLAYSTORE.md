@@ -45,12 +45,24 @@ Every upload needs a higher **`versionCode`**. We're at `versionCode 2`
 (`versionName 0.1.1`). Bump `versionCode` in `app/build.gradle.kts` for each Play
 upload (and `versionName` when the user-facing version changes).
 
-## Later: automate uploads
-Once the app exists on Play, subsequent uploads can be automated:
-- Create a **Google Cloud service account**, grant it access in Play Console (Users & permissions), download its JSON key.
-- Add a GitHub Actions job using `r0adkll/upload-google-play@v1` (service-account JSON as a secret) to push the `.aab` to a track on tag.
+## Automated uploads
+The **Upload to Google Play** workflow (`.github/workflows/play.yml`) builds a
+signed `.aab` and pushes it to a Play track via the Play Developer API. It's
+manual (Actions → Run workflow → pick **track** + **status**), so uploads are
+always deliberate.
 
-Ask and I'll wire that workflow up.
+One-time setup (after the app exists on Play with its first manual release):
+1. **Play Console → Setup → API access** → link a Google Cloud project (create one if needed).
+2. In that Google Cloud project (**IAM & Admin → Service accounts**) create a service account, then **Keys → Add key → JSON** and download the key.
+3. Back in **Play Console → Users and permissions → Invite user**, invite the service-account email and grant **release** permissions (e.g. "Release to testing tracks", and "Release to production" if you'll push production), scoped to this app.
+4. Add the downloaded JSON as the GitHub secret **`PLAY_SERVICE_ACCOUNT_JSON`** (plaintext) on `onoffmypc-android`.
+
+Then per release: bump `versionCode`, update `distribution/whatsnew/whatsnew-en-US`,
+and run the workflow (default track **internal**). Promote between tracks in Play
+Console, or re-run with a higher track.
+
+> The **first** release must still be created and uploaded **manually** — the Play
+> API only accepts uploads once the package exists on Play.
 
 ## Recommended path
 1. Run the **Build AAB** workflow, download the `.aab`.
