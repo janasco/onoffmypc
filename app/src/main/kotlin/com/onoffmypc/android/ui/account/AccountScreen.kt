@@ -16,6 +16,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -43,8 +45,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.onoffmypc.android.ui.theme.Muted
+import com.onoffmypc.android.ui.theme.OnBackground
 import com.onoffmypc.android.ui.theme.Red
 import com.onoffmypc.android.ui.theme.Yellow
+import kotlinx.coroutines.delay
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
@@ -104,6 +108,11 @@ fun AccountScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp),
                 ) {
+                    user.deletion_at?.let { da ->
+                        DeletionCountdownCard(deletionAt = da, busy = state.busy, onCancel = vm::cancelDeletion)
+                        Spacer(Modifier.height(24.dp))
+                    }
+
                     SectionTitle("Profile")
                     Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
@@ -174,16 +183,24 @@ fun AccountScreen(
 
                     Spacer(Modifier.height(24.dp))
                     SectionTitle("Danger zone", color = Red)
-                    Text(
-                        text = "Permanently deletes your account, all devices, commands, and telemetry. This cannot be undone.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Muted,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Button(
-                        onClick = { showDelete = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Red, contentColor = Color.White),
-                    ) { Text("Delete account") }
+                    if (user.deletion_at == null) {
+                        Text(
+                            text = "Deletes your account after a 15-day grace period — all devices, commands, and telemetry. You can cancel any time before then.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Muted,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = { showDelete = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Red, contentColor = Color.White),
+                        ) { Text("Delete account") }
+                    } else {
+                        Text(
+                            text = "Your account is scheduled for deletion. Use “Keep my account” above to cancel.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Muted,
+                        )
+                    }
                     Spacer(Modifier.height(24.dp))
                 }
             }
@@ -196,9 +213,65 @@ fun AccountScreen(
             email = user.email,
             busy = state.busy,
             onDismiss = { showDelete = false },
-            onConfirm = { vm.deleteAccount(onSignedOut) },
+            onConfirm = { showDelete = false; vm.scheduleDeletion() },
         )
     }
+}
+
+@Composable
+private fun DeletionCountdownCard(deletionAt: String, busy: Boolean, onCancel: () -> Unit) {
+    val target = remember(deletionAt) {
+        runCatching { OffsetDateTime.parse(deletionAt).toInstant().toEpochMilli() }.getOrNull()
+    }
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(deletionAt) {
+        while (true) {
+            now = System.currentTimeMillis()
+            delay(1000)
+        }
+    }
+    val remaining = ((target ?: now) - now).coerceAtLeast(0)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Red.copy(alpha = 0.12f)),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text(
+                text = "Account scheduled for deletion",
+                color = Red,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = formatCountdown(remaining),
+                color = OnBackground,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Your account and all data will be permanently deleted when the timer ends. Cancel any time before then.",
+                color = Muted,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(onClick = onCancel, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                Text("Keep my account")
+            }
+        }
+    }
+}
+
+private fun formatCountdown(ms: Long): String {
+    if (ms <= 0L) return "Deleting now…"
+    val totalSec = ms / 1000
+    val days = totalSec / 86_400
+    val hours = (totalSec % 86_400) / 3600
+    val mins = (totalSec % 3600) / 60
+    val secs = totalSec % 60
+    return "${days}d ${hours}h ${mins}m ${secs}s"
 }
 
 @Composable
@@ -242,7 +315,7 @@ private fun DeleteAccountDialog(email: String, busy: Boolean, onDismiss: () -> U
         text = {
             Column {
                 Text(
-                    text = "This permanently deletes your account and all data. Type your email to confirm.",
+                    text = "Your account will be scheduled for deletion and permanently removed in 15 days. You can cancel any time before then. Type your email to confirm.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Muted,
                 )
@@ -257,7 +330,7 @@ private fun DeleteAccountDialog(email: String, busy: Boolean, onDismiss: () -> U
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm, enabled = matches && !busy) { Text("Delete forever", color = Red) }
+            TextButton(onClick = onConfirm, enabled = matches && !busy) { Text("Schedule deletion", color = Red) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

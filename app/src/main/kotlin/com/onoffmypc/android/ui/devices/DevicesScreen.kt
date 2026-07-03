@@ -114,6 +114,9 @@ fun DevicesScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         val user = state.user
+                        if (user?.deletion_at != null) {
+                            item { DeletionBanner(onManage = onAccount) }
+                        }
                         if (user != null && !user.email_verified) {
                             item { VerifyEmailBanner(onResend = vm::resendVerification) }
                         }
@@ -218,6 +221,27 @@ private fun DeviceCard(
             PowerControls(onCommand = onCommand)
             Spacer(Modifier.height(4.dp))
             TextButton(onClick = onOpen) { Text("View details →") }
+        }
+    }
+}
+
+@Composable
+private fun DeletionBanner(onManage: () -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = Red.copy(alpha = 0.15f))) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Account scheduled for deletion.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Red,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onManage) { Text("Cancel") }
         }
     }
 }

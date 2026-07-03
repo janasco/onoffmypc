@@ -59,6 +59,9 @@ interface ApiService {
     @DELETE("auth/account")
     suspend fun deleteAccount(): Response<OkResponse>
 
+    @POST("auth/account/cancel-deletion")
+    suspend fun cancelDeletion(): Response<OkResponse>
+
     @POST("auth/logout")
     suspend fun logout(): Response<OkResponse>
 

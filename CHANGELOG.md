@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Account deletion grace period**: deleting your account now schedules removal 15 days out and shows a live countdown (days/hours/minutes/seconds) with a **Keep my account** button to cancel; a dashboard banner also appears while pending. Backed by the API's soft-delete + `/auth/account/cancel-deletion`.
+
 ## [0.1.1] - 2026-07-03
 
 ### Added

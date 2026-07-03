@@ -36,6 +36,8 @@ data class MeResponse(
     val email: String,
     val email_verified: Boolean = false,
     val created_at: String? = null,
+    /** When set, the account is scheduled for deletion at this time (ISO-8601). */
+    val deletion_at: String? = null,
 )
 
 @Serializable

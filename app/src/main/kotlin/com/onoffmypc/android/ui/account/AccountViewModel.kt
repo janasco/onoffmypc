@@ -91,15 +91,30 @@ class AccountViewModel : ViewModel() {
         }
     }
 
-    fun deleteAccount(onDeleted: () -> Unit) {
+    /** Schedules deletion (15-day grace period). Keeps the user signed in so they
+     *  can cancel; the account screen then shows the countdown. */
+    fun scheduleDeletion() {
         _state.update { it.copy(busy = true) }
         viewModelScope.launch {
             repo.deleteAccount().fold(
                 onSuccess = {
-                    repo.logout()
-                    onDeleted()
+                    _state.update { it.copy(busy = false, message = "Account scheduled for deletion.") }
+                    reloadUser()
                 },
-                onFailure = { e -> _state.update { it.copy(busy = false, message = e.message ?: "Couldn't delete account.") } },
+                onFailure = { e -> _state.update { it.copy(busy = false, message = e.message ?: "Couldn't schedule deletion.") } },
+            )
+        }
+    }
+
+    fun cancelDeletion() {
+        _state.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            repo.cancelDeletion().fold(
+                onSuccess = {
+                    _state.update { it.copy(busy = false, message = "Account deletion cancelled.") }
+                    reloadUser()
+                },
+                onFailure = { e -> _state.update { it.copy(busy = false, message = e.message ?: "Couldn't cancel deletion.") } },
             )
         }
     }

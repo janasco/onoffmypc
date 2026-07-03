@@ -61,6 +61,8 @@ class OnOffRepository(
 
     suspend fun deleteAccount(): Result<Unit> = call { api.deleteAccount() }.map { }
 
+    suspend fun cancelDeletion(): Result<Unit> = call { api.cancelDeletion() }.map { }
+
     suspend fun devices(): Result<List<Device>> = call { api.devices() }
 
     suspend fun addDevice(name: String): Result<NewDevice> =
