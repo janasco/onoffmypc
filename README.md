@@ -1,15 +1,73 @@
 # OnOffMyPC — Android
 
 Native Android app for [OnOffMyPC](https://onoffmypc.com) — remotely power your PC
-on/off and see live telemetry, backed by the same API as the web app
-(`https://api.onoffmypc.com`).
+on/off, send commands, and see live telemetry, backed by the same API as the web
+app (`https://api.onoffmypc.com`).
 
-## Stack
-- **Kotlin** + **Jetpack Compose** (Material 3), dark-first to match the web app
-- Gradle (Kotlin DSL) with a version catalog (`gradle/libs.versions.toml`)
-- `compileSdk 35` · `minSdk 26` · `targetSdk 35`
+## Tech stack
+
+| Area | Choice |
+|---|---|
+| Language | **Kotlin** 2.0.20 |
+| UI | **Jetpack Compose** (Material 3), Compose BOM 2024.09.03 — dark-first, single-Activity |
+| Architecture | **MVVM** + `StateFlow` / `collectAsStateWithLifecycle`; manual DI (`Graph`) |
+| Navigation | **Navigation Compose** 2.8.3 |
+| Lifecycle | AndroidX Lifecycle 2.8.6 (`runtime-compose`, `viewmodel-compose`) |
+| Networking | **Retrofit** 2.11.0 + **OkHttp** 4.12.0 (logging interceptor) |
+| JSON | **kotlinx.serialization** 1.7.3 (via a small in-repo Retrofit converter) |
+| Auth | Cookie-based — an OkHttp `CookieJar` persists the API `session` cookie |
+| Push | **Firebase Cloud Messaging** (Firebase BOM 33.5.1); google-services plugin 4.4.2 |
+| Charts | dependency-free **Compose `Canvas`** (temperature history) |
+| Build | **Gradle** 8.9 (Kotlin DSL) + version catalog; **AGP** 8.6.1 |
+| Toolchain | **JDK 17**; `compileSdk 35` · `minSdk 26` · `targetSdk 35` |
+| CI/CD | GitHub Actions — build check on push; signed-APK release on `app-v*` tags |
+
+No third-party DI, image-loading, or networking-abstraction frameworks — the app
+leans on AndroidX + a thin hand-rolled layer to stay small and legible.
+
+## Architecture
+
+Single `MainActivity` hosting Compose (`AppNav`). **MVVM**: screens observe a
+`ViewModel`'s `StateFlow`; a minimal manual DI container (`Graph`, initialized in
+`OnOffApp`) provides the repository. Networking is Retrofit + OkHttp +
+kotlinx.serialization. **Auth is cookie-based**: the API sets an HttpOnly
+`session` cookie on login and accepts it on later requests, so a
+`SessionCookieJar` captures/replays it (persisted app-private via `SessionStore`;
+device backups disabled so it can't be extracted). A 401 interceptor clears the
+session and routes back to login.
+
+```
+app/src/main/kotlin/com/onoffmypc/android/
+  MainActivity.kt              # Compose host -> AppNav; notif permission + FCM register
+  OnOffApp.kt, Graph.kt        # Application + manual DI
+  data/
+    Constants.kt               # Api.BASE_URL
+    model/Models.kt            # DTOs + CommandType
+    remote/                    # ApiService, ApiClient, SessionCookieJar,
+                               #   UnauthorizedInterceptor, KotlinxJsonConverterFactory
+    SessionStore.kt, OnOffRepository.kt
+  push/                        # FCM: messaging service, PushManager,
+                               #   Notifications, permission request
+  ui/
+    theme/                     # brand palette, dark-first theme
+    auth/                      # login, register, forgot-password
+    devices/                   # dashboard (list + power controls), device detail
+    account/                   # profile, change email/password, delete account
+    components/                # shared PowerControls
+    navigation/AppNav.kt       # route graph
+```
+
+## Features
+- **Auth**: login, register (invite-gated), forgot-password; cookie session + 401 auto-logout
+- **Devices**: list with online/PC status, power controls (on / off / force-off / reset), add / rename / delete, pull-to-refresh
+- **Device detail**: live stats, 7-day temperature chart, command history, 30s auto-refresh
+- **Account**: profile, change email/password, delete account; email-verification banner + resend
+- **Push notifications (FCM)**: device offline/online and command delivered/failed
+
+See `CHANGELOG.md` for the full history.
 
 ## Build
+
 Open in **Android Studio** (Ladybug or newer) and run the `app` configuration, or:
 
 ```bash
@@ -18,39 +76,7 @@ Open in **Android Studio** (Ladybug or newer) and run the `app` configuration, o
 
 A JDK 17 toolchain and the Android SDK are required (Android Studio provides both).
 
-## Architecture
-MVVM + a small manual DI container (`Graph`, set up in `OnOffApp`). Networking is
-Retrofit + OkHttp + kotlinx.serialization. **Auth is cookie-based**: the API sets
-an HttpOnly `session` cookie on login and accepts it on later requests, so a
-`SessionCookieJar` captures/replays it (persisted app-private via `SessionStore`;
-device backups are disabled so it can't be extracted).
-
-```
-app/src/main/kotlin/com/onoffmypc/android/
-  MainActivity.kt            # Compose host -> AppNav
-  OnOffApp.kt, Graph.kt      # Application + DI
-  data/
-    Constants.kt             # Api.BASE_URL
-    model/Models.kt          # DTOs + CommandType
-    remote/                  # ApiService, ApiClient, SessionCookieJar
-    SessionStore.kt, OnOffRepository.kt
-  ui/
-    theme/                   # Color, Theme (brand palette)
-    auth/                    # LoginScreen, AuthViewModel
-    devices/                 # DevicesScreen (list + power controls), DevicesViewModel
-    navigation/AppNav.kt     # login <-> devices
-```
-
-## Implemented
-- Login (`POST /auth/login`), session persistence, sign-out (`POST /auth/logout`)
-- Device list (`GET /devices`) with online / PC-on status
-- Power controls — on / off / force-off (with confirm) / reset (`POST /commands/:id`)
-
-## Roadmap (next)
-1. Register + forgot-password flows.
-2. Device detail: telemetry (temp/humidity/RSSI) + history chart; auto-refresh.
-3. Add/rename/delete device; add-device token reveal.
-4. Harden token storage (EncryptedSharedPreferences) and add release signing.
-5. Push notifications for status changes (later).
-
-See `CHANGELOG.md` for changes.
+## Docs
+- **[RELEASE.md](RELEASE.md)** — keystore setup and cutting a signed `app-v*` release
+- **[PUSH.md](PUSH.md)** — Firebase project + backend service-account setup for FCM
+- **[CHANGELOG.md](CHANGELOG.md)** — release notes
