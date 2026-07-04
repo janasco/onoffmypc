@@ -129,6 +129,8 @@ fun AccountScreen(
                                 }
                             }
                             Spacer(Modifier.height(8.dp))
+                            ProfileRow("Plan", planLabel(user.plan, user.device_limit))
+                            Spacer(Modifier.height(8.dp))
                             ProfileRow("Member since", formatDate(user.created_at))
                         }
                     }
@@ -334,6 +336,12 @@ private fun DeleteAccountDialog(email: String, busy: Boolean, onDismiss: () -> U
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+private fun planLabel(plan: String?, limit: Int?): String {
+    val name = (plan ?: "free").replaceFirstChar { it.uppercase() }
+    val devices = if (limit == null) "unlimited devices" else "$limit device${if (limit == 1) "" else "s"}"
+    return "$name · $devices"
 }
 
 private fun formatDate(iso: String?): String {

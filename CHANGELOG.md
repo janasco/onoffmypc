@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- **Subscription plan** shown on the account screen (name + device limit), and **Replace token** on a device's menu (regenerates the token for swapped/damaged ESP hardware, keeping the device's name and history). Device-add now respects the plan's device limit.
 - **Account deletion grace period**: deleting your account now schedules removal 15 days out and shows a live countdown (days/hours/minutes/seconds) with a **Keep my account** button to cancel; a dashboard banner also appears while pending. Backed by the API's soft-delete + `/auth/account/cancel-deletion`.
 
 ## [0.1.1] - 2026-07-03

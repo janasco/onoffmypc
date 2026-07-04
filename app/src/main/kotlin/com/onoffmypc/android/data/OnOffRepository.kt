@@ -73,6 +73,8 @@ class OnOffRepository(
 
     suspend fun deleteDevice(id: String): Result<Unit> = call { api.deleteDevice(id) }.map { }
 
+    suspend fun rotateToken(id: String): Result<NewDevice> = call { api.rotateToken(id) }
+
     suspend fun device(id: String): Result<Device> = call { api.device(id) }
 
     suspend fun deviceStatus(id: String): Result<DeviceStatus> = call { api.deviceStatus(id) }

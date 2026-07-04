@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -63,6 +64,7 @@ fun DevicesScreen(
     var showAdd by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf<Device?>(null) }
     var deleting by remember { mutableStateOf<Device?>(null) }
+    var replacing by remember { mutableStateOf<Device?>(null) }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -139,6 +141,7 @@ fun DevicesScreen(
                                     onCommand = { type -> vm.sendCommand(device, type) },
                                     onRename = { renaming = device },
                                     onDelete = { deleting = device },
+                                    onReplace = { replacing = device },
                                 )
                             }
                         }
@@ -177,6 +180,17 @@ fun DevicesScreen(
             },
         )
     }
+    replacing?.let { device ->
+        AlertDialog(
+            onDismissRequest = { replacing = null },
+            title = { Text("Replace device token?") },
+            text = { Text("Use this if the ESP hardware was damaged or swapped. A new token is generated; the old one stops working and you'll flash the new ESP with it. Your device name and history are kept.") },
+            confirmButton = {
+                TextButton(onClick = { replacing = null; vm.rotateToken(device) }) { Text("Generate new token") }
+            },
+            dismissButton = { TextButton(onClick = { replacing = null }) { Text("Cancel") } },
+        )
+    }
     state.createdDevice?.let { created ->
         TokenRevealDialog(device = created, onDismiss = { vm.dismissCreatedDevice() })
     }
@@ -189,6 +203,7 @@ private fun DeviceCard(
     onCommand: (CommandType) -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
+    onReplace: () -> Unit,
 ) {
     val (statusText, statusColor) = deviceStatusFromLastSeen(device)
     var menuOpen by remember { mutableStateOf(false) }
@@ -208,6 +223,10 @@ private fun DeviceCard(
                         DropdownMenuItem(
                             text = { Text("Rename") },
                             onClick = { menuOpen = false; onRename() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Replace token") },
+                            onClick = { menuOpen = false; onReplace() },
                         )
                         DropdownMenuItem(
                             text = { Text("Delete", color = Red) },

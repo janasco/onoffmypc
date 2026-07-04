@@ -38,6 +38,9 @@ data class MeResponse(
     val created_at: String? = null,
     /** When set, the account is scheduled for deletion at this time (ISO-8601). */
     val deletion_at: String? = null,
+    val plan: String? = null,
+    /** Max devices for the plan; null means unlimited. */
+    val device_limit: Int? = null,
 )
 
 @Serializable

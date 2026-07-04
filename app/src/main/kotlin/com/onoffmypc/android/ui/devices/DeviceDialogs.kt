@@ -87,7 +87,7 @@ fun TokenRevealDialog(device: NewDevice, onDismiss: () -> Unit) {
     val clipboard = LocalClipboardManager.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Device added") },
+        title = { Text("Device credentials") },
         text = {
             Column {
                 Text(

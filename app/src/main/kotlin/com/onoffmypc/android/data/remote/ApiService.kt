@@ -77,6 +77,9 @@ interface ApiService {
     @DELETE("devices/{id}")
     suspend fun deleteDevice(@Path("id") id: String): Response<DeletedResponse>
 
+    @POST("devices/{id}/rotate-token")
+    suspend fun rotateToken(@Path("id") id: String): Response<NewDevice>
+
     @GET("devices/{id}")
     suspend fun device(@Path("id") id: String): Response<Device>
 

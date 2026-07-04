@@ -114,6 +114,17 @@ class DevicesViewModel : ViewModel() {
         }
     }
 
+    /** Replace a device's token (e.g. the ESP hardware was swapped). Reveals the
+     *  new token via the same dialog as add-device. */
+    fun rotateToken(device: Device) {
+        viewModelScope.launch {
+            repo.rotateToken(device.id).fold(
+                onSuccess = { nd -> _state.update { it.copy(createdDevice = nd) } },
+                onFailure = { e -> _state.update { it.copy(message = e.message ?: "Couldn't replace the token.") } },
+            )
+        }
+    }
+
     fun dismissCreatedDevice() = _state.update { it.copy(createdDevice = null) }
 
     fun consumeMessage() = _state.update { it.copy(message = null) }
