@@ -2,9 +2,15 @@
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-04
+
 ### Added
 - **Subscription plan** shown on the account screen (name + device limit), and **Replace token** on a device's menu (regenerates the token for swapped/damaged ESP hardware, keeping the device's name and history). Device-add now respects the plan's device limit.
 - **Account deletion grace period**: deleting your account now schedules removal 15 days out and shows a live countdown (days/hours/minutes/seconds) with a **Keep my account** button to cancel; a dashboard banner also appears while pending. Backed by the API's soft-delete + `/auth/account/cancel-deletion`.
+- **Show / hide password**: every password field (login, register, change email, and change password) now has a Show/Hide toggle.
+
+### Changed
+- **Light & dark theme**: the app now follows the phone's system light/dark setting instead of always rendering dark.
 
 ## [0.1.1] - 2026-07-03
 
