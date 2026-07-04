@@ -40,12 +40,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.onoffmypc.android.ui.components.PasswordField
 import com.onoffmypc.android.ui.theme.Muted
-import com.onoffmypc.android.ui.theme.OnBackground
 import com.onoffmypc.android.ui.theme.Red
 import com.onoffmypc.android.ui.theme.Yellow
 import kotlinx.coroutines.delay
@@ -146,15 +145,11 @@ fun AccountScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
+                    PasswordField(
                         value = emailPw,
-                        onValueChange = { emailPw = it },
-                        label = { Text("Current password") },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                        label = "Current password",
+                        imeAction = ImeAction.Done,
+                    ) { emailPw = it }
                     Spacer(Modifier.height(8.dp))
                     Button(
                         onClick = { vm.changeEmail(newEmail, emailPw) { newEmail = ""; emailPw = "" } },
@@ -248,7 +243,7 @@ private fun DeletionCountdownCard(deletionAt: String, busy: Boolean, onCancel: (
             Spacer(Modifier.height(6.dp))
             Text(
                 text = formatCountdown(remaining),
-                color = OnBackground,
+                color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
@@ -292,19 +287,6 @@ private fun ProfileRow(label: String, value: String) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
         Text(value, style = MaterialTheme.typography.bodyMedium, color = Muted)
     }
-}
-
-@Composable
-private fun PasswordField(value: String, label: String, imeAction: ImeAction, onValueChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = imeAction),
-        modifier = Modifier.fillMaxWidth(),
-    )
 }
 
 @Composable

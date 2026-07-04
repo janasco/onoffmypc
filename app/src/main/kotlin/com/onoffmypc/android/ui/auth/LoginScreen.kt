@@ -21,10 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.onoffmypc.android.ui.components.PasswordField
 import com.onoffmypc.android.ui.theme.Muted
 
 @Composable
@@ -64,17 +64,11 @@ fun LoginScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        OutlinedTextField(
+        PasswordField(
             value = state.password,
+            label = "Password",
+            imeAction = ImeAction.Done,
             onValueChange = vm::onPassword,
-            label = { Text("Password") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done,
-            ),
-            modifier = Modifier.fillMaxWidth(),
         )
 
         state.error?.let {

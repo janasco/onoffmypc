@@ -43,7 +43,6 @@ import com.onoffmypc.android.ui.components.PowerControls
 import com.onoffmypc.android.ui.theme.Accent
 import com.onoffmypc.android.ui.theme.Green
 import com.onoffmypc.android.ui.theme.Muted
-import com.onoffmypc.android.ui.theme.OnBackground
 import com.onoffmypc.android.ui.theme.Red
 import com.onoffmypc.android.ui.theme.Yellow
 import java.time.Instant
@@ -201,7 +200,7 @@ private fun fmtDateTime(iso: String?): String {
 }
 
 @Composable
-private fun StatCard(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = OnBackground) {
+private fun StatCard(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = Color.Unspecified) {
     Card(modifier) {
         Column(Modifier.padding(12.dp)) {
             Text(label, color = Muted, style = MaterialTheme.typography.labelSmall)
@@ -256,7 +255,7 @@ private fun pcText(t: Telemetry?): String = when (t?.pc_on) {
 private fun pcColor(t: Telemetry?): Color = when (t?.pc_on) {
     1 -> Green
     0 -> Red
-    else -> OnBackground
+    else -> Color.Unspecified
 }
 
 private fun timeAgo(iso: String?): String {
