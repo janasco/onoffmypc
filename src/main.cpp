@@ -73,6 +73,9 @@ then fill in the form below.</p>
 <label>PC MAC Address <small style="display:inline;text-transform:none">(for Wake-on-LAN)</small></label>
 <input name="pc_mac" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off">
 <small>Run <strong>ipconfig /all</strong> (Windows) or <strong>ip link</strong> (Linux/Mac)</small>
+<label>Setup PIN</label>
+<input name="setup_pin" required autocomplete="off" inputmode="numeric" placeholder="Printed in serial console">
+<small>Find the 6-digit PIN in the ESP Web Tools / serial output when provisioning starts.</small>
 <button type="submit">Save &amp; Connect</button>
 </form>
 </div>
@@ -170,6 +173,22 @@ void clearConfig() {
   Serial.println("[nvs] config cleared");
 }
 
+// ── Provisioning helpers ──────────────────────────────────────────────────────
+
+static String randomFromCharset(const char* charset, int len) {
+  String out;
+  out.reserve(len);
+  const size_t n = strlen(charset);
+  for (int i = 0; i < len; i++) out += charset[esp_random() % n];
+  return out;
+}
+
+static bool fieldTooLong(const String& value, size_t maxLen, const char* label) {
+  if (value.length() <= maxLen) return false;
+  httpServer.send(400, "text/plain", String(label) + " too long");
+  return true;
+}
+
 // ── Provisioning mode ─────────────────────────────────────────────────────────
 
 void startProvisioning() {
@@ -187,10 +206,13 @@ void startProvisioning() {
   prefs.begin("onoffmypc", false);
   String apPass = prefs.getString("ap_pass", "");
   if (apPass.length() < 8) {
-    static const char charset[] = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
-    apPass = "";
-    for (int i = 0; i < 10; i++) apPass += charset[esp_random() % (sizeof(charset) - 1)];
+    apPass = randomFromCharset("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 10);
     prefs.putString("ap_pass", apPass);
+  }
+  String setupPin = prefs.getString("setup_pin", "");
+  if (setupPin.length() < 6) {
+    setupPin = randomFromCharset("0123456789", 6);
+    prefs.putString("setup_pin", setupPin);
   }
   prefs.end();
 
@@ -218,11 +240,29 @@ void startProvisioning() {
   });
 
   httpServer.on("/save", HTTP_POST, []() {
-    String ssid  = httpServer.arg("ssid").substring(0, 64);
-    String pass  = httpServer.arg("pass").substring(0, 64);
-    String devId = httpServer.arg("device_id").substring(0, 64);
-    String token = httpServer.arg("device_token").substring(0, 64);
-    String pcMac = httpServer.arg("pc_mac").substring(0, 17);
+    String ssid  = httpServer.arg("ssid");
+    String pass  = httpServer.arg("pass");
+    String devId = httpServer.arg("device_id");
+    String token = httpServer.arg("device_token");
+    String pcMac = httpServer.arg("pc_mac");
+    String pin   = httpServer.arg("setup_pin");
+
+    if (fieldTooLong(ssid, 64, "WiFi SSID") ||
+        fieldTooLong(pass, 64, "WiFi password") ||
+        fieldTooLong(devId, 64, "Device ID") ||
+        fieldTooLong(token, 128, "Device token") ||
+        fieldTooLong(pcMac, 17, "PC MAC") ||
+        fieldTooLong(pin, 8, "Setup PIN")) {
+      return;
+    }
+
+    prefs.begin("onoffmypc", true);
+    String expectedPin = prefs.getString("setup_pin", "");
+    prefs.end();
+    if (expectedPin.isEmpty() || pin != expectedPin) {
+      httpServer.send(403, "text/plain", "Invalid setup PIN");
+      return;
+    }
 
     if (ssid.isEmpty() || devId.isEmpty() || token.isEmpty()) {
       httpServer.send(400, "text/plain", "Missing required fields");
@@ -238,7 +278,8 @@ void startProvisioning() {
   });
 
   httpServer.begin();
-  Serial.printf("[prov] AP: %s  password: %s  → http://192.168.4.1\n", apSsid, apPass.c_str());
+  Serial.printf("[prov] AP: %s  password: %s  setup PIN: %s  → http://192.168.4.1\n",
+                apSsid, apPass.c_str(), setupPin.c_str());
 }
 
 // ── Wake-on-LAN ──────────────────────────────────────────────────────────────
