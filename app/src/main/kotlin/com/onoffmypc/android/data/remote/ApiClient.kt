@@ -1,5 +1,6 @@
 package com.onoffmypc.android.data.remote
 
+import com.onoffmypc.android.BuildConfig
 import com.onoffmypc.android.data.Api
 import com.onoffmypc.android.data.SessionStore
 import kotlinx.serialization.json.Json
@@ -15,14 +16,18 @@ object ApiClient {
     }
 
     fun create(store: SessionStore): ApiService {
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
-        }
-        val client = OkHttpClient.Builder()
+        val clientBuilder = OkHttpClient.Builder()
             .cookieJar(SessionCookieJar(store))
             .addInterceptor(UnauthorizedInterceptor(store))
-            .addInterceptor(logging)
-            .build()
+
+        if (BuildConfig.DEBUG) {
+            val logging = HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BASIC
+            }
+            clientBuilder.addInterceptor(logging)
+        }
+
+        val client = clientBuilder.build()
 
         return Retrofit.Builder()
             .baseUrl(Api.BASE_URL.trimEnd('/') + "/")

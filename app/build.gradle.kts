@@ -100,6 +100,7 @@ dependencies {
     // Firebase Cloud Messaging (push). Runtime is inert until app/google-services.json is added.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.androidx.security.crypto)
 
     debugImplementation(libs.androidx.ui.tooling)
 }
