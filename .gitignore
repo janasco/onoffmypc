@@ -3,3 +3,6 @@
 src/config.h
 dist/
 .env
+
+# Local-only secrets runbook (never commit)
+SECRETS.md
