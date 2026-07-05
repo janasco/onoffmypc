@@ -40,14 +40,15 @@ The workflow verifies the tag matches `versionName`, builds `:app:assembleReleas
 (signed with the keystore), and creates the GitHub Release with the APK attached.
 
 ## Building a signed release locally (optional)
-Create a **gitignored** `keystore.properties` at the repo root:
+Create a **gitignored** `keystore.properties` in the **`android/`** directory
+(the Gradle root):
 ```properties
 storeFile=/absolute/path/to/onoffmypc-release.jks
 storePassword=...
 keyAlias=onoffmypc
 keyPassword=...
 ```
-Then: `./gradlew :app:assembleRelease` → `app/build/outputs/apk/release/`.
+Then: `cd android && ./gradlew :app:assembleRelease` → `android/app/build/outputs/apk/release/`.
 
 Without a keystore (`keystore.properties` absent and no env vars), the release
 build is left **unsigned**; debug builds are unaffected.

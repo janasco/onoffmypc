@@ -4,7 +4,7 @@ name: Release APK
 # to the shared public release repo onoffmypc/onoffmypc-release (which also hosts
 # the firmware binaries). App tags are prefixed 'app-v' so they don't collide
 # with the firmware's 'fw-v' tags. The tag's version must match versionName in
-# app/build.gradle.kts (checked first, so a mismatched tag fails fast).
+# android/app/build.gradle.kts (checked first, so a mismatched tag fails fast).
 #
 # Required repository secrets:
 #   RELEASE_REPO_TOKEN       PAT with contents:write on onoffmypc/onoffmypc-release
@@ -27,7 +27,7 @@ jobs:
       - name: Verify tag matches versionName
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#app-v}"
-          APP_VERSION="$(grep -oE 'versionName = "[^"]+"' app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')"
+          APP_VERSION="$(grep -oE 'versionName = "[^"]+"' android/app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')"
           if [ "$TAG_VERSION" != "$APP_VERSION" ]; then
             echo "::error::Tag $GITHUB_REF_NAME (version $TAG_VERSION) does not match versionName $APP_VERSION"
             exit 1
@@ -49,6 +49,7 @@ jobs:
           echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
       - name: Build signed release APK
+        working-directory: android
         env:
           KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -71,7 +72,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
         run: |
-          APK="$(ls app/build/outputs/apk/release/*.apk | head -1)"
+          APK="$(ls android/app/build/outputs/apk/release/*.apk | head -1)"
           cp "$APK" "onoffmypc-android-${VERSION}.apk"
           gh release create "${GITHUB_REF_NAME}" \
             --repo onoffmypc/onoffmypc-release \

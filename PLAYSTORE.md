@@ -11,7 +11,7 @@ You don't need a local Android setup — use CI:
 1. GitHub → the `onoffmypc-mobile` repo → **Actions** → **Build AAB (Play Store)** → **Run workflow**.
 2. When it finishes, download the **`onoffmypc-release-aab`** artifact → it contains `app-release.aab`.
 
-(Or locally, if you have the SDK: `./gradlew :app:bundleRelease` → `app/build/outputs/bundle/release/app-release.aab`.)
+(Or locally, if you have the SDK: `cd android && ./gradlew :app:bundleRelease` → `android/app/build/outputs/bundle/release/app-release.aab`.)
 
 ## Understand Play App Signing (important)
 Google **manages your app's real signing key** ("Play App Signing", mandatory for

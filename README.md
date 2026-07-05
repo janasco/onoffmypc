@@ -68,10 +68,12 @@ See `CHANGELOG.md` for the full history.
 
 ## Build
 
-Open in **Android Studio** (Ladybug or newer) and run the `app` configuration, or:
+The Android app lives in **`android/`** (this repo is a mobile monorepo; an
+`ios/` folder will be added later). Open the **`android/`** folder in **Android
+Studio** (Ladybug or newer) and run the `app` configuration, or:
 
 ```bash
-./gradlew :app:assembleDebug
+cd android && ./gradlew :app:assembleDebug
 ```
 
 A JDK 17 toolchain and the Android SDK are required (Android Studio provides both).

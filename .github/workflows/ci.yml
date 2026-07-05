@@ -22,4 +22,5 @@ jobs:
       - uses: android-actions/setup-android@v3
 
       - name: Assemble debug
+        working-directory: android
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
