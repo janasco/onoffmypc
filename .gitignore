@@ -18,3 +18,11 @@ keystore.properties
 
 # Local-only secrets runbook (never commit)
 SECRETS.md
+
+# iOS (Xcode / XcodeGen — .xcodeproj and Info.plist are generated from project.yml)
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+*.xcuserstate
+ios/OnOffMyPC/Info.plist

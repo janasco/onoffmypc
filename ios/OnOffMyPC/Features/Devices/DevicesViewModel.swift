@@ -1,0 +1,33 @@
+import SwiftUI
+
+@MainActor
+final class DevicesViewModel: ObservableObject {
+    @Published var devices: [Device] = []
+    @Published var loading = false
+    @Published var error: String?
+    @Published var toast: String?
+
+    func load(_ appState: AppState) async {
+        if devices.isEmpty { loading = true }
+        error = nil
+        defer { loading = false }
+        do {
+            devices = try await APIClient.shared.devices()
+        } catch APIError.unauthorized {
+            appState.sessionExpired()
+        } catch {
+            self.error = (error as? APIError)?.errorDescription ?? "Couldn't load your devices."
+        }
+    }
+
+    func send(_ type: CommandType, to device: Device, _ appState: AppState) async {
+        do {
+            let result = try await APIClient.shared.sendCommand(deviceId: device.id, type: type)
+            toast = (result.delivered == true) ? "\(type.label) sent" : (result.reason ?? "Device offline")
+        } catch APIError.unauthorized {
+            appState.sessionExpired()
+        } catch {
+            toast = (error as? APIError)?.errorDescription ?? "Command failed."
+        }
+    }
+}
