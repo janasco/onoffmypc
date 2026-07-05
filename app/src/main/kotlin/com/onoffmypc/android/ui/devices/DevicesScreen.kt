@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -44,6 +45,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
+import com.onoffmypc.android.ui.components.AppLogo
+import com.onoffmypc.android.ui.components.LogoutConfirmDialog
 import com.onoffmypc.android.ui.components.PowerControls
 import com.onoffmypc.android.ui.components.deviceStatusFromLastSeen
 import com.onoffmypc.android.ui.theme.Muted
@@ -65,6 +68,8 @@ fun DevicesScreen(
     var renaming by remember { mutableStateOf<Device?>(null) }
     var deleting by remember { mutableStateOf<Device?>(null) }
     var replacing by remember { mutableStateOf<Device?>(null) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var confirmLogout by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -76,10 +81,29 @@ fun DevicesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Your Devices") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        AppLogo(size = 30.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text("OnOffMyPC")
+                    }
+                },
                 actions = {
-                    TextButton(onClick = onAccount) { Text("Account") }
-                    TextButton(onClick = { vm.logout(onLoggedOut) }) { Text("Sign out") }
+                    Box {
+                        TextButton(onClick = { menuOpen = true }) {
+                            Text("☰", style = MaterialTheme.typography.headlineSmall)
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Account") },
+                                onClick = { menuOpen = false; onAccount() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Logout") },
+                                onClick = { menuOpen = false; confirmLogout = true },
+                            )
+                        }
+                    }
                 },
             )
         },
@@ -193,6 +217,12 @@ fun DevicesScreen(
     }
     state.createdDevice?.let { created ->
         TokenRevealDialog(device = created, onDismiss = { vm.dismissCreatedDevice() })
+    }
+    if (confirmLogout) {
+        LogoutConfirmDialog(
+            onConfirm = { confirmLogout = false; vm.logout(onLoggedOut) },
+            onDismiss = { confirmLogout = false },
+        )
     }
 }
 

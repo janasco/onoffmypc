@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.onoffmypc.android.ui.components.AppLogo
 import com.onoffmypc.android.ui.components.PasswordField
 import com.onoffmypc.android.ui.theme.Muted
 
@@ -42,6 +43,8 @@ fun LoginScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
     ) {
+        AppLogo()
+        Spacer(Modifier.height(16.dp))
         Text("OnOffMyPC", style = MaterialTheme.typography.headlineMedium)
         Text(
             text = "Control your PC from anywhere.",

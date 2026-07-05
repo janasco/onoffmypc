@@ -43,6 +43,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.onoffmypc.android.ui.components.LogoutConfirmDialog
 import com.onoffmypc.android.ui.components.PasswordField
 import com.onoffmypc.android.ui.theme.Muted
 import com.onoffmypc.android.ui.theme.Red
@@ -74,6 +75,7 @@ fun AccountScreen(
     var newPw by remember { mutableStateOf("") }
     var confirmPw by remember { mutableStateOf("") }
     var showDelete by remember { mutableStateOf(false) }
+    var confirmLogout by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -174,7 +176,7 @@ fun AccountScreen(
                     ) { Text("Change password") }
 
                     Spacer(Modifier.height(24.dp))
-                    OutlinedButton(onClick = { vm.signOut(onSignedOut) }, modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(onClick = { confirmLogout = true }, modifier = Modifier.fillMaxWidth()) {
                         Text("Sign out")
                     }
 
@@ -211,6 +213,12 @@ fun AccountScreen(
             busy = state.busy,
             onDismiss = { showDelete = false },
             onConfirm = { showDelete = false; vm.scheduleDeletion() },
+        )
+    }
+    if (confirmLogout) {
+        LogoutConfirmDialog(
+            onConfirm = { confirmLogout = false; vm.signOut(onSignedOut) },
+            onDismiss = { confirmLogout = false },
         )
     }
 }
