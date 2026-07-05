@@ -9,7 +9,8 @@ committed (it's in `.gitignore`), so `project.yml` is the source of truth for
 targets/settings. Add/remove files by dropping them under `OnOffMyPC/` and
 re-running `xcodegen generate`.
 
-## Build & run (needs a Mac + Xcode)
+## Build & run (needs a Mac + Xcode 16 or newer)
+> XcodeGen generates the current project format, which requires **Xcode 16+** to open.
 ```bash
 brew install xcodegen          # one-time
 cd ios

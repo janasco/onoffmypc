@@ -13,7 +13,8 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    # macos-15 ships Xcode 16, which reads XcodeGen's current project format (77).
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 

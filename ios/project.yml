@@ -6,9 +6,6 @@ options:
   deploymentTarget:
     iOS: "16.0"
   createIntermediateGroups: true
-  # pbxproj format compatible with Xcode 14/15/16 (XcodeGen 2.45 defaults to the
-  # Xcode-16-only format 77, which older Xcode can't open).
-  objectVersion: 56
 settings:
   base:
     MARKETING_VERSION: "0.1.0"
