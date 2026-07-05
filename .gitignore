@@ -15,3 +15,6 @@ key.properties
 keystore.properties
 *.jks
 .env
+
+# Local-only secrets runbook (never commit)
+SECRETS.md
