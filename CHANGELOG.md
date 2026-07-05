@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-07-05
+
+### Added
+- **Brand logo** now appears on the login, register, reset-password, and devices screens.
+- **Devices menu**: the top bar has a hamburger menu with **Account** and **Logout**.
+
+### Changed
+- **Logout confirmation**: signing out now asks for confirmation first (from the devices menu and the account screen).
+
 ## [0.1.2] - 2026-07-04
 
 ### Added
