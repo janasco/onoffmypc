@@ -8,7 +8,7 @@ news: our release signing config already applies to the bundle, so
 ## Get the signed .aab
 You don't need a local Android setup — use CI:
 
-1. GitHub → the `onoffmypc-android` repo → **Actions** → **Build AAB (Play Store)** → **Run workflow**.
+1. GitHub → the `onoffmypc-mobile` repo → **Actions** → **Build AAB (Play Store)** → **Run workflow**.
 2. When it finishes, download the **`onoffmypc-release-aab`** artifact → it contains `app-release.aab`.
 
 (Or locally, if you have the SDK: `./gradlew :app:bundleRelease` → `app/build/outputs/bundle/release/app-release.aab`.)
@@ -63,7 +63,7 @@ One-time setup (after the app exists on Play with its first manual release):
 1. **Play Console → Setup → API access** → link a Google Cloud project (create one if needed).
 2. In that Google Cloud project (**IAM & Admin → Service accounts**) create a service account, then **Keys → Add key → JSON** and download the key.
 3. Back in **Play Console → Users and permissions → Invite user**, invite the service-account email and grant **release** permissions (e.g. "Release to testing tracks", and "Release to production" if you'll push production), scoped to this app.
-4. Add the downloaded JSON as the GitHub secret **`PLAY_SERVICE_ACCOUNT_JSON`** (plaintext) on `onoffmypc-android`.
+4. Add the downloaded JSON as the GitHub secret **`PLAY_SERVICE_ACCOUNT_JSON`** (plaintext) on `onoffmypc-mobile`.
 
 Then per release: bump `versionCode`, update `distribution/whatsnew/whatsnew-en-US`,
 and run the workflow (default track **internal**). Promote between tracks in Play

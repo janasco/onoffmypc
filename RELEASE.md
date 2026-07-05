@@ -18,7 +18,7 @@ keytool -genkeypair -v \
 # choose a strong keystore password + key password (can be the same)
 ```
 
-### 2. Add GitHub Actions secrets (on the onoffmypc-android repo)
+### 2. Add GitHub Actions secrets (on the onoffmypc-mobile repo)
 | Secret | Value |
 |---|---|
 | `ANDROID_KEYSTORE_BASE64` | `base64 -w0 onoffmypc-release.jks` (Linux) / `base64 -i onoffmypc-release.jks` (macOS) |

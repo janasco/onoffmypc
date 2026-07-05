@@ -4,7 +4,7 @@ No API access needed. Everything below is done by hand in the Play Console, usin
 the assets already in this `playstore/` folder.
 
 ## A. Get the signed AAB
-1. GitHub → `onoffmypc-android` → **Actions** → **Build AAB (Play Store)** → **Run workflow**.
+1. GitHub → `onoffmypc-mobile` → **Actions** → **Build AAB (Play Store)** → **Run workflow**.
 2. Download the **`onoffmypc-release-aab`** artifact and **unzip** it → you get `app-release.aab`. That's the file you'll upload.
 
 ## B. Create the app
