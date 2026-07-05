@@ -71,7 +71,12 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
 
-    buildFeatures { compose = true }
+    // buildConfig = true is required for the generated BuildConfig class
+    // (ApiClient gates HTTP logging on BuildConfig.DEBUG); AGP 8 defaults it off.
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     // Kotlin sources live under src/main/kotlin.
     sourceSets["main"].java.srcDirs("src/main/kotlin")
