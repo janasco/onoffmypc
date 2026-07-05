@@ -117,6 +117,18 @@ final class APIClient {
     // MARK: - Devices
 
     func devices() async throws -> [Device] { try decode(try await send("GET", "devices")) }
+    func addDevice(name: String) async throws -> NewDevice {
+        try decode(try await send("POST", "devices", body: DeviceNameRequest(name: name)))
+    }
+    func renameDevice(id: String, name: String) async throws -> Device {
+        try decode(try await send("PATCH", "devices/\(id)", body: DeviceNameRequest(name: name)))
+    }
+    func deleteDevice(id: String) async throws {
+        _ = try await send("DELETE", "devices/\(id)")
+    }
+    func rotateToken(id: String) async throws -> NewDevice {
+        try decode(try await send("POST", "devices/\(id)/rotate-token"))
+    }
     func device(id: String) async throws -> Device { try decode(try await send("GET", "devices/\(id)")) }
     func deviceStatus(id: String) async throws -> DeviceStatus { try decode(try await send("GET", "devices/\(id)/status")) }
     func telemetry(id: String) async throws -> [Telemetry] { try decode(try await send("GET", "telemetry/\(id)")) }

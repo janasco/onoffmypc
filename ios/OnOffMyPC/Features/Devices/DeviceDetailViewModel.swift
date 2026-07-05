@@ -10,6 +10,7 @@ final class DeviceDetailViewModel: ObservableObject {
     @Published var loading = true
     @Published var error: String?
     @Published var toast: String?
+    @Published var newToken: NewDevice?
 
     func refresh(id: String, _ appState: AppState) async {
         do {
@@ -45,6 +46,43 @@ final class DeviceDetailViewModel: ObservableObject {
             appState.sessionExpired()
         } catch {
             toast = (error as? APIError)?.errorDescription ?? "Command failed."
+        }
+    }
+
+    func rename(_ name: String, id: String, _ appState: AppState) async {
+        let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !n.isEmpty else { return }
+        do {
+            device = try await APIClient.shared.renameDevice(id: id, name: n)
+            toast = "Device renamed"
+        } catch APIError.unauthorized {
+            appState.sessionExpired()
+        } catch {
+            toast = (error as? APIError)?.errorDescription ?? "Couldn't rename the device."
+        }
+    }
+
+    /// Returns true if deleted (so the screen can pop back).
+    func delete(id: String, _ appState: AppState) async -> Bool {
+        do {
+            try await APIClient.shared.deleteDevice(id: id)
+            return true
+        } catch APIError.unauthorized {
+            appState.sessionExpired()
+            return false
+        } catch {
+            toast = (error as? APIError)?.errorDescription ?? "Couldn't delete the device."
+            return false
+        }
+    }
+
+    func replaceToken(id: String, _ appState: AppState) async {
+        do {
+            newToken = try await APIClient.shared.rotateToken(id: id)
+        } catch APIError.unauthorized {
+            appState.sessionExpired()
+        } catch {
+            toast = (error as? APIError)?.errorDescription ?? "Couldn't replace the token."
         }
     }
 }

@@ -1,9 +1,14 @@
 import SwiftUI
 
+private enum DevicesSheet: Identifiable {
+    case account, addDevice
+    var id: Int { switch self { case .account: return 0; case .addDevice: return 1 } }
+}
+
 struct DevicesView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var vm = DevicesViewModel()
-    @State private var showAccount = false
+    @State private var sheet: DevicesSheet?
     @State private var showLogoutConfirm = false
 
     var body: some View {
@@ -18,9 +23,12 @@ struct DevicesView: View {
                         AppLogo(size: 26)
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
+                        Button { sheet = .addDevice } label: { Image(systemName: "plus") }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
                             Button {
-                                showAccount = true
+                                sheet = .account
                             } label: {
                                 Label("Account", systemImage: "person.crop.circle")
                             }
@@ -38,7 +46,12 @@ struct DevicesView: View {
         .task { await vm.load(appState) }
         .refreshable { await vm.load(appState) }
         .overlay(alignment: .bottom) { toastView }
-        .sheet(isPresented: $showAccount) { AccountView() }
+        .sheet(item: $sheet) { route in
+            switch route {
+            case .account: AccountView()
+            case .addDevice: AddDeviceView(vm: vm)
+            }
+        }
         .alert("Sign out?", isPresented: $showLogoutConfirm) {
             Button("Cancel", role: .cancel) {}
             Button("Sign out", role: .destructive) { appState.signOut() }
@@ -61,7 +74,7 @@ struct DevicesView: View {
             VStack(spacing: 8) {
                 Image(systemName: "desktopcomputer").font(.largeTitle).foregroundStyle(.secondary)
                 Text("No devices yet").font(.headline)
-                Text("Add a device from the web dashboard.").foregroundStyle(.secondary)
+                Text("Tap + to add your first device.").foregroundStyle(.secondary)
             }
             .padding()
         } else {

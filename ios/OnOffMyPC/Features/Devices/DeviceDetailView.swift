@@ -4,7 +4,12 @@ import Charts
 struct DeviceDetailView: View {
     let device: Device
     @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var vm = DeviceDetailViewModel()
+
+    @State private var renameText = ""
+    @State private var showDelete = false
+    @State private var showReplace = false
 
     var body: some View {
         List {
@@ -12,11 +17,39 @@ struct DeviceDetailView: View {
             controlsSection
             chartSection
             historySection
+            manageSection
         }
         .navigationTitle(vm.device?.name ?? device.name)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear { if renameText.isEmpty { renameText = device.name } }
         .task { await vm.autoRefresh(id: device.id, appState) }
         .overlay(alignment: .bottom) { toastView }
+        .sheet(item: $vm.newToken) { token in
+            NavigationStack {
+                TokenReveal(device: token)
+                    .navigationTitle("New device token")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") { vm.newToken = nil }
+                        }
+                    }
+            }
+        }
+        .alert("Delete device?", isPresented: $showDelete) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                Task { if await vm.delete(id: device.id, appState) { dismiss() } }
+            }
+        } message: {
+            Text("\"\(vm.device?.name ?? device.name)\" will be removed permanently. This cannot be undone.")
+        }
+        .confirmationDialog("Replace device token?", isPresented: $showReplace, titleVisibility: .visible) {
+            Button("Generate new token") { Task { await vm.replaceToken(id: device.id, appState) } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Use this if the ESP hardware was swapped or damaged. A new token is generated and the old one stops working.")
+        }
     }
 
     private var statsSection: some View {
@@ -103,6 +136,21 @@ struct DeviceDetailView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var manageSection: some View {
+        Section("Manage") {
+            HStack {
+                TextField("Device name", text: $renameText)
+                    .autocorrectionDisabled()
+                Button("Rename") {
+                    Task { await vm.rename(renameText, id: device.id, appState) }
+                }
+                .disabled(renameText.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+            Button("Replace token") { showReplace = true }
+            Button("Delete device", role: .destructive) { showDelete = true }
         }
     }
 

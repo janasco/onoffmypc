@@ -70,6 +70,20 @@ struct Command: Decodable {
     var rowId: String { id ?? [created_at, type].compactMap { $0 }.joined(separator: "-") }
 }
 
+struct DeviceNameRequest: Encodable { let name: String }
+struct DeletedResponse: Decodable { let deleted: Bool? }
+
+/// Response of POST /devices and rotate-token — carries the raw token, shown once.
+struct NewDevice: Decodable, Identifiable {
+    let deviceId: String?
+    let name: String?
+    let token: String?
+    let created_at: String?
+
+    enum CodingKeys: String, CodingKey { case deviceId = "id", name, token, created_at }
+    var id: String { deviceId ?? token ?? UUID().uuidString }
+}
+
 // MARK: - Command types
 
 enum CommandType: String, CaseIterable, Identifiable {

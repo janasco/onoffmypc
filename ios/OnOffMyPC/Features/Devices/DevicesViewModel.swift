@@ -20,6 +20,10 @@ final class DevicesViewModel: ObservableObject {
         }
     }
 
+    private func silentReload() async {
+        if let d = try? await APIClient.shared.devices() { devices = d }
+    }
+
     func send(_ type: CommandType, to device: Device, _ appState: AppState) async {
         do {
             let result = try await APIClient.shared.sendCommand(deviceId: device.id, type: type)
@@ -28,6 +32,21 @@ final class DevicesViewModel: ObservableObject {
             appState.sessionExpired()
         } catch {
             toast = (error as? APIError)?.errorDescription ?? "Command failed."
+        }
+    }
+
+    /// Adds a device and returns it (token shown once) on success; nil on failure.
+    func addDevice(_ name: String, _ appState: AppState) async -> NewDevice? {
+        do {
+            let created = try await APIClient.shared.addDevice(name: name)
+            await silentReload()
+            return created
+        } catch APIError.unauthorized {
+            appState.sessionExpired()
+            return nil
+        } catch {
+            toast = (error as? APIError)?.errorDescription ?? "Couldn't add device."
+            return nil
         }
     }
 }
