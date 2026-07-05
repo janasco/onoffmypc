@@ -1,25 +1,20 @@
 import Foundation
 
-// Request/response shapes mirror the API (see the Android app's Models.kt).
+// MARK: - Requests
 
-struct LoginRequest: Encodable {
-    let email: String
-    let password: String
-}
+struct LoginRequest: Encodable { let email: String; let password: String }
+struct RegisterRequest: Encodable { let email: String; let password: String; let invite_code: String }
+struct ForgotPasswordRequest: Encodable { let email: String }
+struct ChangeEmailRequest: Encodable { let new_email: String; let password: String }
+struct ChangePasswordRequest: Encodable { let current_password: String; let new_password: String }
+struct CommandRequest: Encodable { let type: String }
 
-struct CommandRequest: Encodable {
-    let type: String
-}
+// MARK: - Responses
 
-struct OkResponse: Decodable {
-    let ok: Bool?
-}
+struct OkResponse: Decodable { let ok: Bool? }
+struct ApiError: Decodable { let error: String? }
 
-struct ApiError: Decodable {
-    let error: String?
-}
-
-struct MeResponse: Decodable, Identifiable {
+struct MeResponse: Decodable {
     let id: String
     let email: String
     var email_verified: Bool?
@@ -29,25 +24,53 @@ struct MeResponse: Decodable, Identifiable {
     var device_limit: Int?
 }
 
-struct Device: Decodable, Identifiable {
+struct Device: Decodable, Identifiable, Hashable {
     let id: String
     let name: String
     var pc_on: Int?
     var last_seen_at: String?
     var firmware_version: String?
 
-    /// Considered online if seen within the last 90 seconds (matches the Android app).
+    /// Online if seen within the last 90 seconds (matches the Android app).
     var isOnline: Bool {
         guard let iso = last_seen_at, let date = Date.fromISO(iso) else { return false }
         return Date().timeIntervalSince(date) < 90
     }
 }
 
-struct CommandResponse: Decodable {
-    var id: String?
-    var delivered: Bool?
-    var reason: String?
+struct DeviceStatus: Decodable {
+    var online: Bool?
+    var last_seen_at: String?
 }
+
+struct Telemetry: Decodable {
+    var recorded_at: String?
+    var pc_on: Int?
+    var room_temp: Double?
+    var room_humidity: Double?
+    var rssi: Int?
+}
+
+struct HistoryPoint: Decodable {
+    var hour: String?
+    var temp_avg: Double?
+    var temp_min: Double?
+    var temp_max: Double?
+    var humidity_avg: Double?
+    var rssi_avg: Double?
+}
+
+struct Command: Decodable {
+    var id: String?
+    var created_at: String?
+    var type: String?
+    var status: String?
+
+    /// Stable key for ForEach (the API rows carry an id).
+    var rowId: String { id ?? [created_at, type].compactMap { $0 }.joined(separator: "-") }
+}
+
+// MARK: - Command types
 
 enum CommandType: String, CaseIterable, Identifiable {
     case powerOn = "power_on"
@@ -66,6 +89,11 @@ enum CommandType: String, CaseIterable, Identifiable {
     }
 }
 
+func commandLabel(_ type: String?) -> String {
+    guard let type, let c = CommandType(rawValue: type) else { return type ?? "—" }
+    return c.label
+}
+
 extension Date {
     /// Parses ISO-8601 with or without fractional seconds.
     static func fromISO(_ s: String) -> Date? {
@@ -74,5 +102,15 @@ extension Date {
         if let d = f.date(from: s) { return d }
         f.formatOptions = [.withInternetDateTime]
         return f.date(from: s)
+    }
+
+    /// Short relative label like "3m ago".
+    static func ago(_ iso: String?) -> String {
+        guard let iso, let date = Date.fromISO(iso) else { return "—" }
+        let s = Int(Date().timeIntervalSince(date))
+        if s < 60 { return "\(s)s ago" }
+        if s < 3600 { return "\(s / 60)m ago" }
+        if s < 86400 { return "\(s / 3600)h ago" }
+        return "\(s / 86400)d ago"
     }
 }

@@ -3,21 +3,31 @@ import SwiftUI
 struct DevicesView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var vm = DevicesViewModel()
+    @State private var showAccount = false
+    @State private var showLogoutConfirm = false
 
     var body: some View {
         NavigationStack {
             content
                 .navigationTitle("Your Devices")
+                .navigationDestination(for: Device.self) { device in
+                    DeviceDetailView(device: device)
+                }
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
                         AppLogo(size: 26)
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
-                            Button(role: .destructive) {
-                                appState.signOut()
+                            Button {
+                                showAccount = true
                             } label: {
-                                Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
+                                Label("Account", systemImage: "person.crop.circle")
+                            }
+                            Button(role: .destructive) {
+                                showLogoutConfirm = true
+                            } label: {
+                                Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
                             }
                         } label: {
                             Image(systemName: "line.3.horizontal")
@@ -28,6 +38,13 @@ struct DevicesView: View {
         .task { await vm.load(appState) }
         .refreshable { await vm.load(appState) }
         .overlay(alignment: .bottom) { toastView }
+        .sheet(isPresented: $showAccount) { AccountView() }
+        .alert("Sign out?", isPresented: $showLogoutConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Sign out", role: .destructive) { appState.signOut() }
+        } message: {
+            Text("You'll need to sign in again to control your devices.")
+        }
     }
 
     @ViewBuilder
@@ -79,12 +96,14 @@ private struct DeviceRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(device.name).font(.headline)
-                Spacer()
-                Text(device.isOnline ? "Online" : "Offline")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(device.isOnline ? Color.green : Color.secondary)
+            NavigationLink(value: device) {
+                HStack {
+                    Text(device.name).font(.headline)
+                    Spacer()
+                    Text(device.isOnline ? "Online" : "Offline")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(device.isOnline ? Color.green : Color.secondary)
+                }
             }
             HStack(spacing: 8) {
                 commandButton(.powerOn, tint: .green)
