@@ -1,6 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [1.3.1] - 2026-07-06
+
+### Fixed
+- **Boot-loop on real hardware (critical).** `udp.begin(9)` ran in `setup()` before the WiFi/TCP-IP stack was initialized, tripping an lwIP assert (`tcpip_send_msg_wait_sem ... Invalid mbox`) that panic-rebooted the device roughly once per second — so it never reached provisioning and no `OnOffMyPC-XXXXXX` setup AP appeared. The WoL UDP socket is now opened after WiFi reaches `WL_CONNECTED` (the only place it is used). Affected 1.2.0 and the unreleased 1.3.0. `FIRMWARE_VERSION` → 1.3.1.
 
 ### Added
 - Release automation: `tools/release.sh` builds and packages the flashable image, app image, checksums, ESP Web Tools manifest, and release notes; `.github/workflows/release.yml` runs it on a version tag to publish the GitHub Release and update + deploy the web flasher. See `RELEASE.md`.

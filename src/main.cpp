@@ -13,7 +13,7 @@
 
 using namespace websockets;
 
-#define FIRMWARE_VERSION "1.3.0"
+#define FIRMWARE_VERSION "1.3.1"
 
 // ── Pin definitions ───────────────────────────────────────────────────────────
 #define PIN_POWER_SENSE 34
@@ -417,7 +417,6 @@ void setup() {
   digitalWrite(PIN_LED,       LOW);
 
   dht.begin();
-  udp.begin(9);
 
   if (loadConfig()) {
     Serial.println("[boot] config loaded");
@@ -458,6 +457,9 @@ void loop() {
       if (WiFi.status() == WL_CONNECTED) {
         wifiAttempts = 0;
         Serial.printf("[wifi] IP: %s\n", WiFi.localIP().toString().c_str());
+        // Init the WoL UDP socket now that the network stack is up. Doing this
+        // in setup() (before WiFi) trips an lwIP "Invalid mbox" assert and boot-loops.
+        udp.begin(9);
         state = WS_CONNECTING;
         connectWs();
       } else if (millis() - wifiStarted >= WIFI_ATTEMPT_TIMEOUT_MS) {
