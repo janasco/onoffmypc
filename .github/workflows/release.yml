@@ -54,6 +54,9 @@ jobs:
         run: ./tools/release.sh
 
       - name: Publish GitHub Release (public release repo)
+        # Non-blocking: a bad/expired RELEASE_REPO_TOKEN must not stop the
+        # user-facing web-flasher deploy below (which uses different tokens).
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
         run: |

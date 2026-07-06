@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.2] - 2026-07-06
+
+### Fixed
+- **Device never connected to the server after provisioning (critical).** 1.3.1 turned on TLS certificate validation (`ws.setCACert`) but never set the ESP32 clock, which powers on at 1970 — so certificate validation failed as "not yet valid" and the `wss://api.onoffmypc.com` handshake dropped immediately, looping `[ws] connecting → disconnected`. The firmware now syncs the clock over SNTP (`pool.ntp.org` / Google / Cloudflare) once WiFi is up, before the first TLS handshake. SNTP keeps running, so a slow initial sync self-heals on the next retry.
+
+### Added
+- **Setup portal WiFi scan.** The provisioning page now scans for nearby networks (new `/scan` endpoint; the setup AP runs in AP+STA mode) and offers them in a pick-or-type dropdown sorted by signal strength, with a **Scan** button to refresh — no need to type the SSID by hand.
+- **Show/Hide toggles** on the WiFi Password and Device Token fields in the setup portal.
+
 ## [1.3.1] - 2026-07-06
 
 ### Fixed

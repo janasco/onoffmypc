@@ -13,7 +13,7 @@
 
 using namespace websockets;
 
-#define FIRMWARE_VERSION "1.3.1"
+#define FIRMWARE_VERSION "1.3.2"
 
 // ── Pin definitions ───────────────────────────────────────────────────────────
 #define PIN_POWER_SENSE 34
@@ -31,7 +31,7 @@ using namespace websockets;
 
 // ── Provisioning portal ───────────────────────────────────────────────────────
 
-static const char SETUP_PAGE[] PROGMEM = R"(<!DOCTYPE html>
+static const char SETUP_PAGE[] PROGMEM = R"HTML(<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -48,11 +48,17 @@ p{font-size:.85rem;color:#888;margin-bottom:1.5rem;line-height:1.5}
 a{color:#3b82f6}
 label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;
   color:#888;margin:.75rem 0 .25rem}
-input{width:100%;background:#0f0f0f;border:1px solid #2a2a2a;border-radius:6px;
+input,select{width:100%;background:#0f0f0f;border:1px solid #2a2a2a;border-radius:6px;
   color:#f0f0f0;font-size:.875rem;padding:.55rem .75rem}
 small{display:block;font-size:.7rem;color:#555;margin-top:.25rem}
 button{margin-top:1.5rem;width:100%;background:#3b82f6;color:#fff;border:none;
   border-radius:6px;padding:.7rem;font-size:.9rem;cursor:pointer;font-weight:600}
+.row{display:flex;gap:.5rem;align-items:stretch}
+.row input{flex:1}
+.mini{margin-top:0;width:auto;padding:.55rem .7rem;background:#2a2a2a;font-weight:500;
+  font-size:.75rem;white-space:nowrap}
+.reveal{margin-top:0;width:auto;padding:0 .8rem;background:#2a2a2a;font-weight:500;font-size:.75rem}
+.hint{color:#3b82f6;font-size:.7rem;margin-top:.25rem}
 </style>
 </head>
 <body>
@@ -62,14 +68,25 @@ button{margin-top:1.5rem;width:100%;background:#3b82f6;color:#fff;border:none;
 <a href="https://app.onoffmypc.com">app.onoffmypc.com</a>
 then fill in the form below.</p>
 <form method="POST" action="/save">
-<label>WiFi Network Name</label>
-<input name="ssid" required autocomplete="off" placeholder="Your WiFi SSID">
+<label>WiFi Network</label>
+<div class="row">
+<input name="ssid" id="ssid" list="nets" required autocomplete="off" placeholder="Pick or type your WiFi">
+<button type="button" class="mini" id="rescan" onclick="scan()">Scan</button>
+</div>
+<datalist id="nets"></datalist>
+<div class="hint" id="scanmsg">Scanning for networks…</div>
 <label>WiFi Password</label>
-<input type="password" name="pass" autocomplete="new-password" placeholder="Leave blank if open">
+<div class="row">
+<input type="password" name="pass" id="pass" autocomplete="new-password" placeholder="Leave blank if open">
+<button type="button" class="reveal" onclick="tog('pass',this)">Show</button>
+</div>
 <label>Device ID</label>
 <input name="device_id" required autocomplete="off" placeholder="Paste from dashboard">
 <label>Device Token</label>
-<input name="device_token" required autocomplete="off" placeholder="Paste from dashboard">
+<div class="row">
+<input type="password" name="device_token" id="tok" required autocomplete="off" placeholder="Paste from dashboard">
+<button type="button" class="reveal" onclick="tog('tok',this)">Show</button>
+</div>
 <label>PC MAC Address <small style="display:inline;text-transform:none">(for Wake-on-LAN)</small></label>
 <input name="pc_mac" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off">
 <small>Run <strong>ipconfig /all</strong> (Windows) or <strong>ip link</strong> (Linux/Mac)</small>
@@ -79,8 +96,28 @@ then fill in the form below.</p>
 <button type="submit">Save &amp; Connect</button>
 </form>
 </div>
+<script>
+function tog(id,b){var e=document.getElementById(id);
+  if(e.type==='password'){e.type='text';b.textContent='Hide';}
+  else{e.type='password';b.textContent='Show';}}
+function bars(r){return r>=-55?'▂▄▆█':r>=-65?'▂▄▆ ':r>=-75?'▂▄  ':'▂   ';}
+function scan(){var m=document.getElementById('scanmsg'),b=document.getElementById('rescan');
+  m.textContent='Scanning for networks…';b.disabled=true;
+  fetch('/scan').then(r=>r.json()).then(list=>{
+    var dl=document.getElementById('nets');dl.innerHTML='';
+    list.sort((a,c)=>c.rssi-a.rssi);
+    var seen={};
+    list.forEach(n=>{if(!n.ssid||seen[n.ssid])return;seen[n.ssid]=1;
+      var o=document.createElement('option');
+      o.value=n.ssid;o.label=bars(n.rssi)+(n.secure?' 🔒':'');dl.appendChild(o);});
+    var c=Object.keys(seen).length;
+    m.textContent=c?('Found '+c+' network'+(c>1?'s':'')+' — pick from the list or type your own'):'No networks found — type your WiFi name';
+  }).catch(()=>{m.textContent='Scan failed — type your WiFi name manually';})
+   .finally(()=>{b.disabled=false;});}
+scan();
+</script>
 </body>
-</html>)";
+</html>)HTML";
 
 static const char SAVED_PAGE[] PROGMEM = R"(<!DOCTYPE html>
 <html lang="en">
@@ -217,7 +254,7 @@ void startProvisioning() {
   prefs.end();
 
   IPAddress apIp(192, 168, 4, 1);
-  WiFi.mode(WIFI_AP);
+  WiFi.mode(WIFI_AP_STA);   // STA enabled so the portal can scan for networks
   WiFi.softAPConfig(apIp, apIp, IPAddress(255, 255, 255, 0));
   WiFi.softAP(apSsid, apPass.c_str());
 
@@ -237,6 +274,24 @@ void startProvisioning() {
 
   httpServer.on("/", HTTP_GET, []() {
     httpServer.send_P(200, "text/html", SETUP_PAGE);
+  });
+
+  // Scan nearby WiFi networks for the setup page dropdown.
+  httpServer.on("/scan", HTTP_GET, []() {
+    int n = WiFi.scanNetworks();
+    String json = "[";
+    for (int i = 0; i < n; i++) {
+      String s = WiFi.SSID(i);
+      if (s.isEmpty()) continue;
+      s.replace("\\", "\\\\");
+      s.replace("\"", "\\\"");
+      if (json.length() > 1) json += ",";
+      json += "{\"ssid\":\"" + s + "\",\"rssi\":" + String(WiFi.RSSI(i)) +
+              ",\"secure\":" + (WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? "false" : "true") + "}";
+    }
+    json += "]";
+    WiFi.scanDelete();
+    httpServer.send(200, "application/json", json);
   });
 
   httpServer.on("/save", HTTP_POST, []() {
@@ -359,6 +414,28 @@ void sendTelemetry() {
 
 // ── WiFi & WebSocket ──────────────────────────────────────────────────────────
 
+// TLS certificate validation (ws.setCACert) rejects the server cert as
+// "not yet valid" until the ESP32 clock is set — it powers on at 1970. Sync
+// SNTP once WiFi is up so the wss:// handshake can succeed. SNTP keeps running
+// in the background, so even if this initial wait times out the clock is set a
+// few seconds later and the next WS retry connects.
+bool clockSynced = false;
+void syncClock() {
+  configTime(0, 0, "pool.ntp.org", "time.google.com", "time.cloudflare.com");
+  struct tm ti;
+  for (int i = 0; i < 40; i++) {              // up to ~8 s
+    if (getLocalTime(&ti, 100) && ti.tm_year > (2020 - 1900)) {
+      clockSynced = true;
+      Serial.printf("[time] clock synced: %04d-%02d-%02d %02d:%02d:%02d UTC\n",
+                    ti.tm_year + 1900, ti.tm_mon + 1, ti.tm_mday,
+                    ti.tm_hour, ti.tm_min, ti.tm_sec);
+      return;
+    }
+    delay(200);
+  }
+  Serial.println("[time] NTP sync timed out — TLS may fail until clock sets");
+}
+
 void connectWifi() {
   Serial.printf("[wifi] connecting to %s (attempt %u)\n", cfgSsid.c_str(), wifiAttempts + 1);
   WiFi.mode(WIFI_STA);
@@ -460,6 +537,8 @@ void loop() {
         // Init the WoL UDP socket now that the network stack is up. Doing this
         // in setup() (before WiFi) trips an lwIP "Invalid mbox" assert and boot-loops.
         udp.begin(9);
+        // Set the clock before the first TLS handshake (cert validation needs it).
+        if (!clockSynced) syncClock();
         state = WS_CONNECTING;
         connectWs();
       } else if (millis() - wifiStarted >= WIFI_ATTEMPT_TIMEOUT_MS) {
