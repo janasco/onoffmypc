@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.4] - 2026-07-06
+
+### Fixed
+- **Server rejected the device with a silent 401 (`[ws] disconnected` loop).** Whitespace pasted into the setup portal (typically a trailing newline on the Device ID or Token) was stored verbatim, so the server's token-hash / device lookup failed and closed the WebSocket. Every setup field is now sanitized: Device ID, Token, MAC, and PIN have all whitespace/control characters stripped (hyphens and colons kept, since the UUID and MAC need them); SSID and WiFi password keep internal spaces but are end-trimmed. `loadConfig()` also re-sanitizes on boot, and the save handler logs the cleaned field lengths (a valid device ID is 36 chars) to make a stray character obvious.
+
 ## [1.3.3] - 2026-07-06
 
 ### Fixed

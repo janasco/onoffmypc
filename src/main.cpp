@@ -13,7 +13,7 @@
 
 using namespace websockets;
 
-#define FIRMWARE_VERSION "1.3.3"
+#define FIRMWARE_VERSION "1.3.4"
 
 // ── Pin definitions ───────────────────────────────────────────────────────────
 #define PIN_POWER_SENSE 34
@@ -178,6 +178,24 @@ void blinkLed(unsigned long intervalMs) {
   }
 }
 
+// ── Input sanitizing ──────────────────────────────────────────────────────────
+
+// Strip ALL whitespace and control characters. Used for the device ID, token,
+// MAC, and PIN — none of which ever contain spaces, but copy/paste into the
+// setup portal routinely drags in a trailing newline or stray space that then
+// breaks the token hash / device lookup server-side (a silent 401). Hyphens and
+// colons are PRESERVED — they're valid in the UUID device ID and the MAC.
+static String stripWs(const String& in) {
+  String out;
+  out.reserve(in.length());
+  for (size_t i = 0; i < in.length(); i++) {
+    unsigned char c = (unsigned char) in[i];
+    if (c <= 0x20 || c == 0x7f) continue;   // space, tab, CR, LF, other controls
+    out += (char) c;
+  }
+  return out;
+}
+
 // ── NVS ──────────────────────────────────────────────────────────────────────
 
 bool loadConfig() {
@@ -188,6 +206,14 @@ bool loadConfig() {
   cfgDeviceToken = prefs.getString("device_token", "");
   cfgPcMac       = prefs.getString("pc_mac",       "");
   prefs.end();
+  // Defense in depth: clean any config saved by older firmware that didn't
+  // sanitize. SSID/password keep internal spaces (both are legal there) and are
+  // only end-trimmed; the rest have all whitespace removed.
+  cfgSsid.trim();
+  cfgPass.trim();
+  cfgDeviceId    = stripWs(cfgDeviceId);
+  cfgDeviceToken = stripWs(cfgDeviceToken);
+  cfgPcMac       = stripWs(cfgPcMac);
   return cfgSsid.length() > 0 && cfgDeviceId.length() > 0 && cfgDeviceToken.length() > 0;
 }
 
@@ -310,12 +336,16 @@ void startProvisioning() {
   });
 
   httpServer.on("/save", HTTP_POST, []() {
-    String ssid  = httpServer.arg("ssid");
-    String pass  = httpServer.arg("pass");
-    String devId = httpServer.arg("device_id");
-    String token = httpServer.arg("device_token");
-    String pcMac = httpServer.arg("pc_mac");
-    String pin   = httpServer.arg("setup_pin");
+    // Sanitize every field. SSID and WiFi password may legitimately contain
+    // internal spaces, so they are only end-trimmed; the device ID, token, MAC,
+    // and PIN never contain spaces, so all whitespace/control chars are removed
+    // (hyphens/colons kept). This kills the "pasted a trailing newline" 401.
+    String ssid  = httpServer.arg("ssid");         ssid.trim();
+    String pass  = httpServer.arg("pass");         pass.trim();
+    String devId = stripWs(httpServer.arg("device_id"));
+    String token = stripWs(httpServer.arg("device_token"));
+    String pcMac = stripWs(httpServer.arg("pc_mac"));
+    String pin   = stripWs(httpServer.arg("setup_pin"));
 
     if (fieldTooLong(ssid, 64, "WiFi SSID") ||
         fieldTooLong(pass, 64, "WiFi password") ||
@@ -342,6 +372,11 @@ void startProvisioning() {
     saveConfig(ssid, pass, devId, token, pcMac);
     httpServer.send_P(200, "text/html", SAVED_PAGE);
 
+    // Log sanitized lengths (not the secret token itself) so a stray char is
+    // visible: a valid UUID device ID is exactly 36 chars.
+    Serial.printf("[prov] saved: ssid='%s' (%uch)  device_id='%s' (%uch)  token=%uch  mac='%s'\n",
+                  ssid.c_str(), ssid.length(), devId.c_str(), devId.length(),
+                  token.length(), pcMac.c_str());
     Serial.println("[prov] config saved — restarting");
     delay(1500);
     ESP.restart();
