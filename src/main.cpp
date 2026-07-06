@@ -4,6 +4,7 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <WiFiClientSecure.h>
+#include <HTTPClient.h>
 #include <WiFiUdp.h>
 #include <ArduinoWebsockets.h>
 #include <ArduinoJson.h>
@@ -13,7 +14,7 @@
 
 using namespace websockets;
 
-#define FIRMWARE_VERSION "1.3.4"
+#define FIRMWARE_VERSION "1.3.5"
 
 // ── Pin definitions ───────────────────────────────────────────────────────────
 #define PIN_POWER_SENSE 34
@@ -64,10 +65,13 @@ button{margin-top:1.5rem;width:100%;background:#3b82f6;color:#fff;border:none;
 <body>
 <div class="card">
 <h1>OnOffMyPC Setup</h1>
-<p>Get your Device ID and Token from
+<p>Get your <strong>pairing code</strong> from
 <a href="https://app.onoffmypc.com">app.onoffmypc.com</a>
-then fill in the form below.</p>
+(tap your device → Pairing code), then fill in the form.</p>
 <form method="POST" action="/save">
+<label>Pairing Code</label>
+<input name="pair_code" id="pair" autocomplete="off" placeholder="e.g. 7QK2-9F3D" style="text-transform:uppercase;letter-spacing:.05em">
+<small>One short code — the device fetches its own credentials. Works once, expires in 15 min.</small>
 <label>WiFi Network</label>
 <div class="row">
 <input name="ssid" id="ssid" list="nets" required autocomplete="off" placeholder="Pick or type your WiFi">
@@ -80,13 +84,16 @@ then fill in the form below.</p>
 <input type="password" name="pass" id="pass" autocomplete="new-password" placeholder="Leave blank if open">
 <button type="button" class="reveal" onclick="tog('pass',this)">Show</button>
 </div>
+<details style="margin:.5rem 0">
+<summary style="cursor:pointer;font-size:.75rem;color:#888">Advanced: enter Device ID + Token instead</summary>
 <label>Device ID</label>
-<input name="device_id" required autocomplete="off" placeholder="Paste from dashboard">
+<input name="device_id" autocomplete="off" placeholder="Paste from dashboard">
 <label>Device Token</label>
 <div class="row">
-<input type="password" name="device_token" id="tok" required autocomplete="off" placeholder="Paste from dashboard">
+<input type="password" name="device_token" id="tok" autocomplete="off" placeholder="Paste from dashboard">
 <button type="button" class="reveal" onclick="tog('tok',this)">Show</button>
 </div>
+</details>
 <label>PC MAC Address <small style="display:inline;text-transform:none">(for Wake-on-LAN)</small></label>
 <input name="pc_mac" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off">
 <small>Run <strong>ipconfig /all</strong> (Windows) or <strong>ip link</strong> (Linux/Mac)</small>
@@ -153,7 +160,7 @@ WebsocketsClient ws;
 DHT              dht(PIN_DHT, DHT22);
 WiFiUDP          udp;
 
-String cfgSsid, cfgPass, cfgDeviceId, cfgDeviceToken, cfgPcMac;
+String cfgSsid, cfgPass, cfgDeviceId, cfgDeviceToken, cfgPcMac, cfgPairCode;
 
 enum Mode  { PROVISIONING, NORMAL };
 enum State { WIFI_CONNECTING, WS_CONNECTING, CONNECTED };
@@ -205,6 +212,7 @@ bool loadConfig() {
   cfgDeviceId    = prefs.getString("device_id",    "");
   cfgDeviceToken = prefs.getString("device_token", "");
   cfgPcMac       = prefs.getString("pc_mac",       "");
+  cfgPairCode    = prefs.getString("pair_code",    "");
   prefs.end();
   // Defense in depth: clean any config saved by older firmware that didn't
   // sanitize. SSID/password keep internal spaces (both are legal there) and are
@@ -214,7 +222,11 @@ bool loadConfig() {
   cfgDeviceId    = stripWs(cfgDeviceId);
   cfgDeviceToken = stripWs(cfgDeviceToken);
   cfgPcMac       = stripWs(cfgPcMac);
-  return cfgSsid.length() > 0 && cfgDeviceId.length() > 0 && cfgDeviceToken.length() > 0;
+  cfgPairCode    = stripWs(cfgPairCode);
+  // Provisioned if we have WiFi plus either real credentials or a pairing code
+  // still to redeem (the code is exchanged for credentials once WiFi is up).
+  const bool haveCreds = cfgDeviceId.length() > 0 && cfgDeviceToken.length() > 0;
+  return cfgSsid.length() > 0 && (haveCreds || cfgPairCode.length() > 0);
 }
 
 void saveConfig(const String& ssid, const String& pass,
@@ -226,6 +238,30 @@ void saveConfig(const String& ssid, const String& pass,
   prefs.putString("device_id",    deviceId);
   prefs.putString("device_token", token);
   prefs.putString("pc_mac",       pcMac);
+  prefs.end();
+}
+
+// Save a provisioning that uses a pairing code: WiFi + MAC + code, with no
+// credentials yet (they're fetched from the server once WiFi connects).
+void savePairingConfig(const String& ssid, const String& pass,
+                       const String& pairCode, const String& pcMac) {
+  prefs.begin("onoffmypc", false);
+  prefs.putString("ssid",      ssid);
+  prefs.putString("pass",      pass);
+  prefs.putString("pair_code", pairCode);
+  prefs.putString("pc_mac",    pcMac);
+  prefs.remove("device_id");
+  prefs.remove("device_token");
+  prefs.end();
+}
+
+// Persist credentials obtained by redeeming a pairing code, and drop the
+// (now spent) code so we don't try to redeem it again.
+void saveRedeemedCreds(const String& deviceId, const String& token) {
+  prefs.begin("onoffmypc", false);
+  prefs.putString("device_id",    deviceId);
+  prefs.putString("device_token", token);
+  prefs.remove("pair_code");
   prefs.end();
 }
 
@@ -342,6 +378,7 @@ void startProvisioning() {
     // (hyphens/colons kept). This kills the "pasted a trailing newline" 401.
     String ssid  = httpServer.arg("ssid");         ssid.trim();
     String pass  = httpServer.arg("pass");         pass.trim();
+    String pair  = stripWs(httpServer.arg("pair_code")); pair.toUpperCase();
     String devId = stripWs(httpServer.arg("device_id"));
     String token = stripWs(httpServer.arg("device_token"));
     String pcMac = stripWs(httpServer.arg("pc_mac"));
@@ -349,6 +386,7 @@ void startProvisioning() {
 
     if (fieldTooLong(ssid, 64, "WiFi SSID") ||
         fieldTooLong(pass, 64, "WiFi password") ||
+        fieldTooLong(pair, 16, "Pairing code") ||
         fieldTooLong(devId, 64, "Device ID") ||
         fieldTooLong(token, 128, "Device token") ||
         fieldTooLong(pcMac, 17, "PC MAC") ||
@@ -364,19 +402,21 @@ void startProvisioning() {
       return;
     }
 
-    if (ssid.isEmpty() || devId.isEmpty() || token.isEmpty()) {
-      httpServer.send(400, "text/plain", "Missing required fields");
+    const bool haveManual = !devId.isEmpty() && !token.isEmpty();
+    if (ssid.isEmpty() || (pair.isEmpty() && !haveManual)) {
+      httpServer.send(400, "text/plain", "Enter a pairing code (or WiFi + Device ID/Token)");
       return;
     }
 
-    saveConfig(ssid, pass, devId, token, pcMac);
+    if (haveManual) {
+      saveConfig(ssid, pass, devId, token, pcMac);
+      Serial.printf("[prov] saved (manual): ssid='%s'  device_id='%s' (%uch)  token=%uch\n",
+                    ssid.c_str(), devId.c_str(), devId.length(), token.length());
+    } else {
+      savePairingConfig(ssid, pass, pair, pcMac);
+      Serial.printf("[prov] saved (pairing): ssid='%s'  pair_code='%s'\n", ssid.c_str(), pair.c_str());
+    }
     httpServer.send_P(200, "text/html", SAVED_PAGE);
-
-    // Log sanitized lengths (not the secret token itself) so a stray char is
-    // visible: a valid UUID device ID is exactly 36 chars.
-    Serial.printf("[prov] saved: ssid='%s' (%uch)  device_id='%s' (%uch)  token=%uch  mac='%s'\n",
-                  ssid.c_str(), ssid.length(), devId.c_str(), devId.length(),
-                  token.length(), pcMac.c_str());
     Serial.println("[prov] config saved — restarting");
     delay(1500);
     ESP.restart();
@@ -494,6 +534,47 @@ void connectWifi() {
   wifiRetryAt = 0;
 }
 
+// Exchange the stored pairing code for real credentials via POST /pair. Requires
+// the clock to be synced first (TLS cert validation). On success it saves the
+// device_id + token, clears the spent code, and returns true.
+bool redeemPairCode() {
+  Serial.printf("[pair] redeeming code %s …\n", cfgPairCode.c_str());
+  WiFiClientSecure client;
+  client.setCACert(ONOFFMYPC_ROOT_CA);
+  HTTPClient https;
+  https.setConnectTimeout(8000);
+  https.setTimeout(8000);
+  if (!https.begin(client, "https://api.onoffmypc.com/pair")) {
+    Serial.println("[pair] connection setup failed");
+    return false;
+  }
+  https.addHeader("Content-Type", "application/json");
+  int code = https.POST(String("{\"code\":\"") + cfgPairCode + "\"}");
+  String resp = https.getString();
+  https.end();
+  if (code != 200) {
+    Serial.printf("[pair] server said HTTP %d: %s\n", code, resp.c_str());
+    return false;
+  }
+  JsonDocument doc;
+  if (deserializeJson(doc, resp) != DeserializationError::Ok) {
+    Serial.println("[pair] bad JSON response");
+    return false;
+  }
+  const char* devId = doc["device_id"];
+  const char* tok   = doc["token"];
+  if (!devId || !tok) {
+    Serial.println("[pair] response missing device_id/token");
+    return false;
+  }
+  cfgDeviceId    = devId;
+  cfgDeviceToken = tok;
+  cfgPairCode    = "";
+  saveRedeemedCreds(cfgDeviceId, cfgDeviceToken);
+  Serial.printf("[pair] success — device_id=%s (%uch)\n", cfgDeviceId.c_str(), cfgDeviceId.length());
+  return true;
+}
+
 void connectWs() {
   // Validate the server against pinned root CAs (R25) so the device token in the
   // X-Device-Token header can't be captured by a MITM presenting a rogue cert.
@@ -587,8 +668,18 @@ void loop() {
         // Init the WoL UDP socket now that the network stack is up. Doing this
         // in setup() (before WiFi) trips an lwIP "Invalid mbox" assert and boot-loops.
         udp.begin(9);
-        // Set the clock before the first TLS handshake (cert validation needs it).
+        // Set the clock before any TLS handshake (cert validation needs it).
         if (!clockSynced) syncClock();
+        // If provisioned with a pairing code, redeem it for real credentials
+        // before attempting the WebSocket. Retry with backoff if it fails
+        // (e.g. expired code or transient network) rather than spinning on WS.
+        if (cfgDeviceId.isEmpty() || cfgDeviceToken.isEmpty()) {
+          if (!redeemPairCode()) {
+            Serial.println("[pair] will retry in 10s");
+            wifiRetryAt = millis() + 10000;
+            break;
+          }
+        }
         state = WS_CONNECTING;
         connectWs();
       } else if (millis() - wifiStarted >= WIFI_ATTEMPT_TIMEOUT_MS) {

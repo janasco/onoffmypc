@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.5] - 2026-07-06
+
+### Added
+- **One-field setup via pairing code.** The setup portal now takes a single short **pairing code** (e.g. `7QK2-9F3D`) instead of a 36-char Device ID plus a 36-char Token — the top source of failed setups. Once WiFi is up, the device redeems the code at `POST /pair` (TLS-pinned) to fetch its own credentials, stores them, and connects. Entering the full Device ID + Token by hand is still available under an "Advanced" section. Requires firmware ≥ 1.3.5 with the matching server support.
+
 ## [1.3.4] - 2026-07-06
 
 ### Fixed
