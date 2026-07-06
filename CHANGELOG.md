@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.3] - 2026-07-06
+
+### Fixed
+- **Could not join the setup hotspot (critical, 1.3.2 regression).** Running the provisioning AP in AP+STA mode (added in 1.3.2 for the live network scan) made the WPA2 hotspot reject the correct password on some hardware. The portal AP is back to plain AP mode. Networks are now scanned once at boot in STA mode and cached, then the AP comes up — so the setup-page network dropdown still works without keeping STA active. (The dropdown's Scan button re-reads the boot-time list; it no longer rescans live.)
+
 ## [1.3.2] - 2026-07-06
 
 ### Fixed

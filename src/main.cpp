@@ -13,7 +13,7 @@
 
 using namespace websockets;
 
-#define FIRMWARE_VERSION "1.3.2"
+#define FIRMWARE_VERSION "1.3.3"
 
 // ── Pin definitions ───────────────────────────────────────────────────────────
 #define PIN_POWER_SENSE 34
@@ -226,6 +226,30 @@ static bool fieldTooLong(const String& value, size_t maxLen, const char* label) 
   return true;
 }
 
+// Networks scanned once at boot (in STA mode) and served to the setup page.
+// We scan-then-cache so the provisioning AP itself can run in plain AP mode —
+// AP+STA made the WPA2 hotspot reject clients on some hardware (1.3.2 regression).
+String scanCache = "[]";
+
+static String scanNetworksJson() {
+  WiFi.mode(WIFI_STA);
+  delay(100);
+  int n = WiFi.scanNetworks();
+  String json = "[";
+  for (int i = 0; i < n; i++) {
+    String s = WiFi.SSID(i);
+    if (s.isEmpty()) continue;
+    s.replace("\\", "\\\\");
+    s.replace("\"", "\\\"");
+    if (json.length() > 1) json += ",";
+    json += "{\"ssid\":\"" + s + "\",\"rssi\":" + String(WiFi.RSSI(i)) +
+            ",\"secure\":" + (WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? "false" : "true") + "}";
+  }
+  json += "]";
+  WiFi.scanDelete();
+  return json;
+}
+
 // ── Provisioning mode ─────────────────────────────────────────────────────────
 
 void startProvisioning() {
@@ -253,8 +277,11 @@ void startProvisioning() {
   }
   prefs.end();
 
+  // Scan networks first (STA), then bring up a plain AP for the portal.
+  scanCache = scanNetworksJson();
+
   IPAddress apIp(192, 168, 4, 1);
-  WiFi.mode(WIFI_AP_STA);   // STA enabled so the portal can scan for networks
+  WiFi.mode(WIFI_AP);   // plain AP — reliable WPA2 hotspot
   WiFi.softAPConfig(apIp, apIp, IPAddress(255, 255, 255, 0));
   WiFi.softAP(apSsid, apPass.c_str());
 
@@ -276,22 +303,10 @@ void startProvisioning() {
     httpServer.send_P(200, "text/html", SETUP_PAGE);
   });
 
-  // Scan nearby WiFi networks for the setup page dropdown.
+  // Serve the networks scanned at boot (see scanNetworksJson). The AP stays in
+  // plain mode, so we don't rescan live here.
   httpServer.on("/scan", HTTP_GET, []() {
-    int n = WiFi.scanNetworks();
-    String json = "[";
-    for (int i = 0; i < n; i++) {
-      String s = WiFi.SSID(i);
-      if (s.isEmpty()) continue;
-      s.replace("\\", "\\\\");
-      s.replace("\"", "\\\"");
-      if (json.length() > 1) json += ",";
-      json += "{\"ssid\":\"" + s + "\",\"rssi\":" + String(WiFi.RSSI(i)) +
-              ",\"secure\":" + (WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? "false" : "true") + "}";
-    }
-    json += "]";
-    WiFi.scanDelete();
-    httpServer.send(200, "application/json", json);
+    httpServer.send(200, "application/json", scanCache);
   });
 
   httpServer.on("/save", HTTP_POST, []() {
