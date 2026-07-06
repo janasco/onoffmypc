@@ -3,6 +3,7 @@ import Foundation
 // MARK: - Requests
 
 struct LoginRequest: Encodable { let email: String; let password: String }
+struct GoogleAuthRequest: Encodable { let credential: String }
 struct RegisterRequest: Encodable { let email: String; let password: String; let invite_code: String }
 struct ForgotPasswordRequest: Encodable { let email: String }
 struct ChangeEmailRequest: Encodable { let new_email: String; let password: String }

@@ -1,4 +1,5 @@
 import SwiftUI
+import GoogleSignIn
 
 @main
 struct OnOffMyPCApp: App {
@@ -6,7 +7,9 @@ struct OnOffMyPCApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView().environmentObject(appState)
+            RootView()
+                .environmentObject(appState)
+                .onOpenURL { url in _ = GoogleSignInManager.handle(url) }
         }
     }
 }

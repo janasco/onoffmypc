@@ -10,6 +10,7 @@ import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.DeviceNameRequest
 import com.onoffmypc.android.data.model.DeviceStatus
 import com.onoffmypc.android.data.model.ForgotPasswordRequest
+import com.onoffmypc.android.data.model.GoogleAuthRequest
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.model.LoginRequest
@@ -31,6 +32,9 @@ import retrofit2.http.Query
 interface ApiService {
     @POST("auth/login")
     suspend fun login(@Body body: LoginRequest): Response<OkResponse>
+
+    @POST("auth/google")
+    suspend fun googleAuth(@Body body: GoogleAuthRequest): Response<OkResponse>
 
     @POST("auth/register")
     suspend fun register(@Body body: RegisterRequest): Response<RegisterResponse>

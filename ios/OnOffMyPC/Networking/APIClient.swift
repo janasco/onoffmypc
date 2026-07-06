@@ -84,6 +84,11 @@ final class APIClient {
         _ = try await send("POST", "auth/login", body: LoginRequest(email: email, password: password))
     }
 
+    /// Exchange a Google ID token for a session (the API sets the session cookie).
+    func googleAuth(idToken: String) async throws {
+        _ = try await send("POST", "auth/google", body: GoogleAuthRequest(credential: idToken))
+    }
+
     /// Register then sign in (registration doesn't set a session cookie; login does).
     func register(email: String, password: String, inviteCode: String) async throws {
         _ = try await send("POST", "auth/register",

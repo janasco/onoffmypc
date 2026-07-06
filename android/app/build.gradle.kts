@@ -36,6 +36,12 @@ android {
         versionCode = 4
         versionName = "0.1.3"
         vectorDrawables { useSupportLibrary = true }
+
+        // Google Sign-In server (Web) client ID used to request an ID token.
+        // Public value; set GOOGLE_SERVER_CLIENT_ID in gradle.properties (or -P).
+        // Empty by default → the app hides the Google button until configured.
+        val googleServerClientId = (project.findProperty("GOOGLE_SERVER_CLIENT_ID") as String?) ?: ""
+        buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$googleServerClientId\"")
     }
 
     signingConfigs {
@@ -106,6 +112,11 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
     implementation(libs.androidx.security.crypto)
+
+    // Google Sign-In via Credential Manager
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

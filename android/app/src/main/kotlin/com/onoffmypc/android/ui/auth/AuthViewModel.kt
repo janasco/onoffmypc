@@ -1,5 +1,6 @@
 package com.onoffmypc.android.ui.auth
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onoffmypc.android.Graph
@@ -35,6 +36,31 @@ class AuthViewModel : ViewModel() {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
             repo.login(current.email, current.password).fold(
+                onSuccess = {
+                    _state.update { it.copy(loading = false) }
+                    PushManager.registerIfPossible()
+                    onSuccess()
+                },
+                onFailure = { e ->
+                    _state.update { it.copy(loading = false, error = friendly(e.message)) }
+                },
+            )
+        }
+    }
+
+    /** Whether to show the "Continue with Google" button. */
+    val googleEnabled: Boolean get() = GoogleSignInHelper.isConfigured
+
+    fun googleSignIn(context: Context, onSuccess: () -> Unit) {
+        _state.update { it.copy(loading = true, error = null) }
+        viewModelScope.launch {
+            val idToken = try {
+                GoogleSignInHelper.getIdToken(context)
+            } catch (e: Exception) {
+                _state.update { it.copy(loading = false, error = friendly(e.message)) }
+                return@launch
+            }
+            repo.googleSignIn(idToken).fold(
                 onSuccess = {
                     _state.update { it.copy(loading = false) }
                     PushManager.registerIfPossible()

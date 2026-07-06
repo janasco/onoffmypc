@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -36,6 +38,7 @@ fun LoginScreen(
     vm: AuthViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -98,6 +101,17 @@ fun LoginScreen(
                 )
             } else {
                 Text("Sign in")
+            }
+        }
+
+        if (vm.googleEnabled) {
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { vm.googleSignIn(context, onLoggedIn) },
+                enabled = !state.loading,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Continue with Google")
             }
         }
 

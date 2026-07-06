@@ -6,6 +6,10 @@ options:
   deploymentTarget:
     iOS: "16.0"
   createIntermediateGroups: true
+packages:
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: "7.1.0"
 settings:
   base:
     MARKETING_VERSION: "0.1.0"
@@ -16,6 +20,9 @@ targets:
   OnOffMyPC:
     type: application
     platform: iOS
+    dependencies:
+      - package: GoogleSignIn
+        product: GoogleSignIn
     sources:
       - path: OnOffMyPC
     settings:

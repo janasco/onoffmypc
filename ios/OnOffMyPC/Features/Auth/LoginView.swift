@@ -40,6 +40,17 @@ struct LoginView: View {
                 .controlSize(.large)
                 .disabled(vm.loading)
 
+                if vm.googleEnabled {
+                    Button {
+                        Task { await vm.googleSignIn(appState) }
+                    } label: {
+                        Text("Continue with Google").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .disabled(vm.loading)
+                }
+
                 HStack {
                     NavigationLink("Forgot password?") { ForgotPasswordView() }
                     Spacer()
