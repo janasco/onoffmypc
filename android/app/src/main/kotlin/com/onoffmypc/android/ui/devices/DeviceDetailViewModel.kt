@@ -24,6 +24,7 @@ data class DeviceDetailUiState(
     val commands: List<Command> = emptyList(),
     val error: String? = null,
     val message: String? = null,
+    val refreshing: Boolean = false,
 )
 
 class DeviceDetailViewModel : ViewModel() {
@@ -74,6 +75,16 @@ class DeviceDetailViewModel : ViewModel() {
                 _state.update { it.copy(loading = false, error = e.message ?: "Failed to load device") }
             },
         )
+    }
+
+    /** Manual pull-to-refresh: re-fetch now and show the refresh indicator. */
+    fun onPullRefresh() {
+        val id = deviceId ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(refreshing = true) }
+            refresh(id)
+            _state.update { it.copy(refreshing = false) }
+        }
     }
 
     fun sendCommand(type: CommandType) {
