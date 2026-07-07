@@ -3,109 +3,68 @@
 ## [1.3.6] - 2026-07-07
 
 ### Changed
-- **Telemetry cadence 5s → 30s.** Writes ~6x fewer D1 rows (~2.9k vs ~17k per device per day) to stay within Cloudflare's free tier as devices scale. Still refreshes `last_seen` well inside the 90s "online" window, so status is unaffected.
+- Reduced how often the device reports status/sensor data to save bandwidth and battery. Live status is unaffected.
 
 ## [1.3.5] - 2026-07-06
 
 ### Added
-- **One-field setup via pairing code.** The setup portal now takes a single short **pairing code** (e.g. `7QK2-9F3D`) instead of a 36-char Device ID plus a 36-char Token — the top source of failed setups. Once WiFi is up, the device redeems the code at `POST /pair` (TLS-pinned) to fetch its own credentials, stores them, and connects. Entering the full Device ID + Token by hand is still available under an "Advanced" section. Requires firmware ≥ 1.3.5 with the matching server support.
+- **One-code setup.** The setup page now accepts a single short **pairing code** (e.g. `7QK2-9F3D`) from your dashboard instead of two long values — the easiest way to set up a device. Manual entry is still available under "Advanced".
 
 ## [1.3.4] - 2026-07-06
 
 ### Fixed
-- **Server rejected the device with a silent 401 (`[ws] disconnected` loop).** Whitespace pasted into the setup portal (typically a trailing newline on the Device ID or Token) was stored verbatim, so the server's token-hash / device lookup failed and closed the WebSocket. Every setup field is now sanitized: Device ID, Token, MAC, and PIN have all whitespace/control characters stripped (hyphens and colons kept, since the UUID and MAC need them); SSID and WiFi password keep internal spaces but are end-trimmed. `loadConfig()` also re-sanitizes on boot, and the save handler logs the cleaned field lengths (a valid device ID is 36 chars) to make a stray character obvious.
+- Setup would sometimes fail if extra spaces were accidentally included when pasting your details. Entries are now cleaned automatically so setup succeeds.
 
 ## [1.3.3] - 2026-07-06
 
 ### Fixed
-- **Could not join the setup hotspot (critical, 1.3.2 regression).** Running the provisioning AP in AP+STA mode (added in 1.3.2 for the live network scan) made the WPA2 hotspot reject the correct password on some hardware. The portal AP is back to plain AP mode. Networks are now scanned once at boot in STA mode and cached, then the AP comes up — so the setup-page network dropdown still works without keeping STA active. (The dropdown's Scan button re-reads the boot-time list; it no longer rescans live.)
+- Fixed an issue where the `OnOffMyPC-XXXXXX` setup network could reject the correct password. Joining the setup network is reliable again, and the setup page still lists nearby Wi-Fi networks to pick from.
 
 ## [1.3.2] - 2026-07-06
 
 ### Fixed
-- **Device never connected to the server after provisioning (critical).** 1.3.1 turned on TLS certificate validation (`ws.setCACert`) but never set the ESP32 clock, which powers on at 1970 — so certificate validation failed as "not yet valid" and the `wss://api.onoffmypc.com` handshake dropped immediately, looping `[ws] connecting → disconnected`. The firmware now syncs the clock over SNTP (`pool.ntp.org` / Google / Cloudflare) once WiFi is up, before the first TLS handshake. SNTP keeps running, so a slow initial sync self-heals on the next retry.
+- Fixed a problem where a freshly set-up device could fail to come online. Devices now connect reliably right after setup.
 
 ### Added
-- **Setup portal WiFi scan.** The provisioning page now scans for nearby networks (new `/scan` endpoint; the setup AP runs in AP+STA mode) and offers them in a pick-or-type dropdown sorted by signal strength, with a **Scan** button to refresh — no need to type the SSID by hand.
-- **Show/Hide toggles** on the WiFi Password and Device Token fields in the setup portal.
+- **Wi-Fi picker in setup.** The setup page scans for nearby networks so you can pick yours from a list instead of typing the name.
+- **Show/Hide** buttons on the password fields in the setup page.
 
 ## [1.3.1] - 2026-07-06
 
 ### Fixed
-- **Boot-loop on real hardware (critical).** `udp.begin(9)` ran in `setup()` before the WiFi/TCP-IP stack was initialized, tripping an lwIP assert (`tcpip_send_msg_wait_sem ... Invalid mbox`) that panic-rebooted the device roughly once per second — so it never reached provisioning and no `OnOffMyPC-XXXXXX` setup AP appeared. The WoL UDP socket is now opened after WiFi reaches `WL_CONNECTED` (the only place it is used). Affected 1.2.0 and the unreleased 1.3.0. `FIRMWARE_VERSION` → 1.3.1.
-
-### Added
-- Release automation: `tools/release.sh` builds and packages the flashable image, app image, checksums, ESP Web Tools manifest, and release notes; `.github/workflows/release.yml` runs it on a version tag to publish the GitHub Release and update + deploy the web flasher. See `RELEASE.md`.
-- Release workflow now verifies the tag's base version matches `FIRMWARE_VERSION` before building (fails fast on a mismatched tag), and supports a pre-release rehearsal path: a hyphenated tag (e.g. `v1.3.0-rc1`) builds and publishes a GitHub pre-release only, skipping the web-flasher update and marketing deploy so the full build + publish path can be exercised without touching production.
+- Fixed a startup problem that could prevent the setup network from appearing on some boards. First-time setup now works reliably.
 
 ### Security
-- **TLS certificate validation** on the `wss://api.onoffmypc.com` connection (`FIRMWARE_VERSION` → 1.3.0). Replaced `ws.setInsecure()` (which accepted any certificate) with `ws.setCACert()` pinned to a bundle of the two roots Cloudflare Universal SSL issues from — GTS Root R4 (Google Trust Services) and ISRG Root X1 (Let's Encrypt) — so the `X-Device-Token` header can no longer be captured by a MITM. Both roots are bundled so a routine CA rotation between them doesn't brick fielded devices (`src/certs.h`).
-- **Provisioning AP is now WPA2-protected** with a random per-device password generated from the hardware RNG, stored in NVS (stable across reboots, regenerated on factory reset), and printed on serial / the ESP Web Tools console for the user to join. Previously the setup AP was open to anyone in range.
+- **Encrypted, verified connection to the service.** The device now verifies the server's identity before sending anything, protecting your device credentials in transit.
+- **Password-protected setup network.** The `OnOffMyPC-XXXXXX` setup hotspot is now secured with a unique per-device password (shown during setup) instead of being open.
 
 ## [1.2.0] - 2026-06-30
 
 ### Changed
-- WiFi reconnection: a provisioned device now retries WiFi indefinitely with exponential backoff (5 → 10 → 20 → 40 → 60 s cap) instead of falling back to the setup AP after a 30 s timeout. A router reboot or temporary outage no longer strands an unattended device in provisioning mode. Provisioning is now entered only on first boot with no stored config or via explicit factory reset (`r` over Serial); reconfiguring for a permanent network change requires a factory reset.
-
-### Fixed
-- Build error: `WiFiUdp` is not a type on the current ESP32 Arduino core — corrected to `WiFiUDP`. The firmware now compiles (`pio run -e esp32dev`) and all 12 native unit tests pass.
+- **Automatic reconnection.** A configured device now keeps retrying Wi-Fi on its own after a router reboot or brief outage, instead of dropping back into setup mode. To change networks permanently, factory-reset the device (send `r` over the serial console).
 
 ## [1.1.0] - 2026-06-30
 
 ### Added
-- `power_off_force` command: holds the power button pin HIGH for 6 seconds to force a hard shutdown (use when normal `power_off` has no effect)
-- Simulator: handles `power_off_force` — sets `pc_on = False` and logs "FORCE OFF"
+- **Force off** command: holds the power button for 6 seconds to force a hard shutdown when a normal power-off has no effect.
 
 ### Fixed
-- Captive portal: `WiFi.softAPConfig()` now called **before** `WiFi.softAP()` (correct order per ESP32 SDK docs) to ensure the custom IP is applied before the AP starts accepting clients
-
-## [1.0.2] - 2026-06-30
-
-### Fixed
-- Simulator (`tools/simulate_device.py`): updated to send token as `X-Device-Token` header instead of URL query param, matching the firmware change in v1.0.1
+- Setup page reliability improvements.
 
 ## [1.0.1] - 2026-06-30
 
 ### Changed
-- WebSocket connection no longer puts device token in the URL — token is now sent as `X-Device-Token` request header so it does not appear in server access logs
+- Security hardening for how the device authenticates to the service.
 
 ## [1.0.0] - 2026-06-30
 
 ### Added
-- WiFi provisioning via captive portal: on first boot (or after factory reset), device creates an AP named `OnOffMyPC-XXXXXX` and serves a setup page at `http://192.168.4.1`
-- NVS storage via `Preferences`: SSID, password, device ID, device token, and PC MAC saved to ESP32 flash and survive reboots
-- Factory reset: send `r` over Serial to clear NVS config and restart into setup mode
-- WiFi timeout (30 s): if STA connection fails, device returns to setup AP for reconfiguration
-- Captive portal OS detection: redirects iOS (`/hotspot-detect.html`), Android (`/generate_204`), and Windows (`/ncsi.txt`, `/connecttest.txt`, `/fwlink`) portal checks automatically
-
-### Changed
-- Configuration no longer requires editing `config.h` — all credentials entered via browser at `http://192.168.4.1`
-- Button press duration hardcoded to 200 ms inline (removed `POWER_BTN_PRESS_MS` define)
-- Version string in boot message updated to `v1.0.0`
-
-## [0.2.0] - 2026-06-29
-
-### Added
-- `tools/simulate_device.py`: Python WebSocket device simulator for testing without hardware
-  - Connects to the live API via `wss://api.onoffmypc.com/ws/:id?token=`
-  - Sends telemetry every 5 seconds with sine-wave temperature/humidity drift and random RSSI
-  - Handles power_on, power_off, reset commands and sends acks
-  - Immediately sends updated telemetry after each command to reflect new PC state
-  - Usage: `python3 tools/simulate_device.py DEVICE_ID DEVICE_TOKEN`
-
-### Fixed
-- `diagram.json`: corrected Wokwi board type to `wokwi-esp32-devkit-v1`
-- `diagram.json`: corrected pin names from `IO4`/`IO2` to `D4`/`D2` format
-- `diagram.json`: corrected LED cathode pin from `K` to `C`
+- **Browser-based Wi-Fi setup.** On first boot (or after a factory reset) the device creates a `OnOffMyPC-XXXXXX` network and serves a setup page at `http://192.168.4.1` — no software or config files to edit.
+- Settings are saved on the device and survive reboots.
+- **Factory reset:** send `r` over the serial console to clear settings and restart into setup.
+- The setup page opens automatically on iOS, Android, and Windows.
 
 ## [0.1.0] - 2026-06-29
 
 ### Added
-- Initial ESP32 firmware (PlatformIO / Arduino framework)
-- WiFi connection with auto-reconnect
-- Authenticated WebSocket connection to api.onoffmypc.com (`/ws/:deviceId?token=`)
-- Telemetry every 5 seconds: PC power state, room temperature, humidity, RSSI
-- Command handling: power_on (Wake-on-LAN), power_off (short button press), reset (reset button press)
-- Command ack sent back to server after execution
-- State machine: WIFI_CONNECTING → WS_CONNECTING → CONNECTED with LED blink patterns
-- config.h / config.example.h for user credentials and pin mapping
+- Initial firmware: Wi-Fi connectivity with auto-reconnect, secure connection to the service, periodic status/sensor reporting (PC power state, temperature, humidity, signal), and power-on / power-off / reset control.

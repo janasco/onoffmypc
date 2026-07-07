@@ -80,6 +80,15 @@ if [ ! -s "$NOTES" ]; then
   printf '## OnOffMyPC Firmware v%s\n\nSee CHANGELOG.md for details.\n' "$VERSION" > "$NOTES"
 fi
 
+# Safety net: these public notes must not disclose backend/internal architecture.
+# Drop any line mentioning an internal term (defense-in-depth on top of a
+# user-facing CHANGELOG). Keep this list in sync with the mobile release script.
+LEAK_RE='D1|Cloudflare|Durable Object|Workers?|SQLite|lwIP|Hono|JWKS|bcrypt|token_hash|wrangler|Miniflare|DeviceRelay|Invalid mbox|setCACert|setInsecure|udp\.begin|migration|Resend|Turnstile'
+if grep -qiE "$LEAK_RE" "$NOTES"; then
+  echo "==> Redacting internal terms from public release notes"
+  grep -viE "$LEAK_RE" "$NOTES" > "$NOTES.tmp" && mv "$NOTES.tmp" "$NOTES"
+fi
+
 echo "==> Done. Artifacts:"
 ls -la dist/
 echo "VERSION=$VERSION"
