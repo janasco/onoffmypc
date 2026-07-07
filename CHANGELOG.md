@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-07
+
+### Added
+- **Continue with Google** is now enabled — sign in or create your account with one tap.
+
 ## [0.2.0] - 2026-07-07
 
 ### Added
