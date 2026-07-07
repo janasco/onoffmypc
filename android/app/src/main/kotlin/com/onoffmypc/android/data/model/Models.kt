@@ -159,7 +159,15 @@ data class CommandResponse(
 )
 
 @Serializable
-data class ApiError(val error: String? = null)
+data class ApiError(val error: String? = null, val code: String? = null)
+
+/** Carries the HTTP status + server error code so callers can branch on them
+ *  (e.g. 402 / "trial_expired" → prompt to upgrade). */
+class ApiException(
+    val httpCode: Int,
+    val serverCode: String? = null,
+    message: String? = null,
+) : Exception(message)
 
 /** Command types the API accepts (POST /commands/:id). */
 enum class CommandType(val wire: String, val label: String) {

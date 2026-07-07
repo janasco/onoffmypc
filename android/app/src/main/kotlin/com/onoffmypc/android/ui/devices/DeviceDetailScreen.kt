@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,6 +56,7 @@ import java.time.format.DateTimeFormatter
 fun DeviceDetailScreen(
     deviceId: String,
     onBack: () -> Unit,
+    onUpgrade: () -> Unit = {},
     vm: DeviceDetailViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -100,6 +102,18 @@ fun DeviceDetailScreen(
                 else -> DetailContent(state) { vm.sendCommand(it) }
             }
         }
+    }
+
+    if (state.upgradePrompt) {
+        AlertDialog(
+            onDismissRequest = { vm.consumeUpgradePrompt() },
+            title = { Text("Free trial ended") },
+            text = { Text("Make a one-time payment to keep controlling your devices.") },
+            confirmButton = {
+                TextButton(onClick = { vm.consumeUpgradePrompt(); onUpgrade() }) { Text("Upgrade") }
+            },
+            dismissButton = { TextButton(onClick = { vm.consumeUpgradePrompt() }) { Text("Not now") } },
+        )
     }
 }
 

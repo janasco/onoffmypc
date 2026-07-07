@@ -232,6 +232,17 @@ fun DevicesScreen(
             onDismiss = { confirmLogout = false },
         )
     }
+    if (state.upgradePrompt) {
+        AlertDialog(
+            onDismissRequest = { vm.consumeUpgradePrompt() },
+            title = { Text("Free trial ended") },
+            text = { Text("Make a one-time payment to keep controlling your devices.") },
+            confirmButton = {
+                TextButton(onClick = { vm.consumeUpgradePrompt(); onBilling() }) { Text("Upgrade") }
+            },
+            dismissButton = { TextButton(onClick = { vm.consumeUpgradePrompt() }) { Text("Not now") } },
+        )
+    }
 }
 
 @Composable

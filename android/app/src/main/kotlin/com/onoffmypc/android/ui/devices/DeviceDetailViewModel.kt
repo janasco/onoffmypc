@@ -3,6 +3,7 @@ package com.onoffmypc.android.ui.devices
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onoffmypc.android.Graph
+import com.onoffmypc.android.data.model.ApiException
 import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
@@ -25,6 +26,7 @@ data class DeviceDetailUiState(
     val error: String? = null,
     val message: String? = null,
     val refreshing: Boolean = false,
+    val upgradePrompt: Boolean = false,
 )
 
 class DeviceDetailViewModel : ViewModel() {
@@ -95,11 +97,18 @@ class DeviceDetailViewModel : ViewModel() {
                     val msg = if (r.delivered) "${type.label} sent" else "${type.label}: device offline"
                     _state.update { it.copy(message = msg) }
                 },
-                onFailure = { e -> _state.update { it.copy(message = e.message ?: "Command failed") } },
+                onFailure = { e ->
+                    if (e is ApiException && (e.httpCode == 402 || e.serverCode == "trial_expired")) {
+                        _state.update { it.copy(upgradePrompt = true) }
+                    } else {
+                        _state.update { it.copy(message = e.message ?: "Command failed") }
+                    }
+                },
             )
             refresh(id)
         }
     }
 
     fun consumeMessage() = _state.update { it.copy(message = null) }
+    fun consumeUpgradePrompt() = _state.update { it.copy(upgradePrompt = false) }
 }

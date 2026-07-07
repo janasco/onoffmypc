@@ -101,6 +101,7 @@ fun AppNav() {
                 DeviceDetailScreen(
                     deviceId = deviceId,
                     onBack = { navController.popBackStack() },
+                    onUpgrade = { navController.navigate(ROUTE_BILLING) },
                 )
             }
         }

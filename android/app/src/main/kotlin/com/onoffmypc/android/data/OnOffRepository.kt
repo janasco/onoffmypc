@@ -1,6 +1,7 @@
 package com.onoffmypc.android.data
 
 import com.onoffmypc.android.data.model.ApiError
+import com.onoffmypc.android.data.model.ApiException
 import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
 import com.onoffmypc.android.data.model.ChangeEmailRequest
@@ -111,14 +112,17 @@ class OnOffRepository(
         when {
             res.isSuccessful && body != null -> Result.success(body)
             res.isSuccessful -> Result.failure(Exception("Empty response"))
-            else -> Result.failure(Exception(parseError(res) ?: "Request failed (${res.code()})"))
+            else -> {
+                val err = parseError(res)
+                Result.failure(ApiException(res.code(), err?.code, err?.error ?: "Request failed (${res.code()})"))
+            }
         }
     } catch (_: Exception) {
         Result.failure(Exception("Network error"))
     }
 
-    private fun parseError(res: Response<*>): String? = try {
-        res.errorBody()?.string()?.let { JSON.decodeFromString<ApiError>(it).error }
+    private fun parseError(res: Response<*>): ApiError? = try {
+        res.errorBody()?.string()?.let { JSON.decodeFromString<ApiError>(it) }
     } catch (_: Exception) {
         null
     }
