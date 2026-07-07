@@ -70,6 +70,7 @@ fun AppNav() {
             DevicesScreen(
                 onOpen = { device -> navController.navigate("device/${device.id}") },
                 onAccount = { navController.navigate(ROUTE_ACCOUNT) },
+                onBilling = { navController.navigate(ROUTE_BILLING) },
                 onLoggedOut = {
                     navController.navigate(ROUTE_LOGIN) {
                         popUpTo(ROUTE_DEVICES) { inclusive = true }

@@ -50,6 +50,8 @@ import com.onoffmypc.android.ui.components.LogoutConfirmDialog
 import com.onoffmypc.android.ui.components.PowerControls
 import com.onoffmypc.android.ui.components.deviceStatusFromLastSeen
 import com.onoffmypc.android.ui.theme.Muted
+import androidx.compose.ui.graphics.Color
+import com.onoffmypc.android.ui.theme.Accent
 import com.onoffmypc.android.ui.theme.Red
 import com.onoffmypc.android.ui.theme.Yellow
 
@@ -58,6 +60,7 @@ import com.onoffmypc.android.ui.theme.Yellow
 fun DevicesScreen(
     onOpen: (Device) -> Unit,
     onAccount: () -> Unit,
+    onBilling: () -> Unit,
     onLoggedOut: () -> Unit,
     vm: DevicesViewModel = viewModel(),
 ) {
@@ -145,6 +148,11 @@ fun DevicesScreen(
                         }
                         if (user != null && !user.email_verified) {
                             item { VerifyEmailBanner(onResend = vm::resendVerification) }
+                        }
+                        state.billing?.let { b ->
+                            if (!b.is_lifetime) {
+                                item { TrialBanner(billing = b, onUpgrade = onBilling) }
+                            }
                         }
                         if (state.devices.isEmpty()) {
                             item {
@@ -312,5 +320,48 @@ private fun VerifyEmailBanner(onResend: () -> Unit) {
             )
             TextButton(onClick = onResend) { Text("Resend") }
         }
+    }
+}
+
+@Composable
+private fun TrialBanner(
+    billing: com.onoffmypc.android.data.model.BillingStatus,
+    onUpgrade: () -> Unit,
+) {
+    val expired = billing.trial_expired
+    val days = trialDaysLeft(billing.trial_ends_at)
+    val tint = if (expired) Red else Accent
+    Card(colors = CardDefaults.cardColors(containerColor = tint.copy(alpha = 0.12f))) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = when {
+                    expired -> "Free trial ended. Pay $${billing.price} once to keep controlling your devices."
+                    days != null -> "Free trial: $days day${if (days == 1L) "" else "s"} left."
+                    else -> "You're on the free trial."
+                },
+                color = if (expired) Red else Color.Unspecified,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onUpgrade) { Text(if (expired) "Unlock" else "Upgrade") }
+        }
+    }
+}
+
+/** Whole days remaining until the trial ends, or null if unknown/past. */
+private fun trialDaysLeft(iso: String?): Long? {
+    if (iso == null) return null
+    return try {
+        val end = java.time.Instant.parse(iso).toEpochMilli()
+        val diff = end - System.currentTimeMillis()
+        if (diff <= 0) 0 else diff / 86_400_000L
+    } catch (_: Exception) {
+        null
     }
 }
