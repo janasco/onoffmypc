@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-07
+
+### Added
+- **Continue with Google**: sign in or create an account with Google (shown once the Google client ID is configured).
+- **Plan & Billing screen**: view your plan, the free-trial countdown, and the one-time $15 Lifetime unlock; submit a payment for review and see payment history. Reachable from Account and the menu.
+- **Free-trial banner** on the devices screen showing days left (or a "trial ended" prompt), and an **Upgrade** prompt when a power command is blocked after the trial ends.
+- **Pull-to-refresh** on the device detail screen.
+
 ## [0.1.3] - 2026-07-05
 
 ### Added

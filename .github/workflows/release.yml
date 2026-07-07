@@ -21,6 +21,8 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # let the built-in GITHUB_TOKEN publish a Release here
     steps:
       - uses: actions/checkout@v4
 
@@ -68,12 +70,39 @@ jobs:
           echo "NOTES_FILE=$NOTES" >> "$GITHUB_ENV"
           echo "----- release notes -----"; cat "$NOTES"
 
-      - name: Publish to the release repo
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+      - name: Stage the APK
         run: |
           APK="$(ls android/app/build/outputs/apk/release/*.apk | head -1)"
           cp "$APK" "onoffmypc-android-${VERSION}.apk"
+
+      # Always available, even if the cross-repo token is expired: download the
+      # APK straight from this workflow run's "Artifacts".
+      - name: Upload APK as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: onoffmypc-android-${{ env.VERSION }}
+          path: onoffmypc-android-${{ env.VERSION }}.apk
+
+      # Primary published home for the APK: this repo's own Releases, using the
+      # built-in GITHUB_TOKEN (no PAT needed, so it can't be broken by a stale
+      # RELEASE_REPO_TOKEN).
+      - name: Publish Release on this repo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "Android ${GITHUB_REF_NAME}" \
+            --notes-file "$NOTES_FILE" \
+            "onoffmypc-android-${VERSION}.apk" \
+          || gh release upload "${GITHUB_REF_NAME}" "onoffmypc-android-${VERSION}.apk" --clobber
+
+      # Best-effort mirror to the shared public release repo. Non-blocking so an
+      # expired RELEASE_REPO_TOKEN never fails the build (rotate it to re-enable).
+      - name: Mirror to the shared release repo
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+        run: |
           gh release create "${GITHUB_REF_NAME}" \
             --repo onoffmypc/onoffmypc-release \
             --title "Android ${GITHUB_REF_NAME}" \
