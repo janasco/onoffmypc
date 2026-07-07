@@ -102,6 +102,15 @@ final class APIClient {
 
     func me() async throws -> MeResponse { try decode(try await send("GET", "auth/me")) }
 
+    // MARK: - Billing
+
+    func billingStatus() async throws -> BillingStatus { try decode(try await send("GET", "billing/status")) }
+    func paymentHistory() async throws -> [PaymentRequestItem] { try decode(try await send("GET", "billing/requests")) }
+    func submitPayment(method: String, reference: String, note: String?) async throws {
+        _ = try await send("POST", "billing/request",
+                           body: SubmitPaymentRequest(method: method, reference: reference, note: note))
+    }
+
     func changeEmail(newEmail: String, password: String) async throws {
         _ = try await send("POST", "auth/change-email", body: ChangeEmailRequest(new_email: newEmail, password: password))
     }

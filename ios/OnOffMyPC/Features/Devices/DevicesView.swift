@@ -1,8 +1,8 @@
 import SwiftUI
 
 private enum DevicesSheet: Identifiable {
-    case account, addDevice
-    var id: Int { switch self { case .account: return 0; case .addDevice: return 1 } }
+    case account, addDevice, billing
+    var id: Int { switch self { case .account: return 0; case .addDevice: return 1; case .billing: return 2 } }
 }
 
 struct DevicesView: View {
@@ -32,6 +32,11 @@ struct DevicesView: View {
                             } label: {
                                 Label("Account", systemImage: "person.crop.circle")
                             }
+                            Button {
+                                sheet = .billing
+                            } label: {
+                                Label("Plan & Billing", systemImage: "creditcard")
+                            }
                             Button(role: .destructive) {
                                 showLogoutConfirm = true
                             } label: {
@@ -50,6 +55,7 @@ struct DevicesView: View {
             switch route {
             case .account: AccountView()
             case .addDevice: AddDeviceView(vm: vm)
+            case .billing: BillingView()
             }
         }
         .alert("Sign out?", isPresented: $showLogoutConfirm) {
@@ -78,9 +84,14 @@ struct DevicesView: View {
             }
             .padding()
         } else {
-            List(vm.devices) { device in
-                DeviceRow(device: device) { type in
-                    Task { await vm.send(type, to: device, appState) }
+            List {
+                if let b = vm.billing, !(b.is_lifetime ?? false) {
+                    TrialBanner(billing: b) { sheet = .billing }
+                }
+                ForEach(vm.devices) { device in
+                    DeviceRow(device: device) { type in
+                        Task { await vm.send(type, to: device, appState) }
+                    }
                 }
             }
         }
@@ -100,6 +111,43 @@ struct DevicesView: View {
                     vm.toast = nil
                 }
         }
+    }
+}
+
+private struct TrialBanner: View {
+    let billing: BillingStatus
+    let onUpgrade: () -> Void
+
+    var body: some View {
+        let expired = billing.trial_expired ?? false
+        HStack {
+            Text(bannerText(expired))
+                .font(.subheadline)
+                .foregroundStyle(expired ? Color.red : Color.primary)
+            Spacer()
+            Button(expired ? "Unlock" : "Upgrade", action: onUpgrade)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+        }
+        .listRowBackground((expired ? Color.red : Color.accentColor).opacity(0.12))
+    }
+
+    private func bannerText(_ expired: Bool) -> String {
+        if expired { return "Free trial ended. Pay $\(billing.price ?? 15) once to keep control." }
+        if let days = daysLeft(billing.trial_ends_at) {
+            return "Free trial: \(days) day\(days == 1 ? "" : "s") left."
+        }
+        return "You're on the free trial."
+    }
+
+    private func daysLeft(_ iso: String?) -> Int? {
+        guard let iso else { return nil }
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let end = f.date(from: iso) ?? ISO8601DateFormatter().date(from: iso)
+        guard let end else { return nil }
+        let secs = end.timeIntervalSinceNow
+        return secs <= 0 ? 0 : Int(secs / 86_400)
     }
 }
 

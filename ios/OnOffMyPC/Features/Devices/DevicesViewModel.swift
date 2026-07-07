@@ -3,6 +3,7 @@ import SwiftUI
 @MainActor
 final class DevicesViewModel: ObservableObject {
     @Published var devices: [Device] = []
+    @Published var billing: BillingStatus?
     @Published var loading = false
     @Published var error: String?
     @Published var toast: String?
@@ -13,6 +14,7 @@ final class DevicesViewModel: ObservableObject {
         defer { loading = false }
         do {
             devices = try await APIClient.shared.devices()
+            billing = try? await APIClient.shared.billingStatus()
         } catch APIError.unauthorized {
             appState.sessionExpired()
         } catch {

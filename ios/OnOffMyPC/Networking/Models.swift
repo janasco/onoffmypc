@@ -15,6 +15,46 @@ struct CommandRequest: Encodable { let type: String }
 struct OkResponse: Decodable { let ok: Bool? }
 struct ApiError: Decodable { let error: String? }
 
+struct Plan: Decodable, Identifiable {
+    let id: String
+    let name: String
+    var devices: Int?
+    var price: Int
+    var oneTime: Bool?
+    var description: String?
+}
+
+struct PaymentRequestItem: Decodable, Identifiable {
+    let id: String
+    let plan: String
+    var amount: String?
+    var method: String?
+    var reference: String?
+    let status: String
+    let created_at: String
+}
+
+struct BillingStatus: Decodable {
+    let plan: String
+    var is_lifetime: Bool?
+    var has_access: Bool?
+    var trial_ends_at: String?
+    var trial_expired: Bool?
+    var device_limit: Int?
+    var device_count: Int?
+    var plans: [Plan]?
+    var price: Int?
+    var payment_instructions: String?
+    var pending_request: PaymentRequestItem?
+}
+
+struct SubmitPaymentRequest: Encodable {
+    var plan: String = "lifetime"
+    let method: String
+    let reference: String
+    var note: String?
+}
+
 struct MeResponse: Decodable {
     let id: String
     let email: String
