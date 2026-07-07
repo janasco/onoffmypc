@@ -16,7 +16,7 @@
 #define PIN_DHT         4
 #define PIN_LED         2
 
-#define TELEMETRY_INTERVAL_MS  5000
+#define TELEMETRY_INTERVAL_MS  30000
 #define WS_RECONNECT_DELAY_MS  5000
 #define POWER_BTN_PRESS_MS     200
 #define POWER_BTN_HOLD_MS      6000

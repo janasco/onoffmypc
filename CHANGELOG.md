@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.6] - 2026-07-07
+
+### Changed
+- **Telemetry cadence 5s → 30s.** Writes ~6x fewer D1 rows (~2.9k vs ~17k per device per day) to stay within Cloudflare's free tier as devices scale. Still refreshes `last_seen` well inside the 90s "online" window, so status is unaffected.
+
 ## [1.3.5] - 2026-07-06
 
 ### Added

@@ -14,7 +14,7 @@
 
 using namespace websockets;
 
-#define FIRMWARE_VERSION "1.3.5"
+#define FIRMWARE_VERSION "1.3.6"
 
 // ── Pin definitions ───────────────────────────────────────────────────────────
 #define PIN_POWER_SENSE 34
@@ -24,7 +24,9 @@ using namespace websockets;
 #define PIN_LED          2
 
 // ── Timing ───────────────────────────────────────────────────────────────────
-#define TELEMETRY_INTERVAL_MS    5000
+// 30s telemetry cadence: refreshes last_seen well inside the 90s "online" window
+// while writing ~6x fewer D1 rows than the old 5s cadence (~2.9k vs ~17k/day).
+#define TELEMETRY_INTERVAL_MS    30000
 #define WS_RECONNECT_DELAY_MS    5000
 #define WIFI_ATTEMPT_TIMEOUT_MS 30000   // wait this long for a single connect attempt
 #define WIFI_RETRY_MIN_MS        5000   // backoff after a failed attempt (doubles each time)
