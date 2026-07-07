@@ -13,6 +13,12 @@ section="$(awk -v ver="$VERSION" '
   grab { print }
 ' CHANGELOG.md)"
 
+# Safety net: public release notes must not disclose backend/internal
+# architecture. Drop any line mentioning an internal term (defense-in-depth on
+# top of a user-facing CHANGELOG). Keep in sync with the firmware release script.
+LEAK_RE='D1|Cloudflare|Durable Object|Workers?|SQLite|Hono|JWKS|bcrypt|token_hash|wrangler|Miniflare|DeviceRelay|migration|Resend|Turnstile'
+section="$(printf '%s\n' "$section" | grep -viE "$LEAK_RE" || true)"
+
 if [ "$MODE" = "--plain" ]; then
   # Strip markdown to plain bullet lines for the Play "What's new" field.
   printf '%s\n' "$section" \
