@@ -64,6 +64,12 @@ struct DevicesView: View {
         } message: {
             Text("You'll need to sign in again to control your devices.")
         }
+        .alert("Free trial ended", isPresented: $vm.showUpgrade) {
+            Button("Not now", role: .cancel) {}
+            Button("Upgrade") { sheet = .billing }
+        } message: {
+            Text("Make a one-time payment to keep controlling your devices.")
+        }
     }
 
     @ViewBuilder

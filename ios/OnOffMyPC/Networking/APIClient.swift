@@ -4,12 +4,14 @@ enum APIError: Error, LocalizedError {
     case message(String)
     case network
     case unauthorized
+    case trialExpired(String)
 
     var errorDescription: String? {
         switch self {
         case .message(let m): return m
         case .network: return "Network error. Check your connection."
         case .unauthorized: return "Session expired. Please sign in again."
+        case .trialExpired(let m): return m
         }
     }
 }
@@ -59,6 +61,8 @@ final class APIClient {
         guard (200..<300).contains(http.statusCode) else {
             let msg = (try? JSONDecoder().decode(ApiError.self, from: data))?.error
                 ?? "Request failed (\(http.statusCode))."
+            // Trial ended (402) → distinct error so the UI can prompt to upgrade.
+            if http.statusCode == 402 { throw APIError.trialExpired(msg) }
             throw APIError.message(msg)
         }
         return data

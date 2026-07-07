@@ -11,6 +11,7 @@ final class DeviceDetailViewModel: ObservableObject {
     @Published var error: String?
     @Published var toast: String?
     @Published var newToken: NewDevice?
+    @Published var showUpgrade = false
 
     func refresh(id: String, _ appState: AppState) async {
         do {
@@ -44,6 +45,8 @@ final class DeviceDetailViewModel: ObservableObject {
             await refresh(id: id, appState)
         } catch APIError.unauthorized {
             appState.sessionExpired()
+        } catch APIError.trialExpired {
+            showUpgrade = true
         } catch {
             toast = (error as? APIError)?.errorDescription ?? "Command failed."
         }

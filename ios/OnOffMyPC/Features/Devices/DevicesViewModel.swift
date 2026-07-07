@@ -7,6 +7,7 @@ final class DevicesViewModel: ObservableObject {
     @Published var loading = false
     @Published var error: String?
     @Published var toast: String?
+    @Published var showUpgrade = false
 
     func load(_ appState: AppState) async {
         if devices.isEmpty { loading = true }
@@ -32,6 +33,8 @@ final class DevicesViewModel: ObservableObject {
             toast = (result.delivered == true) ? "\(type.label) sent" : (result.reason ?? "Device offline")
         } catch APIError.unauthorized {
             appState.sessionExpired()
+        } catch APIError.trialExpired {
+            showUpgrade = true
         } catch {
             toast = (error as? APIError)?.errorDescription ?? "Command failed."
         }

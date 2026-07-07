@@ -10,6 +10,7 @@ struct DeviceDetailView: View {
     @State private var renameText = ""
     @State private var showDelete = false
     @State private var showReplace = false
+    @State private var showBilling = false
 
     var body: some View {
         List {
@@ -35,6 +36,13 @@ struct DeviceDetailView: View {
                         }
                     }
             }
+        }
+        .sheet(isPresented: $showBilling) { BillingView() }
+        .alert("Free trial ended", isPresented: $vm.showUpgrade) {
+            Button("Not now", role: .cancel) {}
+            Button("Upgrade") { showBilling = true }
+        } message: {
+            Text("Make a one-time payment to keep controlling your devices.")
         }
         .alert("Delete device?", isPresented: $showDelete) {
             Button("Cancel", role: .cancel) {}
