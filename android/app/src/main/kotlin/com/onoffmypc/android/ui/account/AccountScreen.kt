@@ -56,6 +56,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun AccountScreen(
     onBack: () -> Unit,
+    onBilling: () -> Unit,
     onSignedOut: () -> Unit,
     vm: AccountViewModel = viewModel(),
 ) {
@@ -134,6 +135,11 @@ fun AccountScreen(
                             Spacer(Modifier.height(8.dp))
                             ProfileRow("Member since", formatDate(user.created_at))
                         }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedButton(onClick = onBilling, modifier = Modifier.fillMaxWidth()) {
+                        Text("Plan & Billing")
                     }
 
                     Spacer(Modifier.height(24.dp))

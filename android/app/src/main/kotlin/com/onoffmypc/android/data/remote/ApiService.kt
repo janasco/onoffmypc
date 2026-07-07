@@ -9,8 +9,11 @@ import com.onoffmypc.android.data.model.DeletedResponse
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.DeviceNameRequest
 import com.onoffmypc.android.data.model.DeviceStatus
+import com.onoffmypc.android.data.model.BillingStatus
 import com.onoffmypc.android.data.model.ForgotPasswordRequest
 import com.onoffmypc.android.data.model.GoogleAuthRequest
+import com.onoffmypc.android.data.model.PaymentRequestItem
+import com.onoffmypc.android.data.model.SubmitPaymentRequest
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.model.LoginRequest
@@ -50,6 +53,15 @@ interface ApiService {
 
     @GET("auth/me")
     suspend fun me(): Response<MeResponse>
+
+    @GET("billing/status")
+    suspend fun billingStatus(): Response<BillingStatus>
+
+    @POST("billing/request")
+    suspend fun submitPayment(@Body body: SubmitPaymentRequest): Response<OkResponse>
+
+    @GET("billing/requests")
+    suspend fun paymentHistory(): Response<List<PaymentRequestItem>>
 
     @POST("auth/change-email")
     suspend fun changeEmail(@Body body: ChangeEmailRequest): Response<OkResponse>

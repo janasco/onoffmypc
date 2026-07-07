@@ -11,6 +11,7 @@ import androidx.navigation.navArgument
 import com.onoffmypc.android.Graph
 import com.onoffmypc.android.data.remote.AuthEvents
 import com.onoffmypc.android.ui.account.AccountScreen
+import com.onoffmypc.android.ui.billing.BillingScreen
 import com.onoffmypc.android.ui.auth.ForgotPasswordScreen
 import com.onoffmypc.android.ui.auth.LoginScreen
 import com.onoffmypc.android.ui.auth.RegisterScreen
@@ -22,6 +23,7 @@ private const val ROUTE_REGISTER = "register"
 private const val ROUTE_FORGOT = "forgot"
 private const val ROUTE_DEVICES = "devices"
 private const val ROUTE_ACCOUNT = "account"
+private const val ROUTE_BILLING = "billing"
 
 @Composable
 fun AppNav() {
@@ -78,12 +80,16 @@ fun AppNav() {
         composable(ROUTE_ACCOUNT) {
             AccountScreen(
                 onBack = { navController.popBackStack() },
+                onBilling = { navController.navigate(ROUTE_BILLING) },
                 onSignedOut = {
                     navController.navigate(ROUTE_LOGIN) {
                         popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                     }
                 },
             )
+        }
+        composable(ROUTE_BILLING) {
+            BillingScreen(onBack = { navController.popBackStack() })
         }
         composable(
             route = "device/{deviceId}",

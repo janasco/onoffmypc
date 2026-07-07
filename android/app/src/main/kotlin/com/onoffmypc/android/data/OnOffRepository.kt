@@ -15,6 +15,7 @@ import com.onoffmypc.android.data.model.GoogleAuthRequest
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
+import com.onoffmypc.android.data.model.SubmitPaymentRequest
 import com.onoffmypc.android.data.model.NewDevice
 import com.onoffmypc.android.data.model.PushRegisterRequest
 import com.onoffmypc.android.data.model.RegisterRequest
@@ -49,6 +50,11 @@ class OnOffRepository(
     }
 
     suspend fun me(): Result<MeResponse> = call { api.me() }
+
+    suspend fun billingStatus() = call { api.billingStatus() }
+    suspend fun paymentHistory() = call { api.paymentHistory() }
+    suspend fun submitPayment(method: String, reference: String, note: String?): Result<Unit> =
+        call { api.submitPayment(SubmitPaymentRequest(method = method.trim(), reference = reference.trim(), note = note?.trim())) }.map { }
 
     suspend fun changeEmail(newEmail: String, password: String): Result<Unit> =
         call { api.changeEmail(ChangeEmailRequest(newEmail.trim(), password)) }.map { }

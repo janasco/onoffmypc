@@ -34,6 +34,50 @@ data class RegisterResponse(
 data class OkResponse(val ok: Boolean = false)
 
 @Serializable
+data class Plan(
+    val id: String,
+    val name: String,
+    val devices: Int? = null,
+    val price: Int = 0,
+    val oneTime: Boolean = false,
+    val description: String = "",
+)
+
+@Serializable
+data class PaymentRequestItem(
+    val id: String,
+    val plan: String,
+    val amount: String? = null,
+    val method: String? = null,
+    val reference: String? = null,
+    val status: String,
+    val created_at: String,
+)
+
+@Serializable
+data class BillingStatus(
+    val plan: String,
+    val is_lifetime: Boolean = false,
+    val has_access: Boolean = true,
+    val trial_ends_at: String? = null,
+    val trial_expired: Boolean = false,
+    val device_limit: Int? = null,
+    val device_count: Int = 0,
+    val plans: List<Plan> = emptyList(),
+    val price: Int = 0,
+    val payment_instructions: String = "",
+    val pending_request: PaymentRequestItem? = null,
+)
+
+@Serializable
+data class SubmitPaymentRequest(
+    val plan: String = "lifetime",
+    val method: String,
+    val reference: String,
+    val note: String? = null,
+)
+
+@Serializable
 data class MeResponse(
     val id: String,
     val email: String,
