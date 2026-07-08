@@ -39,6 +39,10 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        # Google Sign-In callback (reversed iOS OAuth client ID).
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - com.googleusercontent.apps.156303072600-ge9r29an6f26erri76ld7015c2vi8jv8
 schemes:
   OnOffMyPC:
     build:

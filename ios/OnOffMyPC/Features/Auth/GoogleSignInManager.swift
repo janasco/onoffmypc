@@ -8,7 +8,7 @@ import GoogleSignIn
 enum GoogleSignInManager {
 
     /// iOS OAuth 2.0 client ID, e.g. "1234-abc.apps.googleusercontent.com".
-    static let clientID = ""
+    static let clientID = "156303072600-ge9r29an6f26erri76ld7015c2vi8jv8.apps.googleusercontent.com"
 
     static var isConfigured: Bool { !clientID.isEmpty }
 
