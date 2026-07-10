@@ -1,11 +1,14 @@
 # Releasing firmware
 
-A release publishes the compiled binaries to the public release repo **and** updates
-the one-click web flasher on the marketing site, so users always get the latest build.
+A release publishes compiled binaries to the public release repo and, for a
+stable tag, updates the one-click web flasher on the marketing site. This is a
+privileged cross-repository operation; review the diff, artifact digest, and
+workflow permissions before tagging.
 
 ## Automated (recommended)
 
-1. Bump `FIRMWARE_VERSION` in `src/main.cpp`.
+1. Bump `FIRMWARE_VERSION` in `src/main.cpp` and confirm compatibility with
+   existing devices.
 2. Add the matching section to `CHANGELOG.md` (the release notes are pulled from it).
 3. Commit, then tag and push (firmware tags are prefixed `fw-v` so they don't
    collide with the Android app's `app-v` tags in the shared release repo):
@@ -39,8 +42,8 @@ A clean tag (`fw-v1.3.0`, no suffix) runs the full pipeline including the web fl
 ### Required repository secrets
 | Secret | Purpose |
 |---|---|
-| `RELEASE_REPO_TOKEN` | PAT with `contents:write` on `onoffmypc-release` |
-| `WEB_REPO_TOKEN` | PAT with `contents:write` on `onoffmypc-web` |
+| `RELEASE_REPO_TOKEN` | Narrow publication credential; prefer a GitHub App or equivalent |
+| `WEB_REPO_TOKEN` | Web-flasher promotion credential; prefer reviewed PR promotion |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare token with `Pages:Edit` |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account id |
 

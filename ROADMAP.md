@@ -1,8 +1,8 @@
 # ESP32 Firmware Roadmap
 
-Status as of 2026-06-30. Tags: **[BUG]** defects, **[SEC]** security, **[FEAT]** missing features, **[IMPROVE]** improvements.
+Status as of 2026-07-10. Tags: **[BUG]** defects, **[SEC]** security, **[FEAT]** missing features, **[IMPROVE]** improvements. Current source is authoritative when this dated backlog differs.
 
-Firmware `1.1.0`. PlatformIO / Arduino framework on `esp32dev`. Connects over WSS to `api.onoffmypc.com`, relays power commands (WoL + momentary button pulses) and pushes telemetry every 5 s. Provisioned via a captive-portal AP (`OnOffMyPC-XXXXXX`) that stores config in NVS.
+Firmware `1.3.6` in current source. PlatformIO / Arduino framework on `esp32dev`. Connects over WSS to `api.onoffmypc.com`, relays power commands (WoL + momentary button pulses), and pushes telemetry every 30 s. Provisioned via a WPA2 captive-portal AP (`OnOffMyPC-XXXXXX`) that stores config in NVS.
 
 ---
 
@@ -18,7 +18,7 @@ Firmware `1.1.0`. PlatformIO / Arduino framework on `esp32dev`. Connects over WS
 - **[BUG]** MAC parse via `sscanf(...%hhx...)` is not validated — a malformed `pc_mac` produces a garbage magic packet with no error surfaced.
 - **[BUG]** Open-loop commands — after `power_on`/`power_off`/`reset` the firmware never confirms `PIN_POWER_SENSE` changed; the UI reports "sent" with no verification the PC responded.
 - **[BUG]** `/save` truncates fields with `substring(0, N)` — a token/password longer than the cap is silently truncated, corrupting config with no error to the user.
-- **[BUG]** DHT read (~250 ms, blocking) runs every 5 s on the main loop, briefly starving `ws.poll()`.
+- **[BUG]** DHT read is blocking on the main loop and can briefly starve `ws.poll()`.
 
 ## Security
 
@@ -32,7 +32,7 @@ Firmware `1.1.0`. PlatformIO / Arduino framework on `esp32dev`. Connects over WS
 - **[FEAT]** OTA firmware updates (HTTPS pull or pushed) — today the only update path is a USB reflash, which does not scale to a deployed fleet. Highest-value firmware feature. Implement `ArduinoOTA` or a signed HTTP OTA endpoint.
 - **[FEAT]** Physical factory-reset button (long-press, e.g. BOOT/GPIO0) — reset is currently only via the serial `r` command, unusable for non-technical users.
 - **[FEAT]** Report power-state changes / command outcome back to the server (close the open loop).
-- **[FEAT]** WiFi reconnect with bounded backoff instead of provisioning fallback (see the critical bug above).
+- **[FEAT]** Physical factory-reset input and a clearer user recovery path for Wi-Fi changes.
 - **[FEAT]** Multiple WoL targets and/or stored target IP; directed subnet broadcast (e.g. `192.168.1.255`) computed from the device IP + netmask.
 - **[FEAT]** Server-pushed configurable telemetry interval.
 - **[FEAT]** Temperature unit preference (°C/°F) stored in NVS.
@@ -53,8 +53,8 @@ Firmware `1.1.0`. PlatformIO / Arduino framework on `esp32dev`. Connects over WS
 - **[IMPROVE]** Add a distinct LED pattern for "WiFi connected, WS connecting" (currently fast=provisioning, slow=WS reconnect, solid=connected) and an explicit auth-failure pattern, to help users diagnose where a connection stalls.
 - **[IMPROVE]** Provisioning page validation is `required`-only — add client-side MAC-format and UUID-format checks to reduce misconfiguration.
 - **[IMPROVE]** Centralize timing/pin/version constants; `FIRMWARE_VERSION` and pins live in `main.cpp` while `config.example.h` duplicates pin defs.
-- **[IMPROVE]** Unit tests cover only the WoL/command/telemetry builders. Add tests (or Wokwi simulation) for the WiFi/WS state machine, especially the reconnect/provisioning-fallback logic.
-- **[IMPROVE]** No CI release build — the released `.bin` is built manually. Add a GitHub Actions workflow that builds and uploads the binary on a version tag.
+- **[IMPROVE]** Unit tests cover extracted WoL/command/telemetry helpers. Add tests against production parser/state-machine code, especially reconnect, provisioning, replay, watchdog, and malformed-frame behavior.
+- **[IMPROVE]** CI release builds exist, but toolchain/dependency pinning and signed artifact verification remain open.
 
 ## Hardware notes
 - **[IMPROVE]** `PIN_POWER_SENSE` (GPIO34) is input-only with no internal pull — correct readings depend entirely on external level-shifting/opto conditioning from the PC power LED. Document the required circuit so builders don't get floating reads.
