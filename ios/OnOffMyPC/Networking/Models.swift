@@ -166,6 +166,38 @@ func commandLabel(_ type: String?) -> String {
     return c.label
 }
 
+/// Feedback for request acceptance only; device acknowledgement is reported later.
+func commandRequestFeedback(
+    _ type: CommandType,
+    deviceName: String,
+    sentToDevice: Bool,
+    reason: String? = nil
+) -> String {
+    if sentToDevice {
+        return "\(type.label) sent to \(deviceName); awaiting device acknowledgement."
+    }
+    switch reason {
+    case "device_offline":
+        return "\(type.label) queued for \(deviceName); the device is offline."
+    case "relay_error":
+        return "\(type.label) queued for \(deviceName); the delivery service is temporarily unavailable."
+    default:
+        return "\(type.label) queued for \(deviceName); it has not reached the device yet."
+    }
+}
+
+/// Honest lifecycle labels shared by every command-history presentation.
+func commandStatusText(_ status: String?) -> String {
+    switch status {
+    case "pending": return "Queued"
+    case "sent": return "Awaiting device acknowledgement"
+    case "delivered": return "Device acknowledged (PC state not confirmed)"
+    case "expired": return "Expired — not acknowledged"
+    case nil: return "Unknown"
+    default: return status?.replacingOccurrences(of: "_", with: " ").capitalized ?? "Unknown"
+    }
+}
+
 extension Date {
     /// Parses ISO-8601 with or without fractional seconds.
     static func fromISO(_ s: String) -> Date? {

@@ -42,11 +42,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.ui.components.PowerControls
+import com.onoffmypc.android.ui.components.commandStatusColor
+import com.onoffmypc.android.ui.components.commandStatusLabel
 import com.onoffmypc.android.ui.theme.Accent
 import com.onoffmypc.android.ui.theme.Green
 import com.onoffmypc.android.ui.theme.Muted
 import com.onoffmypc.android.ui.theme.Red
-import com.onoffmypc.android.ui.theme.Yellow
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -157,7 +158,11 @@ private fun DetailContent(state: DeviceDetailUiState, onCommand: (com.onoffmypc.
         StatCard("Last Update", timeAgo(latest?.recorded_at), Modifier.fillMaxWidth())
 
         Spacer(Modifier.height(20.dp))
-        PowerControls(onCommand = onCommand)
+        PowerControls(
+            deviceName = state.device?.name ?: "this device",
+            commandInFlight = state.commandInFlight,
+            onCommand = onCommand,
+        )
 
         Spacer(Modifier.height(24.dp))
         Text("Temperature — last 7 days", style = MaterialTheme.typography.titleSmall, color = Muted)
@@ -178,18 +183,25 @@ private fun DetailContent(state: DeviceDetailUiState, onCommand: (com.onoffmypc.
 
 @Composable
 private fun CommandRow(command: Command) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(commandLabel(command.type), style = MaterialTheme.typography.bodyMedium)
             Text(fmtDateTime(command.created_at), style = MaterialTheme.typography.labelSmall, color = Muted)
         }
-        Text(command.status ?: "—", color = statusColor(command.status), style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(2.dp))
+        Text(
+            commandStatusLabel(command.status),
+            color = commandStatusColor(command.status),
+            style = MaterialTheme.typography.labelMedium,
+        )
     }
 }
 
@@ -199,12 +211,6 @@ private fun commandLabel(type: String?): String = when (type) {
     "power_off_force" -> "Force Off"
     "reset" -> "Reset"
     else -> type ?: "—"
-}
-
-private fun statusColor(status: String?): Color = when (status) {
-    "delivered" -> Green
-    "expired" -> Muted
-    else -> Yellow // pending / sent
 }
 
 private fun fmtDateTime(iso: String?): String {

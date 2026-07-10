@@ -5,6 +5,7 @@
 ### Changed
 - **One-time device unlocks**: each device receives a 30-day trial, after which billing targets that device for a $15 one-time purchase with no subscription. The app shows each device's trial, unlocked, and payment-review state while preserving existing Lifetime account access.
 - A command blocked by an expired device trial now opens billing with that device preselected.
+- Command requests now distinguish offline queueing, delivery to the device connection, and device acknowledgement while explicitly stating that PC state is not yet confirmed; disruptive controls name the target and require confirmation.
 
 ## [0.2.1] - 2026-07-07
 

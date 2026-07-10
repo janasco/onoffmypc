@@ -100,7 +100,10 @@ struct DevicesView: View {
                     TrialBanner(billing: b) { sheet = .billing(nil) }
                 }
                 ForEach(vm.devices) { device in
-                    DeviceRow(device: device) { type in
+                    DeviceRow(
+                        device: device,
+                        commandInFlight: vm.commandInFlightDeviceIds.contains(device.id)
+                    ) { type in
                         Task { await vm.send(type, to: device, appState) }
                     }
                 }
@@ -194,6 +197,7 @@ private struct TrialBanner: View {
 
 private struct DeviceRow: View {
     let device: Device
+    let commandInFlight: Bool
     let onCommand: (CommandType) -> Void
 
     var body: some View {
@@ -207,19 +211,13 @@ private struct DeviceRow: View {
                         .foregroundStyle(device.isOnline ? Color.green : Color.secondary)
                 }
             }
-            HStack(spacing: 8) {
-                commandButton(.powerOn, tint: .green)
-                commandButton(.powerOff, tint: .red)
-                commandButton(.reset, tint: .orange)
-            }
+            PowerCommandControls(
+                deviceName: device.name,
+                commandInFlight: commandInFlight,
+                includeForceOff: false,
+                onCommand: onCommand
+            )
         }
         .padding(.vertical, 6)
-    }
-
-    private func commandButton(_ type: CommandType, tint: Color) -> some View {
-        Button(type.label) { onCommand(type) }
-            .buttonStyle(.bordered)
-            .tint(tint)
-            .controlSize(.small)
     }
 }

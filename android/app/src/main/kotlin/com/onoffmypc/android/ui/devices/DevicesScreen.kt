@@ -176,6 +176,7 @@ fun DevicesScreen(
                             items(state.devices, key = { it.id }) { device ->
                                 DeviceCard(
                                     device = device,
+                                    commandInFlight = device.id in state.commandInFlightDeviceIds,
                                     onOpen = { onOpen(device) },
                                     onCommand = { type -> vm.sendCommand(device, type) },
                                     onRename = { renaming = device },
@@ -259,6 +260,7 @@ fun DevicesScreen(
 @Composable
 private fun DeviceCard(
     device: Device,
+    commandInFlight: Boolean,
     onOpen: () -> Unit,
     onCommand: (CommandType) -> Unit,
     onRename: () -> Unit,
@@ -297,7 +299,11 @@ private fun DeviceCard(
             }
 
             Spacer(Modifier.height(8.dp))
-            PowerControls(onCommand = onCommand)
+            PowerControls(
+                deviceName = device.name,
+                commandInFlight = commandInFlight,
+                onCommand = onCommand,
+            )
             Spacer(Modifier.height(4.dp))
             TextButton(onClick = onOpen) { Text("View details →") }
         }

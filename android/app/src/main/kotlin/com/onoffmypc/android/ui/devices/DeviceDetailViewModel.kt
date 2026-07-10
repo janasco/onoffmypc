@@ -9,6 +9,7 @@ import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.Telemetry
+import com.onoffmypc.android.ui.components.commandRequestFeedback
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +29,7 @@ data class DeviceDetailUiState(
     val refreshing: Boolean = false,
     val upgradePrompt: Boolean = false,
     val unlockPrice: Int = 15,
+    val commandInFlight: Boolean = false,
 )
 
 class DeviceDetailViewModel : ViewModel() {
@@ -98,24 +100,38 @@ class DeviceDetailViewModel : ViewModel() {
 
     fun sendCommand(type: CommandType) {
         val id = deviceId ?: return
+        if (_state.value.commandInFlight) return
+        _state.update { it.copy(commandInFlight = true) }
         viewModelScope.launch {
-            repo.sendCommand(id, type).fold(
-                onSuccess = { r ->
-                    val msg = if (r.delivered) "${type.label} sent" else "${type.label}: device offline"
-                    _state.update { it.copy(message = msg) }
-                },
-                onFailure = { e ->
-                    if (e is ApiException && (
-                            e.httpCode == 402 || e.serverCode == "trial_expired" || e.serverCode == "device_locked"
-                        )
-                    ) {
-                        _state.update { it.copy(upgradePrompt = true) }
-                    } else {
-                        _state.update { it.copy(message = e.message ?: "Command failed") }
-                    }
-                },
-            )
-            refresh(id)
+            try {
+                repo.sendCommand(id, type).fold(
+                    onSuccess = { response ->
+                        val name = _state.value.device?.name ?: "this device"
+                        _state.update {
+                            it.copy(
+                                message = commandRequestFeedback(
+                                    type, name, response.delivered, response.reason,
+                                ),
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        if (error is ApiException && (
+                                error.httpCode == 402 || error.serverCode == "trial_expired" || error.serverCode == "device_locked"
+                            )
+                        ) {
+                            _state.update { it.copy(upgradePrompt = true) }
+                        } else {
+                            _state.update {
+                                it.copy(message = error.message ?: "Couldn't submit the command request.")
+                            }
+                        }
+                    },
+                )
+                refresh(id)
+            } finally {
+                _state.update { it.copy(commandInFlight = false) }
+            }
         }
     }
 

@@ -89,22 +89,13 @@ struct DeviceDetailView: View {
 
     private var controlsSection: some View {
         Section("Controls") {
-            HStack(spacing: 8) {
-                commandButton(.powerOn, .green)
-                commandButton(.powerOff, .red)
-                commandButton(.powerOffForce, .red)
-                commandButton(.reset, .orange)
+            PowerCommandControls(
+                deviceName: vm.device?.name ?? device.name,
+                commandInFlight: vm.commandInFlight
+            ) { type in
+                Task { await vm.send(type, id: device.id, appState) }
             }
         }
-    }
-
-    private func commandButton(_ type: CommandType, _ tint: Color) -> some View {
-        Button(type.label) {
-            Task { await vm.send(type, id: device.id, appState) }
-        }
-        .buttonStyle(.bordered)
-        .tint(tint)
-        .controlSize(.small)
     }
 
     private var tempPoints: [(Int, Double)] {
@@ -137,12 +128,11 @@ struct DeviceDetailView: View {
                 Text("No commands yet.").foregroundStyle(.secondary)
             } else {
                 ForEach(vm.commands, id: \.rowId) { command in
-                    HStack {
+                    VStack(alignment: .leading, spacing: 3) {
                         Text(commandLabel(command.type))
-                        Spacer()
-                        Text(command.status ?? "—")
+                        Text(commandStatusText(command.status))
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(commandStatusColor(command.status))
                     }
                 }
             }

@@ -9,6 +9,7 @@ import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.MeResponse
 import com.onoffmypc.android.data.model.NewDevice
+import com.onoffmypc.android.ui.components.commandRequestFeedback
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +26,7 @@ data class DevicesUiState(
     val message: String? = null,
     val createdDevice: NewDevice? = null,
     val upgradeDeviceId: String? = null,
+    val commandInFlightDeviceIds: Set<String> = emptySet(),
 )
 
 class DevicesViewModel : ViewModel() {
@@ -82,17 +84,35 @@ class DevicesViewModel : ViewModel() {
     }
 
     fun sendCommand(device: Device, type: CommandType) {
+        if (device.id in _state.value.commandInFlightDeviceIds) return
+        _state.update { it.copy(commandInFlightDeviceIds = it.commandInFlightDeviceIds + device.id) }
         viewModelScope.launch {
-            repo.sendCommand(device.id, type).fold(
-                onSuccess = { r ->
-                    val msg = if (r.delivered) "${type.label} sent" else "${type.label}: device offline"
-                    _state.update { it.copy(message = msg) }
-                },
-                onFailure = { e ->
-                    if (isTrialExpired(e)) _state.update { it.copy(upgradeDeviceId = device.id) }
-                    else _state.update { it.copy(message = e.message ?: "Command failed") }
-                },
-            )
+            try {
+                repo.sendCommand(device.id, type).fold(
+                    onSuccess = { response ->
+                        _state.update {
+                            it.copy(
+                                message = commandRequestFeedback(
+                                    type, device.name, response.delivered, response.reason,
+                                ),
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        if (isTrialExpired(error)) {
+                            _state.update { it.copy(upgradeDeviceId = device.id) }
+                        } else {
+                            _state.update {
+                                it.copy(message = error.message ?: "Couldn't submit the command request.")
+                            }
+                        }
+                    },
+                )
+            } finally {
+                _state.update {
+                    it.copy(commandInFlightDeviceIds = it.commandInFlightDeviceIds - device.id)
+                }
+            }
         }
     }
 

@@ -9,6 +9,7 @@ final class DevicesViewModel: ObservableObject {
     @Published var toast: String?
     @Published var showUpgrade = false
     @Published var upgradeDeviceId: String?
+    @Published var commandInFlightDeviceIds: Set<String> = []
 
     func load(_ appState: AppState) async {
         if devices.isEmpty { loading = true }
@@ -36,16 +37,24 @@ final class DevicesViewModel: ObservableObject {
     }
 
     func send(_ type: CommandType, to device: Device, _ appState: AppState) async {
+        guard !commandInFlightDeviceIds.contains(device.id) else { return }
+        commandInFlightDeviceIds.insert(device.id)
+        defer { commandInFlightDeviceIds.remove(device.id) }
         do {
             let result = try await APIClient.shared.sendCommand(deviceId: device.id, type: type)
-            toast = (result.delivered == true) ? "\(type.label) sent" : (result.reason ?? "Device offline")
+            toast = commandRequestFeedback(
+                type,
+                deviceName: device.name,
+                sentToDevice: result.delivered == true,
+                reason: result.reason
+            )
         } catch APIError.unauthorized {
             appState.sessionExpired()
         } catch APIError.trialExpired {
             upgradeDeviceId = device.id
             showUpgrade = true
         } catch {
-            toast = (error as? APIError)?.errorDescription ?? "Command failed."
+            toast = (error as? APIError)?.errorDescription ?? "Couldn't submit the command request."
         }
     }
 

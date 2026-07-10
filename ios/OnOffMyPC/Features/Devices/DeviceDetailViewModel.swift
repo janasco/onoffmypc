@@ -13,6 +13,7 @@ final class DeviceDetailViewModel: ObservableObject {
     @Published var newToken: NewDevice?
     @Published var showUpgrade = false
     @Published var unlockPrice = 15
+    @Published var commandInFlight = false
 
     func refreshBilling() async {
         guard let billing = try? await APIClient.shared.billingStatus() else { return }
@@ -46,16 +47,24 @@ final class DeviceDetailViewModel: ObservableObject {
     }
 
     func send(_ type: CommandType, id: String, _ appState: AppState) async {
+        guard !commandInFlight else { return }
+        commandInFlight = true
+        defer { commandInFlight = false }
         do {
             let result = try await APIClient.shared.sendCommand(deviceId: id, type: type)
-            toast = (result.delivered == true) ? "\(type.label) sent" : "\(type.label): device offline"
+            toast = commandRequestFeedback(
+                type,
+                deviceName: device?.name ?? "this device",
+                sentToDevice: result.delivered == true,
+                reason: result.reason
+            )
             await refresh(id: id, appState)
         } catch APIError.unauthorized {
             appState.sessionExpired()
         } catch APIError.trialExpired {
             showUpgrade = true
         } catch {
-            toast = (error as? APIError)?.errorDescription ?? "Command failed."
+            toast = (error as? APIError)?.errorDescription ?? "Couldn't submit the command request."
         }
     }
 

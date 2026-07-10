@@ -64,10 +64,10 @@ app/src/main/kotlin/com/onoffmypc/android/
 
 ## Features
 - **Auth**: login, register (invite-gated), forgot-password; cookie session + 401 auto-logout
-- **Devices**: list with online/PC status, power controls (on / off / force-off / reset), add / rename / delete, pull-to-refresh
+- **Devices**: list with online/PC status, power controls (on / off / force-off / reset), target-specific confirmation for disruptive actions, honest queued/awaiting-ack/device-acknowledged/expired command states, add / rename / delete, pull-to-refresh
 - **Device detail**: live stats, 7-day temperature chart, command history, 30s auto-refresh
 - **Account and billing**: profile, security settings, deletion, email verification, a 30-day trial for each device, and one-time $15 device unlocks; existing Lifetime accounts remain supported
-- **Push notifications (FCM)**: device offline/online and command delivered/failed
+- **Push notifications (FCM)**: device offline/online, device-acknowledged commands, and commands that expire without acknowledgement
 
 See `CHANGELOG.md` for the full history.
 
