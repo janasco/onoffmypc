@@ -1,6 +1,8 @@
 # OnOffMyPC — iOS
 
-SwiftUI app (starter: sign in + devices with power controls). Bundle id
+SwiftUI client for the shared OnOffMyPC account/device API. Current scope
+includes sign in/registration/recovery, devices and power controls, device
+details/history, account/security, billing, and Google sign-in. Bundle id
 `com.onoffmypc.app`. Deployment target iOS 16.
 
 The Xcode project is **generated** from [`project.yml`](project.yml) with
@@ -47,4 +49,9 @@ ios/
 - Auth is **cookie-based** (matches the API/web/Android): `POST /auth/login` sets a
   `session` cookie, captured and stored in the Keychain, sent on later requests.
 - The app talks to `https://api.onoffmypc.com` (see `APIClient.swift`).
-- Next up: register, forgot-password, device detail (telemetry/history), account.
+- The iOS client currently has simulator build CI but no App Store/TestFlight
+  signing or release workflow in this repository.
+- Feature parity with Android/web is tracked in the private platform assessment;
+  a backend endpoint does not imply an iOS UI exists.
+- [../docs/SECURITY_ASSESSMENT.md](../docs/SECURITY_ASSESSMENT.md) links to the
+  private cross-repository security and UX documentation.

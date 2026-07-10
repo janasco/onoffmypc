@@ -1,8 +1,9 @@
-# OnOffMyPC — Android
+# OnOffMyPC — Mobile clients
 
-Native Android app for [OnOffMyPC](https://onoffmypc.com) — remotely power your PC
-on/off, send commands, and see live telemetry, backed by the same API as the web
-app (`https://api.onoffmypc.com`).
+Native Android and iOS clients for [OnOffMyPC](https://onoffmypc.com). They let
+authenticated users manage devices, send power commands, inspect telemetry and
+command history, manage account/billing, and receive device notifications. Both
+use the shared API at `https://api.onoffmypc.com`.
 
 ## Tech stack
 
@@ -21,6 +22,10 @@ app (`https://api.onoffmypc.com`).
 | Build | **Gradle** 8.9 (Kotlin DSL) + version catalog; **AGP** 8.6.1 |
 | Toolchain | **JDK 17**; `compileSdk 35` · `minSdk 26` · `targetSdk 35` |
 | CI/CD | GitHub Actions — build check on push; signed-APK release on `app-v*` tags |
+
+Android is the primary mobile target. iOS is generated from `ios/project.yml`
+and currently has simulator build CI; signing, store distribution, push, and
+feature parity should be treated separately.
 
 No third-party DI, image-loading, or networking-abstraction frameworks — the app
 leans on AndroidX + a thin hand-rolled layer to stay small and legible.
@@ -68,8 +73,8 @@ See `CHANGELOG.md` for the full history.
 
 ## Build
 
-The Android app lives in **`android/`** (this repo is a mobile monorepo; an
-`ios/` folder will be added later). Open the **`android/`** folder in **Android
+The Android app lives in **`android/`** and the iOS app in **`ios/`**. Open the
+**`android/`** folder in **Android
 Studio** (Ladybug or newer) and run the `app` configuration, or:
 
 ```bash
@@ -82,3 +87,5 @@ A JDK 17 toolchain and the Android SDK are required (Android Studio provides bot
 - **[RELEASE.md](RELEASE.md)** — keystore setup and cutting a signed `app-v*` release
 - **[PUSH.md](PUSH.md)** — Firebase project + backend service-account setup for FCM
 - **[CHANGELOG.md](CHANGELOG.md)** — release notes
+- **[ios/README.md](ios/README.md)** — iOS build and current scope
+- **[docs/SECURITY_ASSESSMENT.md](docs/SECURITY_ASSESSMENT.md)** — private platform assessment link
