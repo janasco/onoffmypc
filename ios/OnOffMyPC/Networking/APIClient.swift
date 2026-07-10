@@ -59,10 +59,12 @@ final class APIClient {
             throw APIError.unauthorized
         }
         guard (200..<300).contains(http.statusCode) else {
-            let msg = (try? JSONDecoder().decode(ApiError.self, from: data))?.error
-                ?? "Request failed (\(http.statusCode))."
-            // Trial ended (402) → distinct error so the UI can prompt to upgrade.
-            if http.statusCode == 402 { throw APIError.trialExpired(msg) }
+            let apiError = try? JSONDecoder().decode(ApiError.self, from: data)
+            let msg = apiError?.error ?? "Request failed (\(http.statusCode))."
+            // A locked device gets a distinct error so the UI can open its unlock flow.
+            if http.statusCode == 402 || apiError?.code == "trial_expired" || apiError?.code == "device_locked" {
+                throw APIError.trialExpired(msg)
+            }
             throw APIError.message(msg)
         }
         return data
@@ -110,9 +112,10 @@ final class APIClient {
 
     func billingStatus() async throws -> BillingStatus { try decode(try await send("GET", "billing/status")) }
     func paymentHistory() async throws -> [PaymentRequestItem] { try decode(try await send("GET", "billing/requests")) }
-    func submitPayment(method: String, reference: String, note: String?) async throws {
+    func submitPayment(deviceId: String, method: String, reference: String, note: String?) async throws {
         _ = try await send("POST", "billing/request",
-                           body: SubmitPaymentRequest(method: method, reference: reference, note: note))
+                           body: SubmitPaymentRequest(device_id: deviceId, method: method,
+                                                      reference: reference, note: note))
     }
 
     func changeEmail(newEmail: String, password: String) async throws {

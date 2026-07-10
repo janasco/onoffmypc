@@ -12,6 +12,12 @@ final class DeviceDetailViewModel: ObservableObject {
     @Published var toast: String?
     @Published var newToken: NewDevice?
     @Published var showUpgrade = false
+    @Published var unlockPrice = 15
+
+    func refreshBilling() async {
+        guard let billing = try? await APIClient.shared.billingStatus() else { return }
+        unlockPrice = billing.plans?.first { $0.id == "device" }?.price ?? billing.price ?? 15
+    }
 
     func refresh(id: String, _ appState: AppState) async {
         do {
@@ -32,6 +38,7 @@ final class DeviceDetailViewModel: ObservableObject {
 
     /// Refreshes every 30s until the view goes away (the .task is cancelled).
     func autoRefresh(id: String, _ appState: AppState) async {
+        await refreshBilling()
         while !Task.isCancelled {
             await refresh(id: id, appState)
             try? await Task.sleep(nanoseconds: 30_000_000_000)

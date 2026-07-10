@@ -54,8 +54,17 @@ class OnOffRepository(
 
     suspend fun billingStatus() = call { api.billingStatus() }
     suspend fun paymentHistory() = call { api.paymentHistory() }
-    suspend fun submitPayment(method: String, reference: String, note: String?): Result<Unit> =
-        call { api.submitPayment(SubmitPaymentRequest(method = method.trim(), reference = reference.trim(), note = note?.trim())) }.map { }
+    suspend fun submitPayment(deviceId: String, method: String, reference: String, note: String?): Result<Unit> =
+        call {
+            api.submitPayment(
+                SubmitPaymentRequest(
+                    device_id = deviceId,
+                    method = method.trim(),
+                    reference = reference.trim(),
+                    note = note?.trim(),
+                ),
+            )
+        }.map { }
 
     suspend fun changeEmail(newEmail: String, password: String): Result<Unit> =
         call { api.changeEmail(ChangeEmailRequest(newEmail.trim(), password)) }.map { }

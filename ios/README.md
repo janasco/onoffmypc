@@ -2,8 +2,8 @@
 
 SwiftUI client for the shared OnOffMyPC account/device API. Current scope
 includes sign in/registration/recovery, devices and power controls, device
-details/history, account/security, billing, and Google sign-in. Bundle id
-`com.onoffmypc.app`. Deployment target iOS 16.
+details/history, account/security, a 30-day trial and $15 one-time unlock for
+each device, and Google sign-in. Bundle id `com.onoffmypc.app`. Deployment target iOS 16.
 
 The Xcode project is **generated** from [`project.yml`](project.yml) with
 [XcodeGen](https://github.com/yonyz/XcodeGen) — `OnOffMyPC.xcodeproj` is **not**

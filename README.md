@@ -2,8 +2,8 @@
 
 Native Android and iOS clients for [OnOffMyPC](https://onoffmypc.com). They let
 authenticated users manage devices, send power commands, inspect telemetry and
-command history, manage account/billing, and receive device notifications. Both
-use the shared API at `https://api.onoffmypc.com`.
+command history, manage each device's 30-day trial and $15 one-time unlock, and
+receive device notifications. Both use the shared API at `https://api.onoffmypc.com`.
 
 ## Tech stack
 
@@ -66,7 +66,7 @@ app/src/main/kotlin/com/onoffmypc/android/
 - **Auth**: login, register (invite-gated), forgot-password; cookie session + 401 auto-logout
 - **Devices**: list with online/PC status, power controls (on / off / force-off / reset), add / rename / delete, pull-to-refresh
 - **Device detail**: live stats, 7-day temperature chart, command history, 30s auto-refresh
-- **Account**: profile, change email/password, delete account; email-verification banner + resend
+- **Account and billing**: profile, security settings, deletion, email verification, a 30-day trial for each device, and one-time $15 device unlocks; existing Lifetime accounts remain supported
 - **Push notifications (FCM)**: device offline/online and command delivered/failed
 
 See `CHANGELOG.md` for the full history.

@@ -37,12 +37,14 @@ struct DeviceDetailView: View {
                     }
             }
         }
-        .sheet(isPresented: $showBilling) { BillingView() }
-        .alert("Free trial ended", isPresented: $vm.showUpgrade) {
+        .sheet(isPresented: $showBilling, onDismiss: {
+            Task { await vm.refreshBilling() }
+        }) { BillingView(initialDeviceId: device.id) }
+        .alert("Device trial ended", isPresented: $vm.showUpgrade) {
             Button("Not now", role: .cancel) {}
-            Button("Upgrade") { showBilling = true }
+            Button("Unlock device") { showBilling = true }
         } message: {
-            Text("Make a one-time payment to keep controlling your devices.")
+            Text("Unlock \(vm.device?.name ?? device.name) for $\(vm.unlockPrice) one time to continue controlling it.")
         }
         .alert("Delete device?", isPresented: $showDelete) {
             Button("Cancel", role: .cancel) {}
@@ -50,7 +52,7 @@ struct DeviceDetailView: View {
                 Task { if await vm.delete(id: device.id, appState) { dismiss() } }
             }
         } message: {
-            Text("\"\(vm.device?.name ?? device.name)\" will be removed permanently. This cannot be undone.")
+            Text("\"\(vm.device?.name ?? device.name)\" will be removed permanently if it has no purchase or payment under review. Purchased access must be transferred through support before deletion.")
         }
         .confirmationDialog("Replace device token?", isPresented: $showReplace, titleVisibility: .visible) {
             Button("Generate new token") { Task { await vm.replaceToken(id: device.id, appState) } }

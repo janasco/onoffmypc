@@ -24,6 +24,10 @@ private const val ROUTE_FORGOT = "forgot"
 private const val ROUTE_DEVICES = "devices"
 private const val ROUTE_ACCOUNT = "account"
 private const val ROUTE_BILLING = "billing"
+private const val ROUTE_BILLING_PATTERN = "billing?deviceId={deviceId}"
+
+private fun billingRoute(deviceId: String? = null): String =
+    if (deviceId == null) ROUTE_BILLING else "$ROUTE_BILLING?deviceId=$deviceId"
 
 @Composable
 fun AppNav() {
@@ -70,7 +74,7 @@ fun AppNav() {
             DevicesScreen(
                 onOpen = { device -> navController.navigate("device/${device.id}") },
                 onAccount = { navController.navigate(ROUTE_ACCOUNT) },
-                onBilling = { navController.navigate(ROUTE_BILLING) },
+                onBilling = { deviceId -> navController.navigate(billingRoute(deviceId)) },
                 onLoggedOut = {
                     navController.navigate(ROUTE_LOGIN) {
                         popUpTo(ROUTE_DEVICES) { inclusive = true }
@@ -81,7 +85,7 @@ fun AppNav() {
         composable(ROUTE_ACCOUNT) {
             AccountScreen(
                 onBack = { navController.popBackStack() },
-                onBilling = { navController.navigate(ROUTE_BILLING) },
+                onBilling = { navController.navigate(billingRoute()) },
                 onSignedOut = {
                     navController.navigate(ROUTE_LOGIN) {
                         popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
@@ -89,8 +93,20 @@ fun AppNav() {
                 },
             )
         }
-        composable(ROUTE_BILLING) {
-            BillingScreen(onBack = { navController.popBackStack() })
+        composable(
+            route = ROUTE_BILLING_PATTERN,
+            arguments = listOf(
+                navArgument("deviceId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { backStackEntry ->
+            BillingScreen(
+                onBack = { navController.popBackStack() },
+                initialDeviceId = backStackEntry.arguments?.getString("deviceId"),
+            )
         }
         composable(
             route = "device/{deviceId}",
@@ -101,7 +117,7 @@ fun AppNav() {
                 DeviceDetailScreen(
                     deviceId = deviceId,
                     onBack = { navController.popBackStack() },
-                    onUpgrade = { navController.navigate(ROUTE_BILLING) },
+                    onUpgrade = { navController.navigate(billingRoute(deviceId)) },
                 )
             }
         }

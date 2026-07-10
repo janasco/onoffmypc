@@ -131,7 +131,7 @@ fun AccountScreen(
                                 }
                             }
                             Spacer(Modifier.height(8.dp))
-                            ProfileRow("Plan", planLabel(user.plan, user.device_limit))
+                            ProfileRow("Access", planLabel(user.plan))
                             Spacer(Modifier.height(8.dp))
                             ProfileRow("Member since", formatDate(user.created_at))
                         }
@@ -139,7 +139,7 @@ fun AccountScreen(
 
                     Spacer(Modifier.height(12.dp))
                     OutlinedButton(onClick = onBilling, modifier = Modifier.fillMaxWidth()) {
-                        Text("Plan & Billing")
+                        Text("Device unlocks & billing")
                     }
 
                     Spacer(Modifier.height(24.dp))
@@ -334,11 +334,8 @@ private fun DeleteAccountDialog(email: String, busy: Boolean, onDismiss: () -> U
     )
 }
 
-private fun planLabel(plan: String?, limit: Int?): String {
-    val name = (plan ?: "free").replaceFirstChar { it.uppercase() }
-    val devices = if (limit == null) "unlimited devices" else "$limit device${if (limit == 1) "" else "s"}"
-    return "$name · $devices"
-}
+private fun planLabel(plan: String?): String =
+    if (plan == "lifetime") "Lifetime (legacy)" else "One-time purchase per device"
 
 private fun formatDate(iso: String?): String {
     if (iso == null) return "—"

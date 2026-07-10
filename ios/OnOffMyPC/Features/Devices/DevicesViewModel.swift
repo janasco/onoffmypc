@@ -8,6 +8,7 @@ final class DevicesViewModel: ObservableObject {
     @Published var error: String?
     @Published var toast: String?
     @Published var showUpgrade = false
+    @Published var upgradeDeviceId: String?
 
     func load(_ appState: AppState) async {
         if devices.isEmpty { loading = true }
@@ -25,6 +26,13 @@ final class DevicesViewModel: ObservableObject {
 
     private func silentReload() async {
         if let d = try? await APIClient.shared.devices() { devices = d }
+        await refreshBilling()
+    }
+
+    func refreshBilling() async {
+        if let current = try? await APIClient.shared.billingStatus() {
+            billing = current
+        }
     }
 
     func send(_ type: CommandType, to device: Device, _ appState: AppState) async {
@@ -34,6 +42,7 @@ final class DevicesViewModel: ObservableObject {
         } catch APIError.unauthorized {
             appState.sessionExpired()
         } catch APIError.trialExpired {
+            upgradeDeviceId = device.id
             showUpgrade = true
         } catch {
             toast = (error as? APIError)?.errorDescription ?? "Command failed."

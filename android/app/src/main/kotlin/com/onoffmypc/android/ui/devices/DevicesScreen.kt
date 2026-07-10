@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
@@ -60,7 +61,7 @@ import com.onoffmypc.android.ui.theme.Yellow
 fun DevicesScreen(
     onOpen: (Device) -> Unit,
     onAccount: () -> Unit,
-    onBilling: () -> Unit,
+    onBilling: (String?) -> Unit,
     onLoggedOut: () -> Unit,
     vm: DevicesViewModel = viewModel(),
 ) {
@@ -73,12 +74,18 @@ fun DevicesScreen(
     var replacing by remember { mutableStateOf<Device?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     var confirmLogout by remember { mutableStateOf(false) }
+    var hasResumedOnce by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.message) {
         state.message?.let {
             snackbar.showSnackbar(it)
             vm.consumeMessage()
         }
+    }
+
+    LifecycleResumeEffect(Unit) {
+        if (hasResumedOnce) vm.refreshBilling() else hasResumedOnce = true
+        onPauseOrDispose { }
     }
 
     Scaffold(
@@ -150,8 +157,8 @@ fun DevicesScreen(
                             item { VerifyEmailBanner(onResend = vm::resendVerification) }
                         }
                         state.billing?.let { b ->
-                            if (!b.is_lifetime) {
-                                item { TrialBanner(billing = b, onUpgrade = onBilling) }
+                            if (!b.is_lifetime && (b.devices.isEmpty() || b.devices.any { !it.unlocked })) {
+                                item { TrialBanner(billing = b, onUpgrade = { onBilling(null) }) }
                             }
                         }
                         if (state.devices.isEmpty()) {
@@ -232,13 +239,17 @@ fun DevicesScreen(
             onDismiss = { confirmLogout = false },
         )
     }
-    if (state.upgradePrompt) {
+    state.upgradeDeviceId?.let { deviceId ->
+        val deviceName = state.devices.firstOrNull { it.id == deviceId }?.name ?: "this device"
+        val unlockPrice = state.billing?.plans?.firstOrNull { it.id == "device" }?.price
+            ?: state.billing?.price
+            ?: 15
         AlertDialog(
             onDismissRequest = { vm.consumeUpgradePrompt() },
-            title = { Text("Free trial ended") },
-            text = { Text("Make a one-time payment to keep controlling your devices.") },
+            title = { Text("Device trial ended") },
+            text = { Text("The free trial for $deviceName has ended. Unlock this device for \$$unlockPrice one time to continue controlling it.") },
             confirmButton = {
-                TextButton(onClick = { vm.consumeUpgradePrompt(); onBilling() }) { Text("Upgrade") }
+                TextButton(onClick = { vm.consumeUpgradePrompt(); onBilling(deviceId) }) { Text("Unlock device") }
             },
             dismissButton = { TextButton(onClick = { vm.consumeUpgradePrompt() }) { Text("Not now") } },
         )
@@ -339,8 +350,13 @@ private fun TrialBanner(
     billing: com.onoffmypc.android.data.model.BillingStatus,
     onUpgrade: () -> Unit,
 ) {
-    val expired = billing.trial_expired
-    val days = trialDaysLeft(billing.trial_ends_at)
+    val locked = billing.devices.filter { !it.unlocked }
+    val actionable = locked.filter { !it.pending }
+    val expiredCount = actionable.count { deviceTrialExpired(it) }
+    val pendingCount = locked.count { it.pending }
+    val days = actionable.mapNotNull { trialDaysLeft(it.trial_ends_at) }.minOrNull()
+        ?: trialDaysLeft(billing.trial_ends_at)
+    val expired = if (billing.devices.isEmpty()) billing.trial_expired else expiredCount > 0
     val tint = if (expired) Red else Accent
     Card(colors = CardDefaults.cardColors(containerColor = tint.copy(alpha = 0.12f))) {
         Row(
@@ -352,15 +368,17 @@ private fun TrialBanner(
         ) {
             Text(
                 text = when {
-                    expired -> "Free trial ended. Pay $${billing.price} once to keep controlling your devices."
-                    days != null -> "Free trial: $days day${if (days == 1L) "" else "s"} left."
-                    else -> "You're on the free trial."
+                    expiredCount > 0 -> "$expiredCount device trial${if (expiredCount == 1) " has" else "s have"} ended. Unlock each for $${billing.price} one time."
+                    actionable.isEmpty() && pendingCount > 0 -> "$pendingCount device payment${if (pendingCount == 1) " is" else "s are"} under review."
+                    billing.devices.isEmpty() && expired -> "Free trial ended. Unlock a device for $${billing.price} one time."
+                    days != null -> "Device trial: $days day${if (days == 1L) "" else "s"} left on the next device."
+                    else -> "Each device includes a free trial."
                 },
                 color = if (expired) Red else Color.Unspecified,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onUpgrade) { Text(if (expired) "Unlock" else "Upgrade") }
+            TextButton(onClick = onUpgrade) { Text(if (expired) "Unlock" else "Manage") }
         }
     }
 }
@@ -376,3 +394,15 @@ private fun trialDaysLeft(iso: String?): Long? {
         null
     }
 }
+
+private fun trialHasEnded(iso: String?): Boolean {
+    if (iso == null) return false
+    return try {
+        java.time.Instant.parse(iso).toEpochMilli() <= System.currentTimeMillis()
+    } catch (_: Exception) {
+        false
+    }
+}
+
+private fun deviceTrialExpired(device: com.onoffmypc.android.data.model.BillingDevice): Boolean =
+    device.trial_expired ?: trialHasEnded(device.trial_ends_at)

@@ -107,10 +107,10 @@ fun DeviceDetailScreen(
     if (state.upgradePrompt) {
         AlertDialog(
             onDismissRequest = { vm.consumeUpgradePrompt() },
-            title = { Text("Free trial ended") },
-            text = { Text("Make a one-time payment to keep controlling your devices.") },
+            title = { Text("Device trial ended") },
+            text = { Text("Unlock ${state.device?.name ?: "this device"} for \$${state.unlockPrice} one time to continue controlling it.") },
             confirmButton = {
-                TextButton(onClick = { vm.consumeUpgradePrompt(); onUpgrade() }) { Text("Upgrade") }
+                TextButton(onClick = { vm.consumeUpgradePrompt(); onUpgrade() }) { Text("Unlock device") }
             },
             dismissButton = { TextButton(onClick = { vm.consumeUpgradePrompt() }) { Text("Not now") } },
         )

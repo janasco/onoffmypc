@@ -24,7 +24,7 @@ data class DevicesUiState(
     val error: String? = null,
     val message: String? = null,
     val createdDevice: NewDevice? = null,
-    val upgradePrompt: Boolean = false,
+    val upgradeDeviceId: String? = null,
 )
 
 class DevicesViewModel : ViewModel() {
@@ -63,6 +63,15 @@ class DevicesViewModel : ViewModel() {
         }
     }
 
+    /** Refresh access state after returning from billing without replacing the device list. */
+    fun refreshBilling() {
+        viewModelScope.launch {
+            repo.billingStatus().onSuccess { billing ->
+                _state.update { it.copy(billing = billing) }
+            }
+        }
+    }
+
     fun resendVerification() {
         viewModelScope.launch {
             repo.resendVerify().fold(
@@ -80,17 +89,19 @@ class DevicesViewModel : ViewModel() {
                     _state.update { it.copy(message = msg) }
                 },
                 onFailure = { e ->
-                    if (isTrialExpired(e)) _state.update { it.copy(upgradePrompt = true) }
+                    if (isTrialExpired(e)) _state.update { it.copy(upgradeDeviceId = device.id) }
                     else _state.update { it.copy(message = e.message ?: "Command failed") }
                 },
             )
         }
     }
 
-    fun consumeUpgradePrompt() = _state.update { it.copy(upgradePrompt = false) }
+    fun consumeUpgradePrompt() = _state.update { it.copy(upgradeDeviceId = null) }
 
     private fun isTrialExpired(e: Throwable): Boolean =
-        e is ApiException && (e.httpCode == 402 || e.serverCode == "trial_expired")
+        e is ApiException && (
+            e.httpCode == 402 || e.serverCode == "trial_expired" || e.serverCode == "device_locked"
+        )
 
     fun addDevice(name: String) {
         viewModelScope.launch {

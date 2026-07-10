@@ -27,6 +27,7 @@ data class DeviceDetailUiState(
     val message: String? = null,
     val refreshing: Boolean = false,
     val upgradePrompt: Boolean = false,
+    val unlockPrice: Int = 15,
 )
 
 class DeviceDetailViewModel : ViewModel() {
@@ -44,6 +45,12 @@ class DeviceDetailViewModel : ViewModel() {
         if (started) return
         started = true
         deviceId = id
+        viewModelScope.launch {
+            repo.billingStatus().onSuccess { billing ->
+                val price = billing.plans.firstOrNull { it.id == "device" }?.price ?: billing.price
+                _state.update { it.copy(unlockPrice = price) }
+            }
+        }
         viewModelScope.launch {
             while (true) {
                 refresh(id)
@@ -98,7 +105,10 @@ class DeviceDetailViewModel : ViewModel() {
                     _state.update { it.copy(message = msg) }
                 },
                 onFailure = { e ->
-                    if (e is ApiException && (e.httpCode == 402 || e.serverCode == "trial_expired")) {
+                    if (e is ApiException && (
+                            e.httpCode == 402 || e.serverCode == "trial_expired" || e.serverCode == "device_locked"
+                        )
+                    ) {
                         _state.update { it.copy(upgradePrompt = true) }
                     } else {
                         _state.update { it.copy(message = e.message ?: "Command failed") }

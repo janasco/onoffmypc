@@ -47,11 +47,24 @@ data class Plan(
 data class PaymentRequestItem(
     val id: String,
     val plan: String,
+    val device_id: String? = null,
+    val device_name: String? = null,
     val amount: String? = null,
     val method: String? = null,
     val reference: String? = null,
     val status: String,
     val created_at: String,
+)
+
+@Serializable
+data class BillingDevice(
+    val id: String,
+    val name: String,
+    val unlocked: Boolean = false,
+    val pending: Boolean = false,
+    val trial_ends_at: String? = null,
+    // Nullable keeps compatibility with API versions that predate per-device status.
+    val trial_expired: Boolean? = null,
 )
 
 @Serializable
@@ -65,13 +78,15 @@ data class BillingStatus(
     val device_count: Int = 0,
     val plans: List<Plan> = emptyList(),
     val price: Int = 0,
+    val devices: List<BillingDevice> = emptyList(),
     val payment_instructions: String = "",
     val pending_request: PaymentRequestItem? = null,
 )
 
 @Serializable
 data class SubmitPaymentRequest(
-    val plan: String = "lifetime",
+    val plan: String = "device",
+    val device_id: String,
     val method: String,
     val reference: String,
     val note: String? = null,
@@ -162,7 +177,7 @@ data class CommandResponse(
 data class ApiError(val error: String? = null, val code: String? = null)
 
 /** Carries the HTTP status + server error code so callers can branch on them
- *  (e.g. 402 / "trial_expired" → prompt to upgrade). */
+ *  (e.g. 402 / "device_locked" → open the device-unlock flow). */
 class ApiException(
     val httpCode: Int,
     val serverCode: String? = null,

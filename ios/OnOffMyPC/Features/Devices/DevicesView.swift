@@ -1,7 +1,8 @@
 import SwiftUI
 
 private enum DevicesSheet: Identifiable {
-    case account, addDevice, billing
+    case account, addDevice
+    case billing(String?)
     var id: Int { switch self { case .account: return 0; case .addDevice: return 1; case .billing: return 2 } }
 }
 
@@ -33,9 +34,9 @@ struct DevicesView: View {
                                 Label("Account", systemImage: "person.crop.circle")
                             }
                             Button {
-                                sheet = .billing
+                                sheet = .billing(nil)
                             } label: {
-                                Label("Plan & Billing", systemImage: "creditcard")
+                                Label("Device Unlocks", systemImage: "creditcard")
                             }
                             Button(role: .destructive) {
                                 showLogoutConfirm = true
@@ -51,11 +52,13 @@ struct DevicesView: View {
         .task { await vm.load(appState) }
         .refreshable { await vm.load(appState) }
         .overlay(alignment: .bottom) { toastView }
-        .sheet(item: $sheet) { route in
+        .sheet(item: $sheet, onDismiss: {
+            Task { await vm.refreshBilling() }
+        }) { route in
             switch route {
             case .account: AccountView()
             case .addDevice: AddDeviceView(vm: vm)
-            case .billing: BillingView()
+            case .billing(let deviceId): BillingView(initialDeviceId: deviceId)
             }
         }
         .alert("Sign out?", isPresented: $showLogoutConfirm) {
@@ -64,11 +67,11 @@ struct DevicesView: View {
         } message: {
             Text("You'll need to sign in again to control your devices.")
         }
-        .alert("Free trial ended", isPresented: $vm.showUpgrade) {
+        .alert("Device trial ended", isPresented: $vm.showUpgrade) {
             Button("Not now", role: .cancel) {}
-            Button("Upgrade") { sheet = .billing }
+            Button("Unlock device") { sheet = .billing(vm.upgradeDeviceId) }
         } message: {
-            Text("Make a one-time payment to keep controlling your devices.")
+            Text("Unlock \(upgradeDeviceName) for $\(unlockPrice) one time to continue controlling it.")
         }
     }
 
@@ -91,8 +94,10 @@ struct DevicesView: View {
             .padding()
         } else {
             List {
-                if let b = vm.billing, !(b.is_lifetime ?? false) {
-                    TrialBanner(billing: b) { sheet = .billing }
+                if let b = vm.billing,
+                   !(b.is_lifetime ?? false),
+                   b.devices == nil || b.devices?.contains(where: { $0.unlocked != true }) == true {
+                    TrialBanner(billing: b) { sheet = .billing(nil) }
                 }
                 ForEach(vm.devices) { device in
                     DeviceRow(device: device) { type in
@@ -118,6 +123,14 @@ struct DevicesView: View {
                 }
         }
     }
+
+    private var upgradeDeviceName: String {
+        vm.devices.first { $0.id == vm.upgradeDeviceId }?.name ?? "this device"
+    }
+
+    private var unlockPrice: Int {
+        vm.billing?.plans?.first { $0.id == "device" }?.price ?? vm.billing?.price ?? 15
+    }
 }
 
 private struct TrialBanner: View {
@@ -125,13 +138,14 @@ private struct TrialBanner: View {
     let onUpgrade: () -> Void
 
     var body: some View {
-        let expired = billing.trial_expired ?? false
+        let locked = billing.devices?.filter { $0.unlocked != true } ?? []
+        let expired = locked.contains { $0.pending != true && deviceTrialExpired($0) }
         HStack {
             Text(bannerText(expired))
                 .font(.subheadline)
                 .foregroundStyle(expired ? Color.red : Color.primary)
             Spacer()
-            Button(expired ? "Unlock" : "Upgrade", action: onUpgrade)
+            Button(expired ? "Unlock" : "Manage", action: onUpgrade)
                 .buttonStyle(.bordered)
                 .controlSize(.small)
         }
@@ -139,11 +153,23 @@ private struct TrialBanner: View {
     }
 
     private func bannerText(_ expired: Bool) -> String {
-        if expired { return "Free trial ended. Pay $\(billing.price ?? 15) once to keep control." }
-        if let days = daysLeft(billing.trial_ends_at) {
-            return "Free trial: \(days) day\(days == 1 ? "" : "s") left."
+        let locked = billing.devices?.filter { $0.unlocked != true } ?? []
+        let expiredCount = locked.filter { $0.pending != true && deviceTrialExpired($0) }.count
+        let pendingCount = locked.filter { $0.pending == true }.count
+        let days = locked.filter { $0.pending != true }.compactMap { daysLeft($0.trial_ends_at) }.min()
+        if expiredCount > 0 {
+            return "\(expiredCount) device trial\(expiredCount == 1 ? " has" : "s have") ended. Unlock each for $\(billing.price ?? 15) one time."
         }
-        return "You're on the free trial."
+        if !locked.isEmpty, locked.allSatisfy({ $0.pending == true }) {
+            return "\(pendingCount) device payment\(pendingCount == 1 ? " is" : "s are") under review."
+        }
+        if locked.isEmpty, billing.devices == nil, billing.trial_expired == true {
+            return "Free trial ended. Unlock a device for $\(billing.price ?? 15) one time."
+        }
+        if let days {
+            return "Device trial: \(days) day\(days == 1 ? "" : "s") left on the next device."
+        }
+        return "Each device includes a free trial."
     }
 
     private func daysLeft(_ iso: String?) -> Int? {
@@ -154,6 +180,15 @@ private struct TrialBanner: View {
         guard let end else { return nil }
         let secs = end.timeIntervalSinceNow
         return secs <= 0 ? 0 : Int(secs / 86_400)
+    }
+
+    private func trialHasEnded(_ iso: String?) -> Bool {
+        guard let iso, let end = Date.fromISO(iso) else { return false }
+        return end <= Date()
+    }
+
+    private func deviceTrialExpired(_ device: BillingDevice) -> Bool {
+        device.trial_expired ?? trialHasEnded(device.trial_ends_at)
     }
 }
 

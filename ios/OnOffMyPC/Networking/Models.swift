@@ -13,7 +13,10 @@ struct CommandRequest: Encodable { let type: String }
 // MARK: - Responses
 
 struct OkResponse: Decodable { let ok: Bool? }
-struct ApiError: Decodable { let error: String? }
+struct ApiError: Decodable {
+    let error: String?
+    var code: String?
+}
 
 struct Plan: Decodable, Identifiable {
     let id: String
@@ -27,11 +30,23 @@ struct Plan: Decodable, Identifiable {
 struct PaymentRequestItem: Decodable, Identifiable {
     let id: String
     let plan: String
+    var device_id: String?
+    var device_name: String?
     var amount: String?
     var method: String?
     var reference: String?
     let status: String
     let created_at: String
+}
+
+struct BillingDevice: Decodable, Identifiable {
+    let id: String
+    let name: String
+    var unlocked: Bool?
+    var pending: Bool?
+    var trial_ends_at: String?
+    // Optional for compatibility with API versions that predate per-device status.
+    var trial_expired: Bool?
 }
 
 struct BillingStatus: Decodable {
@@ -44,12 +59,14 @@ struct BillingStatus: Decodable {
     var device_count: Int?
     var plans: [Plan]?
     var price: Int?
+    var devices: [BillingDevice]?
     var payment_instructions: String?
     var pending_request: PaymentRequestItem?
 }
 
 struct SubmitPaymentRequest: Encodable {
-    var plan: String = "lifetime"
+    var plan: String = "device"
+    let device_id: String
     let method: String
     let reference: String
     var note: String?
