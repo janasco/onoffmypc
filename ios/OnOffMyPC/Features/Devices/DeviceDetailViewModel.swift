@@ -3,7 +3,8 @@ import SwiftUI
 @MainActor
 final class DeviceDetailViewModel: ObservableObject {
     @Published var device: Device?
-    @Published var online = false
+    @Published var online: Bool?
+    @Published var lastSeenAt: String?
     @Published var latest: Telemetry?
     @Published var history: [HistoryPoint] = []
     @Published var commands: [Command] = []
@@ -14,6 +15,7 @@ final class DeviceDetailViewModel: ObservableObject {
     @Published var showUpgrade = false
     @Published var unlockPrice = 15
     @Published var commandInFlight = false
+    @Published var refreshWarning: String?
 
     func refreshBilling() async {
         guard let billing = try? await APIClient.shared.billingStatus() else { return }
@@ -21,19 +23,58 @@ final class DeviceDetailViewModel: ObservableObject {
     }
 
     func refresh(id: String, _ appState: AppState) async {
+        if device == nil { loading = true }
+        defer { loading = false }
         do {
-            device = try await APIClient.shared.device(id: id)
-            online = (try? await APIClient.shared.deviceStatus(id: id))?.online ?? false
-            latest = (try? await APIClient.shared.telemetry(id: id))?.first
-            if let h = try? await APIClient.shared.history(id: id, days: 7) { history = h }
-            if let c = try? await APIClient.shared.commands(id: id) { commands = c }
+            let fetchedDevice = try await APIClient.shared.device(id: id)
+            device = fetchedDevice
+            var partialFailure = false
+
+            do {
+                let status = try await APIClient.shared.deviceStatus(id: id)
+                online = status.online
+                lastSeenAt = status.last_seen_at ?? fetchedDevice.last_seen_at
+            } catch APIError.unauthorized {
+                appState.sessionExpired()
+                return
+            } catch {
+                online = nil
+                lastSeenAt = fetchedDevice.last_seen_at
+                partialFailure = true
+            }
+
+            do {
+                let telemetry = try await APIClient.shared.telemetry(id: id)
+                latest = telemetry.first
+            } catch APIError.unauthorized {
+                appState.sessionExpired()
+                return
+            } catch {
+                partialFailure = true
+            }
+            do {
+                history = try await APIClient.shared.history(id: id, days: 7)
+            } catch APIError.unauthorized {
+                appState.sessionExpired()
+                return
+            } catch {
+                partialFailure = true
+            }
+            do {
+                commands = try await APIClient.shared.commands(id: id)
+            } catch APIError.unauthorized {
+                appState.sessionExpired()
+                return
+            } catch {
+                partialFailure = true
+            }
+            refreshWarning = partialFailure ? "Some device information could not be refreshed." : nil
             error = nil
-            loading = false
         } catch APIError.unauthorized {
             appState.sessionExpired()
         } catch {
             self.error = (error as? APIError)?.errorDescription ?? "Failed to load device."
-            loading = false
+            if device != nil { refreshWarning = "Some device information could not be refreshed." }
         }
     }
 

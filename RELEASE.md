@@ -12,7 +12,7 @@ app on the same signing identity.
 
 ```bash
 keytool -genkeypair -v \
-  -keystore onoffmypc-release.jks \
+  -keystore android/onoffmypc-release.jks \
   -alias onoffmypc \
   -keyalg RSA -keysize 2048 -validity 10000
 # choose a strong keystore password + key password (can be the same)
@@ -27,6 +27,21 @@ keytool -genkeypair -v \
 | `KEY_PASSWORD` | the key password |
 | `RELEASE_REPO_TOKEN` | a fine-grained PAT with **contents: write** on `onoffmypc/onoffmypc-release` |
 
+If `android/keystore.properties` and `android/onoffmypc-release.jks` already
+exist, import them into the gitignored root `.env` without printing secrets:
+
+```bash
+bash scripts/import-android-keystore.sh
+```
+
+This fills `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`, and
+`ANDROID_KEYSTORE_BASE64`, and restricts `.env`, the properties file, and the JKS
+to mode `0600`. To upload the four CI signing secrets from `.env` afterward:
+
+```bash
+bash scripts/set-android-secrets.sh
+```
+
 ## Cutting a release
 1. Bump `versionCode` (and `versionName` if the number changes) in `app/build.gradle.kts`.
 2. Add a `CHANGELOG.md` entry.
@@ -40,8 +55,10 @@ The workflow verifies the tag matches `versionName`, builds `:app:assembleReleas
 (signed with the keystore), and creates the GitHub Release with the APK attached.
 
 ## Building a signed release locally (optional)
-Create a **gitignored** `keystore.properties` in the **`android/`** directory
-(the Gradle root):
+
+The preferred local source is the repository root `.env`, populated using the
+import command above. Gradle reads environment variables first, then `.env`, and
+finally the legacy `android/keystore.properties` fallback. The fallback format is:
 ```properties
 storeFile=/absolute/path/to/onoffmypc-release.jks
 storePassword=...
@@ -50,8 +67,9 @@ keyPassword=...
 ```
 Then: `cd android && ./gradlew :app:assembleRelease` → `android/app/build/outputs/apk/release/`.
 
-Without a keystore (`keystore.properties` absent and no env vars), the release
-build is left **unsigned**; debug builds are unaffected.
+Without usable signing values in process environment variables, root `.env`, or
+the legacy `keystore.properties`, the release build is left **unsigned**; debug
+builds are unaffected.
 
 ## Notes
 - R8/minification is **off** for this first release (`isMinifyEnabled = false`) to

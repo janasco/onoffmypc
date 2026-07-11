@@ -20,7 +20,13 @@ existing keystore), and Google re-signs it with the app signing key it holds.
 
 - Keep our keystore safe — it's now your **upload key** (used to authenticate uploads).
 - If you ever lose the upload key, Google can reset it; if Google holds the app signing key, your users are never stranded.
-- **FCM still works** regardless of the re-signing: we send via the FCM HTTP v1 **service account**, which doesn't depend on the app's SHA fingerprint. (You'd only need to register a SHA in Firebase if you used Google Sign-In / Safety Net / App Check — we don't.)
+- **FCM still works** regardless of re-signing because delivery uses the FCM HTTP
+  v1 service account. **Google Sign-In does require certificate registration.**
+  Register the upload/release certificate SHA-1 for direct APK and internal AAB
+  testing. After Play App Signing is enabled, also register Google's app-signing
+  certificate SHA-1, then download a refreshed `google-services.json` and test
+  the signed build. The currently tracked file must not be treated as proof that
+  these OAuth identities are configured.
 
 ## First release (done once, manually in Play Console)
 The first submission can't be fully automated — you set up the listing + policies:
@@ -41,9 +47,16 @@ The first submission can't be fully automated — you set up the listing + polic
 6. **Production** — Release → Production → create release → upload (or promote the tested build) → submit for review.
 
 ## Versioning
-Every upload needs a higher **`versionCode`**. We're at `versionCode 2`
-(`versionName 0.1.1`). Bump `versionCode` in `app/build.gradle.kts` for each Play
+Every upload needs a higher **`versionCode`**. We're at `versionCode 7`
+(`versionName 0.3.0`). Bump `versionCode` in `app/build.gradle.kts` for each Play
 upload (and `versionName` when the user-facing version changes).
+
+To print the upload certificate SHA-1 without putting the password on the command
+line, run the following and enter the keystore password when prompted:
+
+```bash
+keytool -list -v -keystore android/onoffmypc-release.jks -alias onoffmypc
+```
 
 ## Release notes
 - **GitHub release** (the `app-v*` APK release) — auto-generated from the matching

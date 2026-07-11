@@ -58,16 +58,28 @@ app/src/main/kotlin/com/onoffmypc/android/
     auth/                      # login, register, forgot-password
     devices/                   # dashboard (list + power controls), device detail
     account/                   # profile, change email/password, delete account
-    components/                # shared PowerControls
+    components/                # shared power controls and command/device-status presentation
     navigation/AppNav.kt       # route graph
 ```
 
 ## Features
 - **Auth**: login, register (invite-gated), forgot-password; cookie session + 401 auto-logout
-- **Devices**: list with online/PC status, power controls (on / off / force-off / reset), target-specific confirmation for disruptive actions, honest queued/awaiting-ack/device-acknowledged/expired command states, add / rename / delete, pull-to-refresh
-- **Device detail**: live stats, 7-day temperature chart, command history, 30s auto-refresh
-- **Account and billing**: profile, security settings, deletion, email verification, a 30-day trial for each device, and one-time $15 device unlocks; existing Lifetime accounts remain supported
+- **Devices**: separate connection, last-contact freshness, and last-reported PC state; power controls (on / off / force-off / reset); target-specific confirmation for disruptive actions; honest queued/awaiting-ack/device-acknowledged/expired command states; add / rename / delete; pull-to-refresh
+- **Device detail**: explicit online, offline, or unknown presence; telemetry freshness; accessible 7-day temperature chart; command history; 30s auto-refresh
+- **Account and billing**: profile, security settings, deletion, email verification, a 30-day trial for each device, and one-time $15 device unlocks through API-created Polar hosted checkout; existing Lifetime accounts remain supported. Polar credentials are never shipped in either app.
 - **Push notifications (FCM)**: device offline/online, device-acknowledged commands, and commands that expire without acknowledgement
+
+## Native-store billing policy
+
+The current native UI opens Polar in the system browser to unlock app functionality. Do not
+publish that purchase link unchanged to every App Store or Google Play storefront. Apple and
+Google generally require their billing systems for digital app functionality, with regional
+external-link/alternative-billing programs and eligibility rules. Before a store release, either
+integrate the required store billing path or gate the Polar action to storefronts where the app is
+properly enrolled. Direct/sideloaded distributions have different rules.
+
+- [Apple App Review Guidelines 3.1](https://developer.apple.com/app-store/review/guidelines/#business)
+- [Google Play Payments policy](https://support.google.com/googleplay/android-developer/answer/9858738)
 
 See `CHANGELOG.md` for the full history.
 

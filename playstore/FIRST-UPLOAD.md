@@ -43,7 +43,7 @@ Store presence → **Main store listing**:
 Release → **Testing → Internal testing** → **Create new release**:
 1. When prompted about **Play App Signing**, **accept it** (Google manages the app signing key; our keystore is the upload key).
 2. **Upload** `app-release.aab`.
-3. Release name auto-fills (e.g. `2 (0.1.1)`); "What's new" → paste a line of notes.
+3. Release name auto-fills (for this build, `7 (0.3.0)`); "What's new" → paste the contents of `distribution/whatsnew/whatsnew-en-US`.
 4. **Save → Review release → Start rollout to Internal testing.**
 5. On the **Testers** tab, add your Google account (create an email list), copy the **opt-in link**, open it on your phone, and install from Play. Internal releases go live in minutes — no review.
 
@@ -59,6 +59,6 @@ the build you tested) or upload the AAB → **Review → Start rollout to Produc
 
 ## Gotchas
 - **App access test credentials + invite code are mandatory** — the #1 rejection reason for gated apps.
-- Each upload needs a higher **`versionCode`** (currently 2). Bump it in `app/build.gradle.kts` and re-run **Build AAB**.
+- Each upload needs a higher **`versionCode`** (currently 7). Bump it in `app/build.gradle.kts` and re-run **Build AAB**.
 - The GitHub artifact is a **.zip** — unzip to get the `.aab`.
 - Keep your **upload keystore** safe (it's the one from `RELEASE.md`).

@@ -2,10 +2,14 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-11
+
 ### Changed
 - **One-time device unlocks**: each device receives a 30-day trial, after which billing targets that device for a $15 one-time purchase with no subscription. The app shows each device's trial, unlocked, and payment-review state while preserving existing Lifetime account access.
+- New purchases now open an API-created Polar hosted checkout instead of collecting a payment method, reference, and note in the app. Both platforms refresh until the signed payment webhook unlocks the selected device and can open Polar's receipt portal without shipping payment credentials.
 - A command blocked by an expired device trial now opens billing with that device preselected.
 - Command requests now distinguish offline queueing, delivery to the device connection, and device acknowledgement while explicitly stating that PC state is not yet confirmed; disruptive controls name the target and require confirmation.
+- Device lists and details now separate connection state, last-contact freshness, and last-reported PC telemetry; unknown, loading, empty, retry, and screen-reader states are clearer and consistent across Android and iOS.
 
 ## [0.2.1] - 2026-07-07
 
@@ -16,7 +20,7 @@
 
 ### Added
 - **Continue with Google**: sign in or create an account with Google (shown once the Google client ID is configured).
-- **Plan & Billing screen**: view your plan, the free-trial countdown, and the one-time $15 Lifetime unlock; submit a payment for review and see payment history. Reachable from Account and the menu.
+- **Plan & Billing screen**: view your plan, the free-trial countdown, and the one-time $15 Lifetime unlock; submit a legacy payment for review and see payment history. Reachable from Account and the menu.
 - **Free-trial banner** on the devices screen showing days left (or a "trial ended" prompt), and an **Upgrade** prompt when a power command is blocked after the trial ends.
 - **Pull-to-refresh** on the device detail screen.
 

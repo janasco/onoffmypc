@@ -2,7 +2,11 @@ import SwiftUI
 
 struct BillingView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var vm = BillingViewModel()
+    @State private var awaitingExternalReturn = false
+    @State private var checkoutDeviceAwaitingConfirmation: String?
     let initialDeviceId: String?
 
     init(initialDeviceId: String? = nil) {
@@ -17,10 +21,14 @@ struct BillingView: View {
                 } else if let status = vm.status {
                     Form {
                         accessSection(status)
+                        if let error = vm.error { errorSection(error) }
                         if status.is_lifetime != true { pricingSection(status) }
                         deviceSection(status)
                         if vm.selectedDevice != nil { paymentSection(status) }
-                        if !vm.history.isEmpty { historySection }
+                        if !vm.history.isEmpty {
+                            historySection
+                        }
+                        if vm.portalAvailable { billingPortalSection }
                     }
                 } else {
                     Text(vm.error ?? "Couldn't load billing.")
@@ -35,19 +43,30 @@ struct BillingView: View {
             }
         }
         .task { await vm.load(initialDeviceId: initialDeviceId) }
-        .overlay(alignment: .bottom) {
-            if let msg = vm.message {
-                Text(msg)
-                    .font(.subheadline)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial, in: Capsule())
-                    .padding(.bottom, 24)
-                    .task(id: msg) {
-                        try? await Task.sleep(nanoseconds: 2_500_000_000)
-                        vm.message = nil
-                    }
+        .onChange(of: scenePhase) { phase in
+            guard phase == .active else { return }
+            let returnedFromExternalURL = awaitingExternalReturn
+            awaitingExternalReturn = false
+            let checkoutDeviceId = returnedFromExternalURL
+                ? checkoutDeviceAwaitingConfirmation
+                : nil
+            checkoutDeviceAwaitingConfirmation = nil
+            Task {
+                if let checkoutDeviceId {
+                    await vm.refreshAfterCheckout(
+                        deviceId: checkoutDeviceId,
+                        initialDeviceId: initialDeviceId
+                    )
+                } else {
+                    await vm.load(initialDeviceId: initialDeviceId)
+                }
             }
+        }
+    }
+
+    private func errorSection(_ error: String) -> some View {
+        Section {
+            Text(error).foregroundStyle(.red).font(.caption)
         }
     }
 
@@ -115,22 +134,25 @@ struct BillingView: View {
                                 Spacer()
                                 if device.unlocked == true {
                                     Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
-                                } else if device.pending == true {
-                                    Text("Pending").font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                                } else if device.legacyPaymentPending {
+                                    Text("Under review")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.orange)
                                 } else if vm.selectedDeviceId == device.id {
                                     Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.accentColor)
                                 } else {
-                                    Text("Select").font(.caption.weight(.semibold))
+                                    Text(device.polarCheckoutPending ? "Continue" : "Select")
+                                        .font(.caption.weight(.semibold))
                                 }
                             }
                         }
-                        .disabled(device.unlocked == true || device.pending == true)
+                        .disabled(!device.checkoutEligible)
                     }
 
                     if devices.allSatisfy({ $0.unlocked == true }) {
                         Text("All of your devices are unlocked.").foregroundStyle(.secondary)
-                    } else if devices.allSatisfy({ $0.unlocked == true || $0.pending == true }) {
-                        Text("Every locked device already has a payment under review.")
+                    } else if devices.contains(where: { $0.legacyPaymentPending }) {
+                        Text("A legacy payment is still under review. Contact support if it needs attention.")
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -142,28 +164,30 @@ struct BillingView: View {
     private func paymentSection(_ status: BillingStatus) -> some View {
         if let device = vm.selectedDevice {
             let price = status.plans?.first { $0.id == "device" }?.price ?? status.price ?? 15
-            Section("Unlock \(device.name) — $\(price) one time") {
-                if let instructions = status.payment_instructions, !instructions.isEmpty {
-                    Text(instructions).font(.subheadline)
-                }
-                TextField("Payment method (e.g. GCash, PayPal)", text: $vm.method)
-                TextField("Reference / proof", text: $vm.reference)
-                TextField("Note (optional)", text: $vm.note)
-                if let error = vm.error {
-                    Text(error).foregroundStyle(.red).font(.caption)
-                }
+            Section("Secure checkout — $\(price) one time") {
+                Text("Payment for \(device.name) is handled securely by Polar in your browser. Return here after checkout and access will refresh automatically.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 Button {
-                    Task { await vm.submit() }
+                    Task {
+                        if let url = await vm.startCheckout() {
+                            openHostedURL(url, checkoutDeviceId: device.id)
+                        }
+                    }
                 } label: {
-                    Text(vm.submitting ? "Submitting…" : "Submit for review")
+                    Text(
+                        vm.startingCheckout
+                            ? "Opening checkout…"
+                            : (device.polarCheckoutPending ? "Continue secure checkout" : "Checkout securely with Polar")
+                    )
                 }
-                .disabled(vm.submitting)
+                .disabled(vm.startingCheckout || vm.openingPortal)
             }
         }
     }
 
     private var historySection: some View {
-        Section("Payment history") {
+        Section("Purchase history") {
             ForEach(vm.history) { request in
                 HStack {
                     VStack(alignment: .leading) {
@@ -184,9 +208,36 @@ struct BillingView: View {
         }
     }
 
+    private var billingPortalSection: some View {
+        Section("Receipts") {
+            Button {
+                Task {
+                    if let url = await vm.openCustomerPortal() { openHostedURL(url) }
+                }
+            } label: {
+                Text(vm.openingPortal ? "Opening Polar…" : "View receipts in Polar")
+            }
+            .disabled(vm.openingPortal || vm.startingCheckout)
+        }
+    }
+
+    private func openHostedURL(_ url: URL, checkoutDeviceId: String? = nil) {
+        awaitingExternalReturn = true
+        checkoutDeviceAwaitingConfirmation = checkoutDeviceId
+        openURL(url) { accepted in
+            guard !accepted else { return }
+            Task { @MainActor in
+                awaitingExternalReturn = false
+                checkoutDeviceAwaitingConfirmation = nil
+                vm.externalURLFailed()
+            }
+        }
+    }
+
     private func deviceStatus(_ device: BillingDevice) -> String {
         if device.unlocked == true { return "Unlocked — no expiration" }
-        if device.pending == true { return "Payment under review" }
+        if device.polarCheckoutPending { return "Checkout pending — select to continue" }
+        if device.legacyPaymentPending { return "Legacy payment under review" }
         if deviceTrialExpired(device) { return "Free trial ended" }
         if let end = device.trial_ends_at { return "Free trial ends \(String(end.prefix(10)))" }
         return "Ready to unlock"
@@ -206,9 +257,9 @@ struct BillingView: View {
     }
 
     private func statusColor(_ status: String) -> Color {
-        switch status {
-        case "approved": return .green
-        case "declined": return .red
+        switch status.lowercased() {
+        case "approved", "paid", "succeeded", "completed": return .green
+        case "declined", "failed", "canceled", "cancelled", "refunded": return .red
         default: return .orange
         }
     }

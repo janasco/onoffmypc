@@ -50,8 +50,10 @@ data class PaymentRequestItem(
     val device_id: String? = null,
     val device_name: String? = null,
     val amount: String? = null,
+    val currency: String? = null,
     val method: String? = null,
     val reference: String? = null,
+    val provider: String? = null,
     val status: String,
     val created_at: String,
 )
@@ -62,10 +64,20 @@ data class BillingDevice(
     val name: String,
     val unlocked: Boolean = false,
     val pending: Boolean = false,
+    val pending_provider: String? = null,
     val trial_ends_at: String? = null,
     // Nullable keeps compatibility with API versions that predate per-device status.
     val trial_expired: Boolean? = null,
-)
+) {
+    val polarCheckoutPending: Boolean
+        get() = pending && pending_provider.equals("polar", ignoreCase = true)
+
+    val legacyPaymentPending: Boolean
+        get() = pending && !polarCheckoutPending
+
+    val checkoutEligible: Boolean
+        get() = !unlocked && (!pending || polarCheckoutPending)
+}
 
 @Serializable
 data class BillingStatus(
@@ -79,18 +91,25 @@ data class BillingStatus(
     val plans: List<Plan> = emptyList(),
     val price: Int = 0,
     val devices: List<BillingDevice> = emptyList(),
+    val billing_provider: String? = null,
+    val portal_available: Boolean = false,
     val payment_instructions: String = "",
     val pending_request: PaymentRequestItem? = null,
 )
 
 @Serializable
-data class SubmitPaymentRequest(
-    val plan: String = "device",
-    val device_id: String,
-    val method: String,
-    val reference: String,
-    val note: String? = null,
+data class CheckoutRequest(val device_id: String)
+
+@Serializable
+data class CheckoutResponse(
+    val checkout_id: String,
+    val url: String,
+    val expires_at: String? = null,
+    val reused: Boolean = false,
 )
+
+@Serializable
+data class PortalResponse(val url: String)
 
 @Serializable
 data class MeResponse(

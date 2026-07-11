@@ -10,6 +10,8 @@ import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.ui.components.commandRequestFeedback
+import com.onoffmypc.android.ui.components.DeviceConnectionState
+import com.onoffmypc.android.ui.components.connectionFromLastContact
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +22,8 @@ import kotlinx.coroutines.launch
 data class DeviceDetailUiState(
     val loading: Boolean = true,
     val device: Device? = null,
-    val online: Boolean = false,
+    val connection: DeviceConnectionState = DeviceConnectionState.UNKNOWN,
+    val lastSeenAt: String? = null,
     val latest: Telemetry? = null,
     val history: List<HistoryPoint> = emptyList(),
     val commands: List<Command> = emptyList(),
@@ -70,13 +73,26 @@ class DeviceDetailViewModel : ViewModel() {
 
         deviceRes.fold(
             onSuccess = { device ->
+                val status = statusRes.getOrNull()
+                val lastSeenAt = status?.last_seen_at ?: device.last_seen_at
+                val latestTelemetry = telemetryRes.getOrNull()?.firstOrNull()
+                val partialFailure = statusRes.isFailure || telemetryRes.isFailure ||
+                    historyRes.isFailure || commandsRes.isFailure
+                val connection = when {
+                    status == null -> DeviceConnectionState.UNKNOWN
+                    status.online -> DeviceConnectionState.ONLINE
+                    connectionFromLastContact(lastSeenAt) == DeviceConnectionState.UNKNOWN ->
+                        DeviceConnectionState.UNKNOWN
+                    else -> DeviceConnectionState.OFFLINE
+                }
                 _state.update {
                     it.copy(
                         loading = false,
-                        error = null,
+                        error = if (partialFailure) "Some device information could not be refreshed." else null,
                         device = device,
-                        online = statusRes.getOrNull()?.online ?: false,
-                        latest = telemetryRes.getOrNull()?.firstOrNull(),
+                        connection = connection,
+                        lastSeenAt = lastSeenAt,
+                        latest = if (telemetryRes.isFailure) it.latest else latestTelemetry,
                         history = historyRes.getOrNull() ?: it.history,
                         commands = commandsRes.getOrNull() ?: it.commands,
                     )

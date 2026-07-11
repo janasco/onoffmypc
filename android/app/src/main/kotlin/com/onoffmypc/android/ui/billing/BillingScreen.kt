@@ -1,5 +1,8 @@
 package com.onoffmypc.android.ui.billing
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,21 +18,23 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.onoffmypc.android.data.model.BillingStatus
@@ -49,13 +54,39 @@ fun BillingScreen(
     vm: BillingViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
-    val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(initialDeviceId) { vm.load(initialDeviceId) }
-    LaunchedEffect(state.message) {
-        state.message?.let { snackbar.showSnackbar(it); vm.consumeMessage() }
+    DisposableEffect(lifecycleOwner, initialDeviceId) {
+        var leftForeground = false
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> leftForeground = true
+                Lifecycle.Event.ON_RESUME -> {
+                    if (leftForeground) {
+                        leftForeground = false
+                        vm.refreshAfterExternalReturn(initialDeviceId)
+                    }
+                }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-
+    LaunchedEffect(state.externalUrl) {
+        state.externalUrl?.let { url ->
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                vm.externalUrlOpened()
+            } catch (_: ActivityNotFoundException) {
+                vm.externalUrlFailed()
+            } catch (_: SecurityException) {
+                vm.externalUrlFailed()
+            }
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -63,7 +94,6 @@ fun BillingScreen(
                 navigationIcon = { TextButton(onClick = onBack) { Text("←") } },
             )
         },
-        snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         if (state.loading) {
             CircularProgressIndicator(Modifier.padding(padding).padding(32.dp))
@@ -83,6 +113,11 @@ fun BillingScreen(
             }
 
             PlanCard(s)
+
+            state.error?.let {
+                Spacer(Modifier.height(12.dp))
+                Text(it, color = Red, style = MaterialTheme.typography.bodySmall)
+            }
 
             val devicePlan = s.plans.firstOrNull { it.id == "device" }
             if (!s.is_lifetime) {
@@ -143,62 +178,65 @@ fun BillingScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Spacer(Modifier.height(16.dp))
-                } else if (s.devices.isNotEmpty() && s.devices.all { it.unlocked || it.pending }) {
+                } else if (s.devices.isNotEmpty() && s.devices.all { it.unlocked }) {
                     Text(
-                        if (s.devices.all { it.unlocked }) {
-                            "All of your devices are unlocked."
-                        } else {
-                            "Every locked device already has a payment under review."
-                        },
+                        "All of your devices are unlocked.",
+                        color = Muted,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                } else if (s.devices.any { it.legacyPaymentPending }) {
+                    Text(
+                        "A legacy payment is still under review. Contact support if it needs attention.",
                         color = Muted,
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
 
                 if (selected != null) {
-                    if (s.payment_instructions.isNotBlank()) {
-                        Text("How to pay", style = MaterialTheme.typography.titleSmall, color = Muted)
-                        Spacer(Modifier.height(8.dp))
-                        Text(s.payment_instructions, style = MaterialTheme.typography.bodySmall)
-                        Spacer(Modifier.height(16.dp))
-                    }
-                    Text("Submit your payment", style = MaterialTheme.typography.titleSmall, color = Muted)
+                    Text("Secure checkout", style = MaterialTheme.typography.titleSmall, color = Muted)
                     Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = state.method, onValueChange = vm::onMethod,
-                        label = { Text("Payment method (e.g. GCash, PayPal)") },
-                        singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    Text(
+                        "Payment is handled securely by Polar in your browser. Return here after checkout and access will refresh automatically.",
+                        color = Muted,
+                        style = MaterialTheme.typography.bodySmall,
                     )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = state.reference, onValueChange = vm::onReference,
-                        label = { Text("Reference / proof") },
-                        singleLine = true, modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = state.note, onValueChange = vm::onNote,
-                        label = { Text("Note (optional)") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    state.error?.let {
-                        Spacer(Modifier.height(8.dp))
-                        Text(it, color = Red, style = MaterialTheme.typography.bodySmall)
-                    }
                     Spacer(Modifier.height(12.dp))
                     Button(
-                        onClick = vm::submit,
-                        enabled = !state.submitting,
+                        onClick = vm::startCheckout,
+                        enabled = !state.startingCheckout && !state.openingPortal,
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text(if (state.submitting) "Submitting…" else "Submit for review") }
+                    ) {
+                        Text(
+                            when {
+                                state.startingCheckout -> "Opening checkout…"
+                                selected.polarCheckoutPending -> "Continue secure checkout"
+                                else -> "Checkout securely with Polar"
+                            },
+                        )
+                    }
                 }
             }
 
             if (state.history.isNotEmpty()) {
                 Spacer(Modifier.height(24.dp))
-                Text("Payment history", style = MaterialTheme.typography.titleSmall, color = Muted)
+                Text("Purchase history", style = MaterialTheme.typography.titleSmall, color = Muted)
                 Spacer(Modifier.height(8.dp))
                 state.history.forEach { HistoryRow(it) }
+            }
+
+            val hasPolarPurchase = s.portal_available || state.history.any {
+                "polar".equals(it.provider, ignoreCase = true) ||
+                    "polar".equals(it.method, ignoreCase = true)
+            }
+            if (hasPolarPurchase) {
+                Spacer(Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = vm::openCustomerPortal,
+                    enabled = !state.openingPortal && !state.startingCheckout,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(if (state.openingPortal) "Opening Polar…" else "View receipts in Polar")
+                }
             }
             Spacer(Modifier.height(24.dp))
         }
@@ -257,7 +295,8 @@ private fun DeviceAccessRow(
                 Text(
                     when {
                         device.unlocked -> "Unlocked — no expiration"
-                        device.pending -> "Payment under review"
+                        device.polarCheckoutPending -> "Checkout pending — select to continue"
+                        device.legacyPaymentPending -> "Legacy payment under review"
                         deviceTrialExpired(device) -> "Free trial ended"
                         device.trial_ends_at != null -> "Free trial ends ${fmtDate(device.trial_ends_at)}"
                         else -> "Ready to unlock"
@@ -273,8 +312,12 @@ private fun DeviceAccessRow(
             }
             when {
                 device.unlocked -> Text("Unlocked", color = Green, style = MaterialTheme.typography.labelLarge)
-                device.pending -> Text("Pending", color = Yellow, style = MaterialTheme.typography.labelLarge)
-                else -> TextButton(onClick = onSelect) { Text(if (selected) "Selected" else "Select") }
+                device.legacyPaymentPending -> Text(
+                    "Under review", color = Yellow, style = MaterialTheme.typography.labelLarge,
+                )
+                else -> TextButton(onClick = onSelect) {
+                    Text(if (selected) "Selected" else if (device.polarCheckoutPending) "Continue" else "Select")
+                }
             }
         }
     }
@@ -295,7 +338,11 @@ private fun HistoryRow(r: PaymentRequestItem) {
         }
         Text(
             r.status,
-            color = when (r.status) { "approved" -> Green; "declined" -> Red; else -> Yellow },
+            color = when (r.status.lowercase()) {
+                "approved", "paid", "succeeded", "completed" -> Green
+                "declined", "failed", "canceled", "cancelled", "refunded" -> Red
+                else -> Yellow
+            },
             style = MaterialTheme.typography.labelMedium,
         )
     }

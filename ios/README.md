@@ -3,7 +3,7 @@
 SwiftUI client for the shared OnOffMyPC account/device API. Current scope
 includes sign in/registration/recovery, devices and power controls, device
 details/history, account/security, a separate 30-day trial and $15 one-time
-unlock for each device, and Google sign-in. There is no subscription, and
+unlock for each device through API-created Polar hosted checkout, and Google sign-in. There is no subscription, and
 existing Lifetime accounts remain covered. Bundle id `com.onoffmypc.app`.
 Deployment target iOS 16.
 
@@ -37,7 +37,7 @@ ios/
 ├── project.yml                 XcodeGen spec (source of truth)
 └── OnOffMyPC/
     ├── OnOffMyPCApp.swift       @main + AppState + RootView (login vs devices)
-    ├── Components/AppLogo.swift
+    ├── Components/             Shared logo, power controls, and device-status UI
     ├── Networking/
     │   ├── APIClient.swift      URLSession; cookie-session auth
     │   ├── Session.swift        Keychain-backed session cookie
@@ -51,6 +51,9 @@ ios/
 - Auth is **cookie-based** (matches the API/web/Android): `POST /auth/login` sets a
   `session` cookie, captured and stored in the Keychain, sent on later requests.
 - The app talks to `https://api.onoffmypc.com` (see `APIClient.swift`).
+- Device screens distinguish live connection state from last-reported PC telemetry,
+  show last-contact freshness, and use an explicit unknown state when presence cannot
+  be established.
 - The iOS client currently has simulator build CI but no App Store/TestFlight
   signing or release workflow in this repository.
 - Feature parity with Android/web is tracked in the private platform assessment;

@@ -2,6 +2,8 @@ package com.onoffmypc.android.data.remote
 
 import com.onoffmypc.android.data.model.ChangeEmailRequest
 import com.onoffmypc.android.data.model.ChangePasswordRequest
+import com.onoffmypc.android.data.model.CheckoutRequest
+import com.onoffmypc.android.data.model.CheckoutResponse
 import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
@@ -13,7 +15,7 @@ import com.onoffmypc.android.data.model.BillingStatus
 import com.onoffmypc.android.data.model.ForgotPasswordRequest
 import com.onoffmypc.android.data.model.GoogleAuthRequest
 import com.onoffmypc.android.data.model.PaymentRequestItem
-import com.onoffmypc.android.data.model.SubmitPaymentRequest
+import com.onoffmypc.android.data.model.PortalResponse
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.model.LoginRequest
@@ -57,8 +59,11 @@ interface ApiService {
     @GET("billing/status")
     suspend fun billingStatus(): Response<BillingStatus>
 
-    @POST("billing/request")
-    suspend fun submitPayment(@Body body: SubmitPaymentRequest): Response<OkResponse>
+    @POST("billing/checkout")
+    suspend fun createCheckout(@Body body: CheckoutRequest): Response<CheckoutResponse>
+
+    @POST("billing/portal")
+    suspend fun customerPortal(): Response<PortalResponse>
 
     @GET("billing/requests")
     suspend fun paymentHistory(): Response<List<PaymentRequestItem>>

@@ -41,6 +41,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,7 +52,8 @@ import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.ui.components.AppLogo
 import com.onoffmypc.android.ui.components.LogoutConfirmDialog
 import com.onoffmypc.android.ui.components.PowerControls
-import com.onoffmypc.android.ui.components.deviceStatusFromLastSeen
+import com.onoffmypc.android.ui.components.DeviceStatusSummary
+import com.onoffmypc.android.ui.components.deviceStatusPresentation
 import com.onoffmypc.android.ui.theme.Muted
 import androidx.compose.ui.graphics.Color
 import com.onoffmypc.android.ui.theme.Accent
@@ -100,7 +104,10 @@ fun DevicesScreen(
                 },
                 actions = {
                     Box {
-                        TextButton(onClick = { menuOpen = true }) {
+                        TextButton(
+                            onClick = { menuOpen = true },
+                            modifier = Modifier.semantics { contentDescription = "Open menu" },
+                        ) {
                             Text("☰", style = MaterialTheme.typography.headlineSmall)
                         }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
@@ -119,7 +126,7 @@ fun DevicesScreen(
         },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(onClick = { showAdd = true }) { Text("+ Add device") }
+            ExtendedFloatingActionButton(onClick = { showAdd = true }) { Text("Add device") }
         },
     ) { padding ->
         Box(
@@ -128,13 +135,23 @@ fun DevicesScreen(
                 .padding(padding),
         ) {
             when {
-                state.loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                state.loading -> CircularProgressIndicator(
+                    Modifier
+                        .align(Alignment.Center)
+                        .clearAndSetSemantics { contentDescription = "Loading devices" },
+                )
 
                 state.error != null -> Column(
-                    modifier = Modifier.align(Alignment.Center),
+                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(state.error!!, color = Muted)
+                    Text("Couldn't load devices", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Check your connection and try again.",
+                        color = Muted,
+                        textAlign = TextAlign.Center,
+                    )
                     Spacer(Modifier.height(12.dp))
                     Button(onClick = vm::load) { Text("Retry") }
                 }
@@ -163,14 +180,22 @@ fun DevicesScreen(
                         }
                         if (state.devices.isEmpty()) {
                             item {
-                                Text(
-                                    text = "No devices yet. Tap “Add device” to create one.",
-                                    color = Muted,
-                                    textAlign = TextAlign.Center,
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 48.dp),
-                                )
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Text("No devices yet", style = MaterialTheme.typography.titleMedium)
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(
+                                        "Add your first device to view its connection and last-reported PC status.",
+                                        color = Muted,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    Button(onClick = { showAdd = true }) { Text("Add device") }
+                                }
                             }
                         } else {
                             items(state.devices, key = { it.id }) { device ->
@@ -267,7 +292,11 @@ private fun DeviceCard(
     onDelete: () -> Unit,
     onReplace: () -> Unit,
 ) {
-    val (statusText, statusColor) = deviceStatusFromLastSeen(device)
+    val status = deviceStatusPresentation(
+        lastSeenAt = device.last_seen_at,
+        pcOn = device.pc_on,
+        onlineLabel = "Recently online",
+    )
     var menuOpen by remember { mutableStateOf(false) }
 
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -278,9 +307,13 @@ private fun DeviceCard(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                Text(statusText, color = statusColor, style = MaterialTheme.typography.labelMedium)
                 Box {
-                    TextButton(onClick = { menuOpen = true }) { Text("⋮") }
+                    TextButton(
+                        onClick = { menuOpen = true },
+                        modifier = Modifier.semantics {
+                            contentDescription = "Device actions for ${device.name}"
+                        },
+                    ) { Text("⋮") }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(
                             text = { Text("Rename") },
@@ -298,14 +331,21 @@ private fun DeviceCard(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
+            DeviceStatusSummary(status)
+            Spacer(Modifier.height(12.dp))
             PowerControls(
                 deviceName = device.name,
                 commandInFlight = commandInFlight,
                 onCommand = onCommand,
             )
             Spacer(Modifier.height(4.dp))
-            TextButton(onClick = onOpen) { Text("View details →") }
+            TextButton(
+                onClick = onOpen,
+                modifier = Modifier.semantics {
+                    contentDescription = "View details for ${device.name}"
+                },
+            ) { Text("View details →") }
         }
     }
 }

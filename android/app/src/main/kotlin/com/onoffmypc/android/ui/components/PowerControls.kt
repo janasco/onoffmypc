@@ -21,14 +21,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.onoffmypc.android.data.model.CommandType
-import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.ui.theme.Green
 import com.onoffmypc.android.ui.theme.Muted
 import com.onoffmypc.android.ui.theme.Red
 import com.onoffmypc.android.ui.theme.Yellow
-import java.time.Instant
 
 /** Power controls shared by list and detail views. Disruptive commands require
  *  target-specific confirmation; controls lock while a request is in flight. */
@@ -43,19 +43,27 @@ fun PowerControls(
 
     Column(modifier) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CmdButton("Power On", Green, Modifier.weight(1f), !commandInFlight) {
+            CmdButton(
+                "Power On", Green, Modifier.weight(1f), !commandInFlight, "Power On $deviceName",
+            ) {
                 onCommand(CommandType.POWER_ON)
             }
-            CmdButton("Power Off", Red, Modifier.weight(1f), !commandInFlight) {
+            CmdButton(
+                "Power Off", Red, Modifier.weight(1f), !commandInFlight, "Power Off $deviceName",
+            ) {
                 confirmation = CommandType.POWER_OFF
             }
         }
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CmdButton("Force Off", Red, Modifier.weight(1f), !commandInFlight) {
+            CmdButton(
+                "Force Off", Red, Modifier.weight(1f), !commandInFlight, "Force Off $deviceName",
+            ) {
                 confirmation = CommandType.POWER_OFF_FORCE
             }
-            CmdButton("Reset", Yellow, Modifier.weight(1f), !commandInFlight) {
+            CmdButton(
+                "Reset", Yellow, Modifier.weight(1f), !commandInFlight, "Reset $deviceName",
+            ) {
                 confirmation = CommandType.RESET
             }
         }
@@ -95,11 +103,12 @@ fun RowScope.CmdButton(
     color: Color,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    accessibilityLabel: String = label,
     onClick: () -> Unit,
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.semantics { contentDescription = accessibilityLabel },
         enabled = enabled,
         colors = ButtonDefaults.buttonColors(
             containerColor = color,
@@ -120,18 +129,4 @@ private fun commandConsequence(type: CommandType, deviceName: String): String = 
     CommandType.POWER_OFF_FORCE ->
         "This asks “$deviceName” to hold the PC power button for 6 seconds. Power may be cut immediately and unsaved work could be lost. Use only when normal Power Off does not work."
     CommandType.POWER_ON -> "This asks “$deviceName” to turn the PC on."
-}
-
-/** Dashboard status from last_seen_at (online if seen within 90s) + latest pc_on. */
-fun deviceStatusFromLastSeen(device: Device): Pair<String, Color> {
-    val online = device.last_seen_at?.let {
-        try {
-            Instant.now().toEpochMilli() - Instant.parse(it).toEpochMilli() < 90_000
-        } catch (_: Exception) {
-            false
-        }
-    } ?: false
-
-    if (!online) return "Offline" to Muted
-    return if (device.pc_on == 1) "PC On" to Green else "PC Off" to Red
 }

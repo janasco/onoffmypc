@@ -21,7 +21,12 @@ final class DevicesViewModel: ObservableObject {
         } catch APIError.unauthorized {
             appState.sessionExpired()
         } catch {
-            self.error = (error as? APIError)?.errorDescription ?? "Couldn't load your devices."
+            let message = (error as? APIError)?.errorDescription ?? "Couldn't load your devices."
+            if devices.isEmpty {
+                self.error = message
+            } else {
+                toast = "Couldn't refresh devices. Your existing information is still shown."
+            }
         }
     }
 

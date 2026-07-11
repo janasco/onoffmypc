@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,19 +36,21 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.onoffmypc.android.data.model.Command
-import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.ui.components.PowerControls
 import com.onoffmypc.android.ui.components.commandStatusColor
 import com.onoffmypc.android.ui.components.commandStatusLabel
+import com.onoffmypc.android.ui.components.DeviceStatusSummary
+import com.onoffmypc.android.ui.components.deviceStatusPresentation
 import com.onoffmypc.android.ui.theme.Accent
-import com.onoffmypc.android.ui.theme.Green
 import com.onoffmypc.android.ui.theme.Muted
-import com.onoffmypc.android.ui.theme.Red
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -76,7 +79,10 @@ fun DeviceDetailScreen(
             TopAppBar(
                 title = { Text(state.device?.name ?: "Device") },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text("←") }
+                    TextButton(
+                        onClick = onBack,
+                        modifier = Modifier.semantics { contentDescription = "Back to devices" },
+                    ) { Text("←") }
                 },
             )
         },
@@ -90,17 +96,30 @@ fun DeviceDetailScreen(
                 .padding(padding),
         ) {
             when {
-                state.loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                state.loading -> CircularProgressIndicator(
+                    Modifier
+                        .align(Alignment.Center)
+                        .clearAndSetSemantics { contentDescription = "Loading device details" },
+                )
 
-                state.device == null -> Text(
-                    text = state.error ?: "Device not found.",
-                    color = Muted,
+                state.device == null -> Column(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(24.dp),
-                )
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text("Couldn't load device", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(6.dp))
+                    Text("Check your connection and try again.", color = Muted)
+                    Spacer(Modifier.height(12.dp))
+                    Button(onClick = vm::onPullRefresh) { Text("Retry") }
+                }
 
-                else -> DetailContent(state) { vm.sendCommand(it) }
+                else -> DetailContent(
+                    state = state,
+                    onRetry = vm::onPullRefresh,
+                    onCommand = vm::sendCommand,
+                )
             }
         }
     }
@@ -119,8 +138,18 @@ fun DeviceDetailScreen(
 }
 
 @Composable
-private fun DetailContent(state: DeviceDetailUiState, onCommand: (com.onoffmypc.android.data.model.CommandType) -> Unit) {
+private fun DetailContent(
+    state: DeviceDetailUiState,
+    onRetry: () -> Unit,
+    onCommand: (com.onoffmypc.android.data.model.CommandType) -> Unit,
+) {
     val latest = state.latest
+    val device = state.device ?: return
+    val status = deviceStatusPresentation(
+        lastSeenAt = state.lastSeenAt ?: device.last_seen_at,
+        pcOn = latest?.pc_on ?: device.pc_on,
+        connection = state.connection,
+    )
 
     Column(
         modifier = Modifier
@@ -128,34 +157,64 @@ private fun DetailContent(state: DeviceDetailUiState, onCommand: (com.onoffmypc.
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = if (state.online) "Online" else "Offline",
-                color = if (state.online) Green else Muted,
-                style = MaterialTheme.typography.labelLarge,
-            )
-            state.device?.firmware_version?.let {
-                Text(
-                    text = "  •  Firmware $it",
-                    color = Muted,
-                    style = MaterialTheme.typography.labelMedium,
-                )
+        Text("Device status", style = MaterialTheme.typography.titleSmall, color = Muted)
+        Spacer(Modifier.height(6.dp))
+        DeviceStatusSummary(status)
+        device.firmware_version?.let {
+            Spacer(Modifier.height(3.dp))
+            Text("Firmware $it", color = Muted, style = MaterialTheme.typography.labelMedium)
+        }
+        if (state.error != null) {
+            Spacer(Modifier.height(12.dp))
+            Card(Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        "Some device information could not be refreshed.",
+                        color = Muted,
+                        modifier = Modifier.weight(1f).padding(vertical = 12.dp),
+                    )
+                    TextButton(onClick = onRetry) { Text("Retry") }
+                }
             }
         }
 
         Spacer(Modifier.height(16.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatCard("PC State", pcText(latest), Modifier.weight(1f), pcColor(latest))
-            StatCard("Temperature", latest?.room_temp?.let { "%.1f°C".format(it) } ?: "—", Modifier.weight(1f))
+            StatCard(
+                "PC State",
+                pcText(latest?.pc_on ?: device.pc_on),
+                Modifier.weight(1f),
+            )
+            StatCard(
+                "Temperature",
+                latest?.room_temp?.let { "%.1f°C".format(it) } ?: "Not reported",
+                Modifier.weight(1f),
+            )
         }
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatCard("Humidity", latest?.room_humidity?.let { "%.0f%%".format(it) } ?: "—", Modifier.weight(1f))
-            StatCard("Signal", latest?.rssi?.let { "$it dBm" } ?: "—", Modifier.weight(1f))
+            StatCard(
+                "Humidity",
+                latest?.room_humidity?.let { "%.0f%%".format(it) } ?: "Not reported",
+                Modifier.weight(1f),
+            )
+            StatCard(
+                "Signal",
+                latest?.rssi?.let { "$it dBm" } ?: "Not reported",
+                Modifier.weight(1f),
+            )
         }
         Spacer(Modifier.height(8.dp))
-        StatCard("Last Update", timeAgo(latest?.recorded_at), Modifier.fillMaxWidth())
+        StatCard(
+            "Latest Telemetry",
+            latest?.recorded_at?.let { timeAgo(it) } ?: "No telemetry received yet",
+            Modifier.fillMaxWidth(),
+        )
 
         Spacer(Modifier.height(20.dp))
         PowerControls(
@@ -210,7 +269,7 @@ private fun commandLabel(type: String?): String = when (type) {
     "power_off" -> "Power Off"
     "power_off_force" -> "Force Off"
     "reset" -> "Reset"
-    else -> type ?: "—"
+    else -> type ?: "Unknown command"
 }
 
 private fun fmtDateTime(iso: String?): String {
@@ -245,7 +304,11 @@ private fun TemperatureChart(temps: List<Double>) {
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp),
+            .height(160.dp)
+            .clearAndSetSemantics {
+                contentDescription = "Temperature history. Minimum %.1f degrees Celsius, maximum %.1f degrees Celsius."
+                    .format(minT, maxT)
+            },
     ) {
         val pad = 8.dp.toPx()
         val w = size.width
@@ -269,28 +332,24 @@ private fun TemperatureChart(temps: List<Double>) {
     }
 }
 
-private fun pcText(t: Telemetry?): String = when (t?.pc_on) {
-    1 -> "On"
-    0 -> "Off"
-    else -> "—"
-}
-
-private fun pcColor(t: Telemetry?): Color = when (t?.pc_on) {
-    1 -> Green
-    0 -> Red
-    else -> Color.Unspecified
+private fun pcText(pcOn: Int?): String = when (pcOn) {
+    1 -> "Last reported: on"
+    0 -> "Last reported: off"
+    else -> "Not reported"
 }
 
 private fun timeAgo(iso: String?): String {
-    if (iso == null) return "—"
+    if (iso == null) return "No telemetry received yet"
     return try {
-        val diff = (Instant.now().toEpochMilli() - Instant.parse(iso).toEpochMilli()) / 1000
+        val diff = ((Instant.now().toEpochMilli() - Instant.parse(iso).toEpochMilli()) / 1000).coerceAtLeast(0)
         when {
+            diff < 15 -> "Just now"
             diff < 60 -> "${diff}s ago"
-            diff < 3600 -> "${diff / 60}m ago"
-            else -> "${diff / 3600}h ago"
+            diff < 3_600 -> "${diff / 60}m ago"
+            diff < 86_400 -> "${diff / 3_600}h ago"
+            else -> "${diff / 86_400}d ago"
         }
     } catch (_: Exception) {
-        "—"
+        "Time unavailable"
     }
 }

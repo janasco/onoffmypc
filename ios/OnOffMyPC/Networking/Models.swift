@@ -33,8 +33,10 @@ struct PaymentRequestItem: Decodable, Identifiable {
     var device_id: String?
     var device_name: String?
     var amount: String?
+    var currency: String?
     var method: String?
     var reference: String?
+    var provider: String?
     let status: String
     let created_at: String
 }
@@ -44,9 +46,22 @@ struct BillingDevice: Decodable, Identifiable {
     let name: String
     var unlocked: Bool?
     var pending: Bool?
+    var pending_provider: String?
     var trial_ends_at: String?
     // Optional for compatibility with API versions that predate per-device status.
     var trial_expired: Bool?
+
+    var polarCheckoutPending: Bool {
+        pending == true && pending_provider?.lowercased() == "polar"
+    }
+
+    var legacyPaymentPending: Bool {
+        pending == true && !polarCheckoutPending
+    }
+
+    var checkoutEligible: Bool {
+        unlocked != true && (pending != true || polarCheckoutPending)
+    }
 }
 
 struct BillingStatus: Decodable {
@@ -60,17 +75,22 @@ struct BillingStatus: Decodable {
     var plans: [Plan]?
     var price: Int?
     var devices: [BillingDevice]?
+    var billing_provider: String?
+    var portal_available: Bool?
     var payment_instructions: String?
     var pending_request: PaymentRequestItem?
 }
 
-struct SubmitPaymentRequest: Encodable {
-    var plan: String = "device"
-    let device_id: String
-    let method: String
-    let reference: String
-    var note: String?
+struct CheckoutRequest: Encodable { let device_id: String }
+
+struct CheckoutResponse: Decodable {
+    let checkout_id: String
+    let url: String
+    var expires_at: String?
+    var reused: Bool?
 }
+
+struct PortalResponse: Decodable { let url: String }
 
 struct MeResponse: Decodable {
     let id: String
@@ -88,12 +108,6 @@ struct Device: Decodable, Identifiable, Hashable {
     var pc_on: Int?
     var last_seen_at: String?
     var firmware_version: String?
-
-    /// Online if seen within the last 90 seconds (matches the Android app).
-    var isOnline: Bool {
-        guard let iso = last_seen_at, let date = Date.fromISO(iso) else { return false }
-        return Date().timeIntervalSince(date) < 90
-    }
 }
 
 struct DeviceStatus: Decodable {
@@ -162,7 +176,7 @@ enum CommandType: String, CaseIterable, Identifiable {
 }
 
 func commandLabel(_ type: String?) -> String {
-    guard let type, let c = CommandType(rawValue: type) else { return type ?? "—" }
+    guard let type, let c = CommandType(rawValue: type) else { return type ?? "Unknown command" }
     return c.label
 }
 
@@ -206,15 +220,5 @@ extension Date {
         if let d = f.date(from: s) { return d }
         f.formatOptions = [.withInternetDateTime]
         return f.date(from: s)
-    }
-
-    /// Short relative label like "3m ago".
-    static func ago(_ iso: String?) -> String {
-        guard let iso, let date = Date.fromISO(iso) else { return "—" }
-        let s = Int(Date().timeIntervalSince(date))
-        if s < 60 { return "\(s)s ago" }
-        if s < 3600 { return "\(s / 60)m ago" }
-        if s < 86400 { return "\(s / 3600)h ago" }
-        return "\(s / 86400)d ago"
     }
 }

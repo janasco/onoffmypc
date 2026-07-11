@@ -53,6 +53,7 @@ struct PowerCommandControls: View {
         .controlSize(.small)
         .frame(maxWidth: .infinity)
         .disabled(commandInFlight)
+        .accessibilityLabel("\(type.label) \(deviceName)")
     }
 
     private func consequence(of type: CommandType) -> String {

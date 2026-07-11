@@ -112,10 +112,11 @@ final class APIClient {
 
     func billingStatus() async throws -> BillingStatus { try decode(try await send("GET", "billing/status")) }
     func paymentHistory() async throws -> [PaymentRequestItem] { try decode(try await send("GET", "billing/requests")) }
-    func submitPayment(deviceId: String, method: String, reference: String, note: String?) async throws {
-        _ = try await send("POST", "billing/request",
-                           body: SubmitPaymentRequest(device_id: deviceId, method: method,
-                                                      reference: reference, note: note))
+    func createCheckout(deviceId: String) async throws -> CheckoutResponse {
+        try decode(try await send("POST", "billing/checkout", body: CheckoutRequest(device_id: deviceId)))
+    }
+    func customerPortal() async throws -> PortalResponse {
+        try decode(try await send("POST", "billing/portal"))
     }
 
     func changeEmail(newEmail: String, password: String) async throws {

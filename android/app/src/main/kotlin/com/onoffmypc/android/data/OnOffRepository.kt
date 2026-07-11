@@ -6,6 +6,8 @@ import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
 import com.onoffmypc.android.data.model.ChangeEmailRequest
 import com.onoffmypc.android.data.model.ChangePasswordRequest
+import com.onoffmypc.android.data.model.CheckoutRequest
+import com.onoffmypc.android.data.model.CheckoutResponse
 import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
@@ -16,8 +18,8 @@ import com.onoffmypc.android.data.model.GoogleAuthRequest
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
-import com.onoffmypc.android.data.model.SubmitPaymentRequest
 import com.onoffmypc.android.data.model.NewDevice
+import com.onoffmypc.android.data.model.PortalResponse
 import com.onoffmypc.android.data.model.PushRegisterRequest
 import com.onoffmypc.android.data.model.RegisterRequest
 import com.onoffmypc.android.data.model.Telemetry
@@ -54,17 +56,10 @@ class OnOffRepository(
 
     suspend fun billingStatus() = call { api.billingStatus() }
     suspend fun paymentHistory() = call { api.paymentHistory() }
-    suspend fun submitPayment(deviceId: String, method: String, reference: String, note: String?): Result<Unit> =
-        call {
-            api.submitPayment(
-                SubmitPaymentRequest(
-                    device_id = deviceId,
-                    method = method.trim(),
-                    reference = reference.trim(),
-                    note = note?.trim(),
-                ),
-            )
-        }.map { }
+    suspend fun createCheckout(deviceId: String): Result<CheckoutResponse> =
+        call { api.createCheckout(CheckoutRequest(deviceId)) }
+
+    suspend fun customerPortal(): Result<PortalResponse> = call { api.customerPortal() }
 
     suspend fun changeEmail(newEmail: String, password: String): Result<Unit> =
         call { api.changeEmail(ChangeEmailRequest(newEmail.trim(), password)) }.map { }

@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 @MainActor
@@ -6,57 +7,137 @@ final class BillingViewModel: ObservableObject {
     @Published var status: BillingStatus?
     @Published var history: [PaymentRequestItem] = []
     @Published var selectedDeviceId: String?
-    @Published var method = ""
-    @Published var reference = ""
-    @Published var note = ""
-    @Published var submitting = false
+    @Published var startingCheckout = false
+    @Published var openingPortal = false
     @Published var error: String?
-    @Published var message: String?
 
     func load(initialDeviceId: String? = nil) async {
         loading = true
+        error = nil
         defer { loading = false }
-        status = try? await APIClient.shared.billingStatus()
+        if let freshStatus = try? await APIClient.shared.billingStatus() {
+            applyStatus(freshStatus, initialDeviceId: initialDeviceId)
+        } else {
+            status = nil
+        }
         history = (try? await APIClient.shared.paymentHistory()) ?? []
-        let eligible = status?.devices?.filter { $0.unlocked != true && $0.pending != true } ?? []
-        let preferred = initialDeviceId ?? selectedDeviceId
-        selectedDeviceId = eligible.first { $0.id == preferred }?.id ?? eligible.first?.id
         if status == nil { error = "Couldn't load billing." }
+    }
+
+    func refreshAfterCheckout(deviceId: String, initialDeviceId: String? = nil) async {
+        loading = true
+        error = nil
+        for attempt in 0..<Self.checkoutRefreshAttempts {
+            if Task.isCancelled { loading = false; return }
+            if attempt > 0 {
+                do { try await Task.sleep(nanoseconds: Self.checkoutRefreshDelay) }
+                catch { loading = false; return }
+            }
+
+            if let freshStatus = try? await APIClient.shared.billingStatus() {
+                applyStatus(freshStatus, initialDeviceId: initialDeviceId ?? deviceId)
+                error = nil
+                if let device = freshStatus.devices?.first(where: { $0.id == deviceId }),
+                   device.unlocked == true {
+                    break
+                }
+                if freshStatus.devices?.contains(where: { $0.id == deviceId }) == false { break }
+            } else if attempt == Self.checkoutRefreshAttempts - 1 {
+                error = "Couldn't refresh billing."
+            }
+            loading = false
+        }
+        history = (try? await APIClient.shared.paymentHistory()) ?? history
+        loading = false
     }
 
     var selectedDevice: BillingDevice? {
         status?.devices?.first {
-            $0.id == selectedDeviceId && $0.unlocked != true && $0.pending != true
+            $0.id == selectedDeviceId && $0.checkoutEligible
+        }
+    }
+
+    var portalAvailable: Bool {
+        status?.portal_available == true || history.contains {
+            $0.provider?.lowercased() == "polar" || $0.method?.lowercased() == "polar"
         }
     }
 
     func selectDevice(_ id: String) {
-        selectedDeviceId = id
+        guard let device = status?.devices?.first(where: { $0.id == id }),
+              device.checkoutEligible else {
+            if status?.devices?.first(where: { $0.id == id })?.legacyPaymentPending == true {
+                error = "This device still has a legacy payment under review. Contact support if it needs attention."
+            }
+            return
+        }
+        selectedDeviceId = device.id
         error = nil
     }
 
-    func submit() async {
-        let m = method.trimmingCharacters(in: .whitespacesAndNewlines)
-        let r = reference.trimmingCharacters(in: .whitespacesAndNewlines)
+    func startCheckout() async -> URL? {
         guard let device = selectedDevice else {
             error = "Choose a device to unlock."
-            return
-        }
-        guard !m.isEmpty, !r.isEmpty else {
-            error = "Enter the payment method and reference."
-            return
+            return nil
         }
         error = nil
-        submitting = true
-        defer { submitting = false }
+        startingCheckout = true
+        defer { startingCheckout = false }
         do {
-            try await APIClient.shared.submitPayment(deviceId: device.id, method: m, reference: r,
-                                                     note: note.isEmpty ? nil : note)
-            method = ""; reference = ""; note = ""
-            message = "Payment submitted for \(device.name)."
-            await load(initialDeviceId: device.id)
+            let checkout = try await APIClient.shared.createCheckout(deviceId: device.id)
+            guard let url = secureHostedURL(checkout.url) else {
+                error = "The server returned an invalid checkout link."
+                return nil
+            }
+            return url
         } catch {
-            self.error = (error as? APIError)?.errorDescription ?? "Submission failed."
+            self.error = (error as? APIError)?.errorDescription ?? "Couldn't start checkout."
+            return nil
         }
     }
+
+    func openCustomerPortal() async -> URL? {
+        error = nil
+        openingPortal = true
+        defer { openingPortal = false }
+        do {
+            let portal = try await APIClient.shared.customerPortal()
+            guard let url = secureHostedURL(portal.url) else {
+                error = "The server returned an invalid billing link."
+                return nil
+            }
+            return url
+        } catch {
+            self.error = (error as? APIError)?.errorDescription ?? "Couldn't open billing."
+            return nil
+        }
+    }
+
+    func externalURLFailed() {
+        error = "No browser is available to open this secure link."
+    }
+
+    private func secureHostedURL(_ value: String) -> URL? {
+        // Mirrors the backend allowlist: privileged checkout and portal URLs
+        // must be HTTPS pages hosted by Polar, never an arbitrary redirect.
+        guard let url = URL(string: value) else { return nil }
+        let host = (url.host ?? "").lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        guard url.scheme?.lowercased() == "https",
+              (host == "polar.sh" || host.hasSuffix(".polar.sh")),
+              url.user == nil,
+              url.password == nil else { return nil }
+        return url
+    }
+
+    private func applyStatus(_ value: BillingStatus, initialDeviceId: String?) {
+        status = value
+        // Pending Polar checkouts remain selectable so the server can return
+        // the existing hosted checkout (reused=true).
+        let eligible = value.devices?.filter(\.checkoutEligible) ?? []
+        let preferred = initialDeviceId ?? selectedDeviceId
+        selectedDeviceId = eligible.first { $0.id == preferred }?.id ?? eligible.first?.id
+    }
+
+    private static let checkoutRefreshAttempts = 5
+    private static let checkoutRefreshDelay: UInt64 = 1_500_000_000
 }

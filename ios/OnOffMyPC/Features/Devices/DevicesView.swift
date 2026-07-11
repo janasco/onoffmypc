@@ -25,6 +25,7 @@ struct DevicesView: View {
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button { sheet = .addDevice } label: { Image(systemName: "plus") }
+                            .accessibilityLabel("Add device")
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
@@ -46,6 +47,7 @@ struct DevicesView: View {
                         } label: {
                             Image(systemName: "line.3.horizontal")
                         }
+                        .accessibilityLabel("Open menu")
                     }
                 }
         }
@@ -78,9 +80,15 @@ struct DevicesView: View {
     @ViewBuilder
     private var content: some View {
         if vm.loading && vm.devices.isEmpty {
-            ProgressView()
+            ProgressView("Loading devices…")
+                .accessibilityLabel("Loading devices")
         } else if let error = vm.error, vm.devices.isEmpty {
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
+                Image(systemName: "wifi.exclamationmark")
+                    .font(.largeTitle)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                Text("Couldn't load devices").font(.headline)
                 Text(error).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 Button("Retry") { Task { await vm.load(appState) } }
             }
@@ -88,8 +96,12 @@ struct DevicesView: View {
         } else if vm.devices.isEmpty {
             VStack(spacing: 8) {
                 Image(systemName: "desktopcomputer").font(.largeTitle).foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                 Text("No devices yet").font(.headline)
-                Text("Tap + to add your first device.").foregroundStyle(.secondary)
+                Text("Add your first device to view its connection and last-reported PC status.")
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button("Add device") { sheet = .addDevice }
             }
             .padding()
         } else {
@@ -120,6 +132,9 @@ struct DevicesView: View {
                 .padding(.vertical, 10)
                 .background(.ultraThinMaterial, in: Capsule())
                 .padding(.bottom, 24)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(toast)
+                .accessibilityAddTraits(.updatesFrequently)
                 .task(id: toast) {
                     try? await Task.sleep(nanoseconds: 2_500_000_000)
                     vm.toast = nil
@@ -201,16 +216,12 @@ private struct DeviceRow: View {
     let onCommand: (CommandType) -> Void
 
     var body: some View {
+        let status = deviceStatusFromLastContact(lastSeenAt: device.last_seen_at, pcOn: device.pc_on)
         VStack(alignment: .leading, spacing: 10) {
             NavigationLink(value: device) {
-                HStack {
-                    Text(device.name).font(.headline)
-                    Spacer()
-                    Text(device.isOnline ? "Online" : "Offline")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(device.isOnline ? Color.green : Color.secondary)
-                }
+                Text(device.name).font(.headline)
             }
+            DeviceStatusSummary(presentation: status)
             PowerCommandControls(
                 deviceName: device.name,
                 commandInFlight: commandInFlight,
