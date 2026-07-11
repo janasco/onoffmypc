@@ -2,7 +2,8 @@
 .vscode/
 src/config.h
 dist/
-.env
+.env*
+!.env.example
 
 # Local-only secrets runbook (never commit)
 SECRETS.md
