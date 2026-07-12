@@ -49,7 +49,7 @@ fun RegisterScreen(
         Spacer(Modifier.height(16.dp))
         Text("Create account", style = MaterialTheme.typography.headlineMedium)
         Text(
-            text = "Early access — invite code required.",
+            text = "Create your account to get started.",
             style = MaterialTheme.typography.bodyMedium,
             color = Muted,
             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp),

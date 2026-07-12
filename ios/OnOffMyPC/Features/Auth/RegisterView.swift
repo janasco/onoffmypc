@@ -9,7 +9,7 @@ struct RegisterView: View {
             VStack(alignment: .leading, spacing: 16) {
                 AppLogo()
                 Text("Create account").font(.largeTitle.bold())
-                Text("Early access — invite code required.")
+                Text("Create your account to get started.")
                     .foregroundStyle(.secondary)
                     .padding(.bottom, 8)
 

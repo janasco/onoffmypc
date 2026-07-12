@@ -33,13 +33,12 @@ HOW IT WORKS
 3. Control your PC from anywhere with an internet connection.
 
 REQUIREMENTS
-OnOffMyPC is currently in early access. You'll need an OnOffMyPC hardware device
-and an account (registration requires an invite code). Learn more at
+You'll need an OnOffMyPC hardware device and an account. Learn more at
 https://onoffmypc.com.
 
 Questions or feedback? Reach us at https://onoffmypc.com/contact.
 
 ## Notes for the Play Console review team (App access section)
-The app requires an account. Registration is invite-gated during early access.
-Please use the test credentials and invite code provided in the App access form
-to sign in and reach the dashboard.
+The app requires an account. If registration requires an invite code in your
+test environment, use the test credentials and invite code provided in the App
+access form to sign in and reach the dashboard.
