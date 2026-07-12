@@ -196,7 +196,7 @@ fun BillingScreen(
                     Text("Secure checkout", style = MaterialTheme.typography.titleSmall, color = Muted)
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Payment is handled securely by Polar in your browser. Return here after checkout and access will refresh automatically.",
+                        "Checkout opens securely in your browser. Return here afterward and access will refresh automatically.",
                         color = Muted,
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -209,8 +209,8 @@ fun BillingScreen(
                         Text(
                             when {
                                 state.startingCheckout -> "Opening checkout…"
-                                selected.polarCheckoutPending -> "Continue secure checkout"
-                                else -> "Checkout securely with Polar"
+                                selected.polarCheckoutPending -> "Continue checkout"
+                                else -> "Pay now"
                             },
                         )
                     }
@@ -224,18 +224,18 @@ fun BillingScreen(
                 state.history.forEach { HistoryRow(it) }
             }
 
-            val hasPolarPurchase = s.portal_available || state.history.any {
+            val hasReceiptPortal = s.portal_available || state.history.any {
                 "polar".equals(it.provider, ignoreCase = true) ||
                     "polar".equals(it.method, ignoreCase = true)
             }
-            if (hasPolarPurchase) {
+            if (hasReceiptPortal) {
                 Spacer(Modifier.height(16.dp))
                 OutlinedButton(
                     onClick = vm::openCustomerPortal,
                     enabled = !state.openingPortal && !state.startingCheckout,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(if (state.openingPortal) "Opening Polar…" else "View receipts in Polar")
+                    Text(if (state.openingPortal) "Opening…" else "Manage receipts")
                 }
             }
             Spacer(Modifier.height(24.dp))

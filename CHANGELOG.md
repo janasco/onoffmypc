@@ -2,11 +2,17 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-07-12
+
+### Changed
+- Billing checkout buttons now say **Pay now** (or **Continue checkout**) instead of naming a payment provider.
+- Receipt portal actions use provider-agnostic **Manage receipts** copy so future payment providers can plug in without UI renames.
+
 ## [0.3.0] - 2026-07-11
 
 ### Changed
 - **One-time device unlocks**: each device receives a 30-day trial, after which billing targets that device for a $15 one-time purchase with no subscription. The app shows each device's trial, unlocked, and payment-review state while preserving existing Lifetime account access.
-- New purchases now open an API-created Polar hosted checkout instead of collecting a payment method, reference, and note in the app. Both platforms refresh until the signed payment webhook unlocks the selected device and can open Polar's receipt portal without shipping payment credentials.
+- New purchases now open an API-created hosted checkout instead of collecting a payment method, reference, and note in the app. Both platforms refresh until payment confirmation unlocks the selected device and can open a receipts portal without shipping payment credentials.
 - A command blocked by an expired device trial now opens billing with that device preselected.
 - Command requests now distinguish offline queueing, delivery to the device connection, and device acknowledgement while explicitly stating that PC state is not yet confirmed; disruptive controls name the target and require confirmation.
 - Device lists and details now separate connection state, last-contact freshness, and last-reported PC telemetry; unknown, loading, empty, retry, and screen-reader states are clearer and consistent across Android and iOS.

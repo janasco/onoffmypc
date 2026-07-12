@@ -165,7 +165,7 @@ struct BillingView: View {
         if let device = vm.selectedDevice {
             let price = status.plans?.first { $0.id == "device" }?.price ?? status.price ?? 15
             Section("Secure checkout — $\(price) one time") {
-                Text("Payment for \(device.name) is handled securely by Polar in your browser. Return here after checkout and access will refresh automatically.")
+                Text("Checkout for \(device.name) opens securely in your browser. Return here afterward and access will refresh automatically.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Button {
@@ -178,7 +178,7 @@ struct BillingView: View {
                     Text(
                         vm.startingCheckout
                             ? "Opening checkout…"
-                            : (device.polarCheckoutPending ? "Continue secure checkout" : "Checkout securely with Polar")
+                            : (device.polarCheckoutPending ? "Continue checkout" : "Pay now")
                     )
                 }
                 .disabled(vm.startingCheckout || vm.openingPortal)
@@ -215,7 +215,7 @@ struct BillingView: View {
                     if let url = await vm.openCustomerPortal() { openHostedURL(url) }
                 }
             } label: {
-                Text(vm.openingPortal ? "Opening Polar…" : "View receipts in Polar")
+                Text(vm.openingPortal ? "Opening…" : "Manage receipts")
             }
             .disabled(vm.openingPortal || vm.startingCheckout)
         }

@@ -1,4 +1,3 @@
-• Secure $15 one-time device unlocks through Polar hosted checkout
-• Clearer online, PC-state, and last-contact status for every device
-• Honest command delivery and device-acknowledgement feedback
-• Improved loading, retry, empty, and accessibility states
+• Pay now checkout wording without naming a payment provider
+• Manage receipts uses provider-agnostic copy
+• Works with the latest device-unlock billing API
