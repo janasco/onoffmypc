@@ -43,6 +43,7 @@ struct BillingView: View {
             }
         }
         .task { await vm.load(initialDeviceId: initialDeviceId) }
+        .refreshable { await vm.load(initialDeviceId: initialDeviceId) }
         .onChange(of: scenePhase) { phase in
             guard phase == .active else { return }
             let returnedFromExternalURL = awaitingExternalReturn

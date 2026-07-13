@@ -9,7 +9,7 @@ data class LoginRequest(val email: String, val password: String)
 data class GoogleAuthRequest(val credential: String)
 
 @Serializable
-data class RegisterRequest(val email: String, val password: String, val invite_code: String)
+data class RegisterRequest(val email: String, val password: String)
 
 @Serializable
 data class ForgotPasswordRequest(val email: String)

@@ -15,6 +15,7 @@ import java.net.URI
 
 data class BillingUiState(
     val loading: Boolean = true,
+    val refreshing: Boolean = false,
     val status: BillingStatus? = null,
     val history: List<PaymentRequestItem> = emptyList(),
     val selectedDeviceId: String? = null,
@@ -63,6 +64,14 @@ class BillingViewModel : ViewModel() {
     }
 
     fun selectDevice(id: String) = _state.update { it.copy(selectedDeviceId = id, error = null) }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _state.update { it.copy(refreshing = true) }
+            refresh(initialDeviceId = _state.value.selectedDeviceId, showLoading = false, includeHistory = true)
+            _state.update { it.copy(refreshing = false) }
+        }
+    }
 
     fun startCheckout() {
         val s = _state.value

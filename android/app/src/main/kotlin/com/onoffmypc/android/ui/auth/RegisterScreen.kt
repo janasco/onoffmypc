@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -37,6 +39,7 @@ fun RegisterScreen(
     vm: RegisterViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -74,19 +77,9 @@ fun RegisterScreen(
         PasswordField(
             value = state.confirmPassword,
             label = "Confirm password",
-            imeAction = ImeAction.Next,
+            imeAction = ImeAction.Done,
             onValueChange = vm::onConfirmPassword,
         )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = state.inviteCode,
-            onValueChange = vm::onInviteCode,
-            label = { Text("Invite code") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            modifier = Modifier.fillMaxWidth(),
-        )
-
         state.error?.let {
             Spacer(Modifier.height(12.dp))
             Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -106,6 +99,17 @@ fun RegisterScreen(
                 )
             } else {
                 Text("Create account")
+            }
+        }
+
+        if (vm.googleEnabled) {
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { vm.googleSignIn(context, onRegistered) },
+                enabled = !state.loading,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Continue with Google")
             }
         }
 

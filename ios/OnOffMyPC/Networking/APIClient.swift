@@ -96,9 +96,9 @@ final class APIClient {
     }
 
     /// Register then sign in (registration doesn't set a session cookie; login does).
-    func register(email: String, password: String, inviteCode: String) async throws {
+    func register(email: String, password: String) async throws {
         _ = try await send("POST", "auth/register",
-                           body: RegisterRequest(email: email, password: password, invite_code: inviteCode))
+                           body: RegisterRequest(email: email, password: password))
         try await login(email: email, password: password)
     }
 

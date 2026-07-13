@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-07-13
+
+### Changed
+- Registration no longer requires an invite code — the app now matches the
+  server's open-registration mode. (The invite-code system itself still exists
+  server-side for future admin-controlled campaigns; it's just not shown or
+  required in the app.)
+
+### Added
+- **Continue with Google** is now available on the registration screen, not
+  just sign-in.
+- Account and billing screens support pull-to-refresh, matching devices and
+  device detail.
+
 ## [0.3.1] - 2026-07-12
 
 ### Changed

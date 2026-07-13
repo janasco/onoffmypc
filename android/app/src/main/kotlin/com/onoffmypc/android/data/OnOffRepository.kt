@@ -46,8 +46,8 @@ class OnOffRepository(
         call { api.forgotPassword(ForgotPasswordRequest(email.trim())) }.map { }
 
     /** Register, then sign in (registration doesn't set a session cookie; login does). */
-    suspend fun register(email: String, password: String, inviteCode: String): Result<Unit> {
-        val reg = call { api.register(RegisterRequest(email.trim(), password, inviteCode.trim())) }
+    suspend fun register(email: String, password: String): Result<Unit> {
+        val reg = call { api.register(RegisterRequest(email.trim(), password)) }
         if (reg.isFailure) return Result.failure(reg.exceptionOrNull() ?: Exception("Registration failed"))
         return login(email, password)
     }

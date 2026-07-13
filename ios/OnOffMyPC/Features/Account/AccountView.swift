@@ -42,6 +42,7 @@ struct AccountView: View {
             }
         }
         .task { await vm.load() }
+        .refreshable { await vm.load() }
         .overlay(alignment: .bottom) { toastView }
     }
 

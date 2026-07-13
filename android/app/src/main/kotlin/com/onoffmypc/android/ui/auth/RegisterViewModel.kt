@@ -1,5 +1,6 @@
 package com.onoffmypc.android.ui.auth
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onoffmypc.android.Graph
@@ -14,7 +15,6 @@ data class RegisterUiState(
     val email: String = "",
     val password: String = "",
     val confirmPassword: String = "",
-    val inviteCode: String = "",
     val loading: Boolean = false,
     val error: String? = null,
 )
@@ -28,11 +28,10 @@ class RegisterViewModel : ViewModel() {
     fun onEmail(value: String) = _state.update { it.copy(email = value, error = null) }
     fun onPassword(value: String) = _state.update { it.copy(password = value, error = null) }
     fun onConfirmPassword(value: String) = _state.update { it.copy(confirmPassword = value, error = null) }
-    fun onInviteCode(value: String) = _state.update { it.copy(inviteCode = value, error = null) }
 
     fun register(onSuccess: () -> Unit) {
         val s = _state.value
-        if (s.email.isBlank() || s.password.isBlank() || s.inviteCode.isBlank()) {
+        if (s.email.isBlank() || s.password.isBlank()) {
             _state.update { it.copy(error = "Fill in all fields.") }
             return
         }
@@ -46,7 +45,32 @@ class RegisterViewModel : ViewModel() {
         }
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
-            repo.register(s.email, s.password, s.inviteCode).fold(
+            repo.register(s.email, s.password).fold(
+                onSuccess = {
+                    _state.update { it.copy(loading = false) }
+                    PushManager.registerIfPossible()
+                    onSuccess()
+                },
+                onFailure = { e ->
+                    _state.update { it.copy(loading = false, error = friendly(e.message)) }
+                },
+            )
+        }
+    }
+
+    /** Whether to show the "Continue with Google" button. */
+    val googleEnabled: Boolean get() = GoogleSignInHelper.isConfigured
+
+    fun googleSignIn(context: Context, onSuccess: () -> Unit) {
+        _state.update { it.copy(loading = true, error = null) }
+        viewModelScope.launch {
+            val idToken = try {
+                GoogleSignInHelper.getIdToken(context)
+            } catch (e: Exception) {
+                _state.update { it.copy(loading = false, error = friendly(e.message)) }
+                return@launch
+            }
+            repo.googleSignIn(idToken).fold(
                 onSuccess = {
                     _state.update { it.copy(loading = false) }
                     PushManager.registerIfPossible()
@@ -60,7 +84,6 @@ class RegisterViewModel : ViewModel() {
     }
 
     private fun friendly(message: String?): String = when (message) {
-        "invalid invite code" -> "That invite code isn't valid."
         "email already registered" -> "That email is already registered."
         null -> "Something went wrong."
         else -> message

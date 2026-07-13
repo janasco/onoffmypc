@@ -23,11 +23,6 @@ struct RegisterView: View {
                 PasswordField(title: "Password", text: $vm.password)
                 PasswordField(title: "Confirm password", text: $vm.confirm)
 
-                TextField("Invite code", text: $vm.inviteCode)
-                    .textInputAutocapitalization(.characters)
-                    .autocorrectionDisabled()
-                    .textFieldStyle(.roundedBorder)
-
                 if let error = vm.error {
                     Text(error).foregroundStyle(.red).font(.footnote)
                 }
@@ -44,6 +39,17 @@ struct RegisterView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(vm.loading)
+
+                if vm.googleEnabled {
+                    Button {
+                        Task { await vm.googleSignIn(appState) }
+                    } label: {
+                        Text("Continue with Google").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .disabled(vm.loading)
+                }
             }
             .padding(24)
         }

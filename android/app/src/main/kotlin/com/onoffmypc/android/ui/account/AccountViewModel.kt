@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 
 data class AccountUiState(
     val loading: Boolean = true,
+    val refreshing: Boolean = false,
     val user: MeResponse? = null,
     val error: String? = null,
     val message: String? = null,
@@ -34,6 +35,16 @@ class AccountViewModel : ViewModel() {
             repo.me().fold(
                 onSuccess = { u -> _state.update { it.copy(loading = false, user = u) } },
                 onFailure = { e -> _state.update { it.copy(loading = false, error = e.message ?: "Failed to load account") } },
+            )
+        }
+    }
+
+    fun refresh() {
+        _state.update { it.copy(refreshing = true) }
+        viewModelScope.launch {
+            repo.me().fold(
+                onSuccess = { u -> _state.update { it.copy(refreshing = false, user = u, error = null) } },
+                onFailure = { e -> _state.update { it.copy(refreshing = false, message = e.message ?: "Refresh failed") } },
             )
         }
     }
