@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-07-16
+
+### Fixed
+- Free-access billing Card now matches positional Modifier usage used elsewhere on the screen.
+
 ## [0.3.5] - 2026-07-16
 
 ### Fixed
