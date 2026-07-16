@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-07-16
+
+### Fixed
+- Android billing screen compile error (`Modifier` casing) that blocked the 0.3.3 APK release.
+
 ## [0.3.3] - 2026-07-16
 
 ### Changed

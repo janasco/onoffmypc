@@ -126,8 +126,8 @@ fun BillingScreen(
 
             if (!s.billing_enabled) {
                 Spacer(Modifier.height(16.dp))
-                Card(modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp)) {
+                Card(Modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             "Free full access",
                             style = MaterialTheme.typography.titleMedium,
@@ -147,7 +147,7 @@ fun BillingScreen(
                 Text("One-time device unlock", style = MaterialTheme.typography.titleSmall, color = Muted)
                 Spacer(Modifier.height(8.dp))
                 Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "${devicePlan?.name ?: "Device Unlock"} — $${devicePlan?.price ?: s.price} per device",
                             style = MaterialTheme.typography.titleMedium,
@@ -271,8 +271,8 @@ fun BillingScreen(
 @Composable
 private fun PlanCard(s: BillingStatus) {
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Current access", color = Muted, style = MaterialTheme.typography.labelMedium)
                 Text(
                     when {
@@ -323,7 +323,7 @@ private fun DeviceAccessRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(device.name, fontWeight = FontWeight.SemiBold)
                 Text(
                     when {
