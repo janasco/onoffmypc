@@ -117,4 +117,10 @@ A JDK 17 toolchain and the Android SDK are required (Android Studio provides bot
 - **[PUSH.md](PUSH.md)** — Firebase project + backend service-account setup for FCM
 - **[CHANGELOG.md](CHANGELOG.md)** — release notes
 - **[ios/README.md](ios/README.md)** — iOS build and current scope
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Android/iOS architecture & feature coverage
+- **[docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)** — current theme tokens vs target
+- **[docs/COMPONENT_LIBRARY.md](docs/COMPONENT_LIBRARY.md)** — Compose/SwiftUI component inventory
+- **[docs/UX_GUIDELINES.md](docs/UX_GUIDELINES.md)** — trust/honesty UX rules
+- **[docs/MOBILE_ROADMAP.md](docs/MOBILE_ROADMAP.md)** — incremental product/tech roadmap
+- **[docs/KMP_MIGRATION_PLAN.md](docs/KMP_MIGRATION_PLAN.md)** — Kotlin Multiplatform phases
 - **[docs/SECURITY_ASSESSMENT.md](docs/SECURITY_ASSESSMENT.md)** — private platform assessment link
