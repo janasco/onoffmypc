@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-07-16
+
+### Fixed
+- Android billing free-access card now uses the same Card(Modifier…) call shape as the rest of the screen so release builds compile.
+
 ## [0.3.4] - 2026-07-16
 
 ### Fixed
