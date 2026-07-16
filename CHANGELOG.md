@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-07-16
+
+### Changed
+- Respects the API `billing_enabled` flag: when billing is off, trial banners and
+  Pay now / unlock CTAs are hidden and the billing screen shows free full access.
+
 ## [0.3.2] - 2026-07-13
 
 ### Changed

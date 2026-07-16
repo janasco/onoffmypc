@@ -107,6 +107,7 @@ struct DevicesView: View {
         } else {
             List {
                 if let b = vm.billing,
+                   b.billingEnabled,
                    !(b.is_lifetime ?? false),
                    b.devices == nil || b.devices?.contains(where: { $0.unlocked != true }) == true {
                     TrialBanner(billing: b) { sheet = .billing(nil) }

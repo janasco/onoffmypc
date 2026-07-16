@@ -174,7 +174,7 @@ fun DevicesScreen(
                             item { VerifyEmailBanner(onResend = vm::resendVerification) }
                         }
                         state.billing?.let { b ->
-                            if (!b.is_lifetime && (b.devices.isEmpty() || b.devices.any { !it.unlocked })) {
+                            if (b.billing_enabled && !b.is_lifetime && (b.devices.isEmpty() || b.devices.any { !it.unlocked })) {
                                 item { TrialBanner(billing = b, onUpgrade = { onBilling(null) }) }
                             }
                         }

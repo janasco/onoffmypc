@@ -67,6 +67,7 @@ struct BillingDevice: Decodable, Identifiable {
 struct BillingStatus: Decodable {
     let plan: String
     var is_lifetime: Bool?
+    var billing_enabled: Bool?
     var has_access: Bool?
     var trial_ends_at: String?
     var trial_expired: Bool?
@@ -79,6 +80,8 @@ struct BillingStatus: Decodable {
     var portal_available: Bool?
     var payment_instructions: String?
     var pending_request: PaymentRequestItem?
+
+    var billingEnabled: Bool { billing_enabled ?? true }
 }
 
 struct CheckoutRequest: Encodable { let device_id: String }

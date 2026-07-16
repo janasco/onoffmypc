@@ -124,6 +124,23 @@ fun BillingScreen(
                 Text(it, color = Red, style = MaterialTheme.typography.bodySmall)
             }
 
+            if (!s.billing_enabled) {
+                Spacer(Modifier.height(16.dp))
+                Card(modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text(
+                            "Free full access",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            "Billing is currently off. Every device can use remote controls without a trial limit or unlock purchase.",
+                            color = Muted,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            } else {
             val devicePlan = s.plans.firstOrNull { it.id == "device" }
             if (!s.is_lifetime) {
                 Spacer(Modifier.height(20.dp))
@@ -222,6 +239,8 @@ fun BillingScreen(
                 }
             }
 
+            }
+
             if (state.history.isNotEmpty()) {
                 Spacer(Modifier.height(24.dp))
                 Text("Purchase history", style = MaterialTheme.typography.titleSmall, color = Muted)
@@ -256,24 +275,32 @@ private fun PlanCard(s: BillingStatus) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Current access", color = Muted, style = MaterialTheme.typography.labelMedium)
                 Text(
-                    if (s.is_lifetime) "Lifetime (legacy)" else "Per device",
-                    color = if (s.is_lifetime) Green else Accent,
+                    when {
+                        !s.billing_enabled -> "Free access"
+                        s.is_lifetime -> "Lifetime (legacy)"
+                        else -> "Per device"
+                    },
+                    color = when {
+                        !s.billing_enabled || s.is_lifetime -> Green
+                        else -> Accent
+                    },
                     style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
                 )
             }
             Spacer(Modifier.height(6.dp))
             val statusText = when {
+                !s.billing_enabled -> "All devices have full access while billing is off."
                 s.is_lifetime -> "All devices on this account remain unlocked."
                 s.devices.isEmpty() -> "Each device includes its own 30-day free trial."
                 else -> "${s.devices.count { it.unlocked }} of ${s.devices.size} devices unlocked"
             }
             Text(
                 statusText,
-                color = if (s.trial_expired) Red else Muted,
+                color = if (s.billing_enabled && s.trial_expired) Red else Muted,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (s.trial_expired) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (s.billing_enabled && s.trial_expired) FontWeight.Bold else FontWeight.Normal,
             )
-            if (!s.is_lifetime) {
+            if (s.billing_enabled && !s.is_lifetime) {
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "Unlock price: $${s.plans.firstOrNull { it.id == "device" }?.price ?: s.price} one time per device",

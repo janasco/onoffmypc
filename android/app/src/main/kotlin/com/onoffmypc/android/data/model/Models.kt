@@ -83,6 +83,7 @@ data class BillingDevice(
 data class BillingStatus(
     val plan: String,
     val is_lifetime: Boolean = false,
+    val billing_enabled: Boolean = true,
     val has_access: Boolean = true,
     val trial_ends_at: String? = null,
     val trial_expired: Boolean = false,

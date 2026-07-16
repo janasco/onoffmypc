@@ -22,9 +22,13 @@ struct BillingView: View {
                     Form {
                         accessSection(status)
                         if let error = vm.error { errorSection(error) }
-                        if status.is_lifetime != true { pricingSection(status) }
-                        deviceSection(status)
-                        if vm.selectedDevice != nil { paymentSection(status) }
+                        if !status.billingEnabled {
+                            freeAccessSection
+                        } else {
+                            if status.is_lifetime != true { pricingSection(status) }
+                            deviceSection(status)
+                            if vm.selectedDevice != nil { paymentSection(status) }
+                        }
                         if !vm.history.isEmpty {
                             historySection
                         }
@@ -75,17 +79,31 @@ struct BillingView: View {
     private func accessSection(_ status: BillingStatus) -> some View {
         let devices = status.devices ?? []
         Section("Current access") {
-            LabeledContent(
-                "Access model",
-                value: status.is_lifetime == true ? "Lifetime (legacy)" : "Per device"
-            )
-            Text(
-                status.is_lifetime == true
-                    ? "All devices on this account remain unlocked."
-                    : "\(devices.filter { $0.unlocked == true }.count) of \(devices.count) devices unlocked"
-            )
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+            if !status.billingEnabled {
+                LabeledContent("Access model", value: "Free access")
+                Text("All devices have full access while billing is off.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                LabeledContent(
+                    "Access model",
+                    value: status.is_lifetime == true ? "Lifetime (legacy)" : "Per device"
+                )
+                Text(
+                    status.is_lifetime == true
+                        ? "All devices on this account remain unlocked."
+                        : "\(devices.filter { $0.unlocked == true }.count) of \(devices.count) devices unlocked"
+                )
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var freeAccessSection: some View {
+        Section {
+            Text("Billing is currently off. Every device can use remote controls without a trial limit or unlock purchase.")
+                .foregroundStyle(.secondary)
         }
     }
 
