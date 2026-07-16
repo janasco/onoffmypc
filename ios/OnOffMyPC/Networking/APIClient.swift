@@ -95,6 +95,14 @@ final class APIClient {
         _ = try await send("POST", "auth/google", body: GoogleAuthRequest(credential: idToken))
     }
 
+    func appleAuth(idToken: String) async throws {
+        _ = try await send("POST", "auth/apple", body: SocialAuthRequest(credential: idToken))
+    }
+
+    func microsoftAuth(idToken: String) async throws {
+        _ = try await send("POST", "auth/microsoft", body: SocialAuthRequest(credential: idToken))
+    }
+
     /// Register then sign in (registration doesn't set a session cookie; login does).
     func register(email: String, password: String) async throws {
         _ = try await send("POST", "auth/register",

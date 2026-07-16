@@ -15,6 +15,7 @@ import com.onoffmypc.android.data.model.DeviceNameRequest
 import com.onoffmypc.android.data.model.DeviceStatus
 import com.onoffmypc.android.data.model.ForgotPasswordRequest
 import com.onoffmypc.android.data.model.GoogleAuthRequest
+import com.onoffmypc.android.data.model.SocialAuthRequest
 import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
@@ -39,6 +40,12 @@ class OnOffRepository(
     /** Exchange a Google ID token for a session (cookie set by the API). */
     suspend fun googleSignIn(idToken: String): Result<Unit> =
         call { api.googleAuth(GoogleAuthRequest(idToken)) }.map { }
+
+    suspend fun appleSignIn(idToken: String): Result<Unit> =
+        call { api.appleAuth(SocialAuthRequest(idToken)) }.map { }
+
+    suspend fun microsoftSignIn(idToken: String): Result<Unit> =
+        call { api.microsoftAuth(SocialAuthRequest(idToken)) }.map { }
 
     /** Request a password-reset email. The API is intentionally silent about
      *  whether the address exists, so any 2xx is treated as success. */

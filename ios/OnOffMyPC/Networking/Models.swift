@@ -4,6 +4,7 @@ import Foundation
 
 struct LoginRequest: Encodable { let email: String; let password: String }
 struct GoogleAuthRequest: Encodable { let credential: String }
+struct SocialAuthRequest: Encodable { let credential: String }
 struct RegisterRequest: Encodable { let email: String; let password: String }
 struct ForgotPasswordRequest: Encodable { let email: String }
 struct ChangeEmailRequest: Encodable { let new_email: String; let password: String }

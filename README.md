@@ -62,8 +62,25 @@ app/src/main/kotlin/com/onoffmypc/android/
     navigation/AppNav.kt       # route graph
 ```
 
+## Social login config
+
+| Platform | Key | Where | Notes |
+|---|---|---|---|
+| Android | `GOOGLE_SERVER_CLIENT_ID` | `android/gradle.properties` → BuildConfig | Existing Google Credential Manager flow |
+| Android | `APPLE_SERVICES_ID` | `android/gradle.properties` → BuildConfig | Empty hides Continue with Apple (Custom Tab OIDC → `/auth/apple`) |
+| Android | `MICROSOFT_CLIENT_ID` | `android/gradle.properties` → BuildConfig | Empty hides Continue with Microsoft (Custom Tab OIDC → `/auth/microsoft`) |
+| iOS | `GoogleSignInManager.clientID` | Swift constant | Existing Google SDK flow |
+| iOS | `AppleSignInManager.audienceClientID` | Swift constant | Set to `com.onoffmypc.app` (or Services ID) when SiWA is enabled; empty hides button |
+| iOS | `MicrosoftSignInManager.clientID` | Swift constant | Empty hides button; redirect `msauth.com.onoffmypc.app://auth` |
+
+Android OIDC redirect scheme: `com.onoffmypc.android://oauth` (register the same
+redirect on Entra; Apple Services ID return URLs are typically HTTPS — use a
+web bridge or keep Apple disabled on Android until configured). API
+`APPLE_CLIENT_IDS` / `MICROSOFT_CLIENT_IDS` must include the same audiences.
+Ship a store release only after provider credentials are set.
+
 ## Features
-- **Auth**: login, register (invite-gated), forgot-password; cookie session + 401 auto-logout
+- **Auth**: login, register (invite-gated), forgot-password; Google / Apple / Microsoft social sign-in (config-gated); cookie session + 401 auto-logout
 - **Devices**: separate connection, last-contact freshness, and last-reported PC state; power controls (on / off / force-off / reset); target-specific confirmation for disruptive actions; honest queued/awaiting-ack/device-acknowledged/expired command states; add / rename / delete; pull-to-refresh
 - **Device detail**: explicit online, offline, or unknown presence; telemetry freshness; accessible 7-day temperature chart; command history; 30s auto-refresh
 - **Account and billing**: profile, security settings, deletion, email verification, a 30-day trial for each device, and one-time $15 device unlocks through API-created Polar hosted checkout; existing Lifetime accounts remain supported. Polar credentials are never shipped in either app.

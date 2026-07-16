@@ -50,6 +50,26 @@ struct RegisterView: View {
                     .controlSize(.large)
                     .disabled(vm.loading)
                 }
+                if vm.appleEnabled {
+                    Button {
+                        Task { await vm.appleSignIn(appState) }
+                    } label: {
+                        Text("Continue with Apple").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .disabled(vm.loading)
+                }
+                if vm.microsoftEnabled {
+                    Button {
+                        Task { await vm.microsoftSignIn(appState) }
+                    } label: {
+                        Text("Continue with Microsoft").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .disabled(vm.loading)
+                }
             }
             .padding(24)
         }

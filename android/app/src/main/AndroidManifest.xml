@@ -25,6 +25,21 @@
             </intent-filter>
         </activity>
 
+        <!-- Captures Apple / Microsoft OIDC redirects (com.onoffmypc.android://oauth). -->
+        <activity
+            android:name=".ui.auth.OAuthRedirectActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="com.onoffmypc.android"
+                    android:host="oauth" />
+            </intent-filter>
+        </activity>
+
         <!-- FCM: receives push messages and token rotations -->
         <service
             android:name=".push.OnOffMessagingService"

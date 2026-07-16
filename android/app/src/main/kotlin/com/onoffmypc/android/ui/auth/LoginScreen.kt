@@ -114,6 +114,26 @@ fun LoginScreen(
                 Text("Continue with Google")
             }
         }
+        if (vm.appleEnabled) {
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { vm.appleSignIn(context, onLoggedIn) },
+                enabled = !state.loading,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Continue with Apple")
+            }
+        }
+        if (vm.microsoftEnabled) {
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { vm.microsoftSignIn(context, onLoggedIn) },
+                enabled = !state.loading,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Continue with Microsoft")
+            }
+        }
 
         TextButton(
             onClick = onForgotPassword,

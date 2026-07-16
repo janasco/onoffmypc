@@ -60,17 +60,43 @@ class RegisterViewModel : ViewModel() {
 
     /** Whether to show the "Continue with Google" button. */
     val googleEnabled: Boolean get() = GoogleSignInHelper.isConfigured
+    val appleEnabled: Boolean get() = AppleSignInHelper.isConfigured
+    val microsoftEnabled: Boolean get() = MicrosoftSignInHelper.isConfigured
 
     fun googleSignIn(context: Context, onSuccess: () -> Unit) {
+        socialSignIn(onSuccess) {
+            val idToken = GoogleSignInHelper.getIdToken(context)
+            repo.googleSignIn(idToken)
+        }
+    }
+
+    fun appleSignIn(context: Context, onSuccess: () -> Unit) {
+        socialSignIn(onSuccess) {
+            val idToken = AppleSignInHelper.getIdToken(context)
+            repo.appleSignIn(idToken)
+        }
+    }
+
+    fun microsoftSignIn(context: Context, onSuccess: () -> Unit) {
+        socialSignIn(onSuccess) {
+            val idToken = MicrosoftSignInHelper.getIdToken(context)
+            repo.microsoftSignIn(idToken)
+        }
+    }
+
+    private fun socialSignIn(
+        onSuccess: () -> Unit,
+        block: suspend () -> Result<Unit>,
+    ) {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
-            val idToken = try {
-                GoogleSignInHelper.getIdToken(context)
+            val result = try {
+                block()
             } catch (e: Exception) {
                 _state.update { it.copy(loading = false, error = friendly(e.message)) }
                 return@launch
             }
-            repo.googleSignIn(idToken).fold(
+            result.fold(
                 onSuccess = {
                     _state.update { it.copy(loading = false) }
                     PushManager.registerIfPossible()

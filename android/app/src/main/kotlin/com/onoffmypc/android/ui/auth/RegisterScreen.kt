@@ -112,6 +112,26 @@ fun RegisterScreen(
                 Text("Continue with Google")
             }
         }
+        if (vm.appleEnabled) {
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { vm.appleSignIn(context, onRegistered) },
+                enabled = !state.loading,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Continue with Apple")
+            }
+        }
+        if (vm.microsoftEnabled) {
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { vm.microsoftSignIn(context, onRegistered) },
+                enabled = !state.loading,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Continue with Microsoft")
+            }
+        }
 
         Spacer(Modifier.height(8.dp))
         TextButton(

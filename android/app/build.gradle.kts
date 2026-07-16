@@ -68,8 +68,8 @@ android {
         applicationId = "com.onoffmypc.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "0.3.7"
+        versionCode = 15
+        versionName = "0.3.8"
         vectorDrawables { useSupportLibrary = true }
 
         // Google Sign-In server (Web) client ID used to request an ID token.
@@ -77,6 +77,12 @@ android {
         // Empty by default → the app hides the Google button until configured.
         val googleServerClientId = (project.findProperty("GOOGLE_SERVER_CLIENT_ID") as String?) ?: ""
         buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$googleServerClientId\"")
+        // Apple Services ID for Sign in with Apple (Android Custom Tab OIDC).
+        val appleServicesId = (project.findProperty("APPLE_SERVICES_ID") as String?) ?: ""
+        buildConfigField("String", "APPLE_SERVICES_ID", "\"$appleServicesId\"")
+        // Microsoft Entra public client ID (Android Custom Tab OIDC).
+        val microsoftClientId = (project.findProperty("MICROSOFT_CLIENT_ID") as String?) ?: ""
+        buildConfigField("String", "MICROSOFT_CLIENT_ID", "\"$microsoftClientId\"")
     }
 
     signingConfigs {
@@ -152,6 +158,9 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+
+    // Custom Tabs for Apple / Microsoft browser OIDC
+    implementation(libs.androidx.browser)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

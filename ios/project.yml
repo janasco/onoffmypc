@@ -12,8 +12,8 @@ packages:
     from: "7.1.0"
 settings:
   base:
-    MARKETING_VERSION: "0.3.1"
-    CURRENT_PROJECT_VERSION: "8"
+    MARKETING_VERSION: "0.3.2"
+    CURRENT_PROJECT_VERSION: "9"
     SWIFT_VERSION: "5.9"
     DEVELOPMENT_TEAM: ""            # set your Apple ID team in Xcode for on-device runs
 targets:
@@ -40,9 +40,17 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         # Google Sign-In callback (reversed iOS OAuth client ID).
+        # Microsoft OIDC callback (msauth.com.onoffmypc.app://auth).
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - com.googleusercontent.apps.156303072600-ge9r29an6f26erri76ld7015c2vi8jv8
+          - CFBundleURLSchemes:
+              - msauth.com.onoffmypc.app
+    entitlements:
+      path: OnOffMyPC/OnOffMyPC.entitlements
+      properties:
+        com.apple.developer.applesignin:
+          - Default
 schemes:
   OnOffMyPC:
     build:

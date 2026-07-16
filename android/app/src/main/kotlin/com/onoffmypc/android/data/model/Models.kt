@@ -8,6 +8,10 @@ data class LoginRequest(val email: String, val password: String)
 @Serializable
 data class GoogleAuthRequest(val credential: String)
 
+/** Shared body for /auth/google, /auth/apple, /auth/microsoft. */
+@Serializable
+data class SocialAuthRequest(val credential: String)
+
 @Serializable
 data class RegisterRequest(val email: String, val password: String)
 

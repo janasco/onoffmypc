@@ -3,9 +3,20 @@
 SwiftUI client for the shared OnOffMyPC account/device API. Current scope
 includes sign in/registration/recovery, devices and power controls, device
 details/history, account/security, a separate 30-day trial and $15 one-time
-unlock for each device through API-created Polar hosted checkout, and Google sign-in. There is no subscription, and
-existing Lifetime accounts remain covered. Bundle id `com.onoffmypc.app`.
-Deployment target iOS 16.
+unlock for each device through API-created Polar hosted checkout, and Google /
+Apple / Microsoft social sign-in (buttons hidden until client IDs are set).
+There is no subscription, and existing Lifetime accounts remain covered. Bundle
+id `com.onoffmypc.app`. Deployment target iOS 16.
+
+### Social login placeholders
+
+- **Apple**: set `AppleSignInManager.audienceClientID` to `com.onoffmypc.app`
+  (or your Services ID) after enabling Sign in with Apple on the App ID; list
+  the same value in API `APPLE_CLIENT_IDS`. Entitlement is in
+  `OnOffMyPC.entitlements`.
+- **Microsoft**: set `MicrosoftSignInManager.clientID` to your Entra app ID;
+  register redirect URI `msauth.com.onoffmypc.app://auth` on the Entra app and
+  list the client ID in API `MICROSOFT_CLIENT_IDS`.
 
 The Xcode project is **generated** from [`project.yml`](project.yml) with
 [XcodeGen](https://github.com/yonyz/XcodeGen) — `OnOffMyPC.xcodeproj` is **not**

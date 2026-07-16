@@ -14,6 +14,7 @@ import com.onoffmypc.android.data.model.DeviceStatus
 import com.onoffmypc.android.data.model.BillingStatus
 import com.onoffmypc.android.data.model.ForgotPasswordRequest
 import com.onoffmypc.android.data.model.GoogleAuthRequest
+import com.onoffmypc.android.data.model.SocialAuthRequest
 import com.onoffmypc.android.data.model.PaymentRequestItem
 import com.onoffmypc.android.data.model.PortalResponse
 import com.onoffmypc.android.data.model.HistoryPoint
@@ -40,6 +41,12 @@ interface ApiService {
 
     @POST("auth/google")
     suspend fun googleAuth(@Body body: GoogleAuthRequest): Response<OkResponse>
+
+    @POST("auth/apple")
+    suspend fun appleAuth(@Body body: SocialAuthRequest): Response<OkResponse>
+
+    @POST("auth/microsoft")
+    suspend fun microsoftAuth(@Body body: SocialAuthRequest): Response<OkResponse>
 
     @POST("auth/register")
     suspend fun register(@Body body: RegisterRequest): Response<RegisterResponse>
