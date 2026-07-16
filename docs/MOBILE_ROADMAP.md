@@ -106,18 +106,18 @@ Prioritize only if API/hardware supports them:
 
 ---
 
-## Awaiting approval — proposed NEXT implementation slices
+## Approved implementation slices (this program)
 
-**Do not start these until explicitly approved.**
+User approved the full audit plan. Execute in order; do not stop after docs.
 
-| ID | Size | Slice | Why |
+| ID | Size | Slice | Status |
 |---|---|---|---|
-| **N1** | S | Add JVM unit tests for `commandStatusLabel`, `commandRequestFeedback`, `connectionFromLastContact`, `deviceStatusPresentation` | Protects the product’s trust language; zero UX risk |
-| **N2** | S | Extract `EmptyState` + `ErrorRetry` composables; use on Devices + Device detail | Small polish; prep for design system |
-| **N3** | S | Replace devices overflow `☰` with Material Icons `MoreVert` + content descriptions | Accessibility / polish |
-| **N4** | M | Add `:shared` Gradle module skeleton (empty `commonMain`) wired into `:app` without moving code | Non-breaking KMP Phase 2 kickoff |
-| **N5** | M | Move `Models.kt` + `CommandPresentation` + `DeviceStatusPresentation` pure functions into `:shared` | First real shared code; Android-only consumer first |
-| **N6** | M | Draft Play Billing vs Polar gating plan + feature flag (docs + stub API only) | Unblocks compliant store release |
-| **N7** | M | iOS APNs registration spike (docs + stub manager; no store submit) | Closes largest iOS parity gap |
+| **D0** | S | Docs pack (`ARCHITECTURE`, UX, design system, components, roadmap, KMP) + README index | First |
+| **S1** | M | Android design-system foundation (`ui/designsystem/` tokens + Empty/Error/Loading/StatusBadge); migrate key screens lightly | After D0 |
+| **S2** | M | Home fleet summary on Devices (total / online / offline; attention only from existing APIs) | After S1 |
+| **S3** | M | Device detail sections (Overview / Power / Activity / Telemetry / Settings) | With S2 |
+| **S4** | S | Dangerous-action confirm copy (`Restart {name}`, etc.) in PowerControls / dialogs | With S2–S3 |
+| **S5** | M | Unit tests for `CommandPresentation` (+ pure helpers / easy repo mapping) | After S1 |
+| **S6** | L | First KMP-prep extract: `:shared:model` (prefer models; defer `:shared:network` if risky) | After S5 |
 
-**Recommended first approval:** **N1** then **N3** (quality + polish), or **N4** if KMP is the priority.
+**Still deferred until asked:** biometric auth, cert pinning, full onboarding wizard, offline cache/paging, CMP iOS rewrite, Hilt/Koin, Play Billing vs Polar gating implementation, iOS APNs production wiring.

@@ -129,13 +129,32 @@ Avoid toast spam: one snackbar channel per screen (`SnackbarHostState`).
 ## 8. Writing style
 
 - Prefer plain language: “Queued”, “Awaiting device acknowledgement”.
-- Name the device in confirmations: `Power Off “Office PC”?`.
+- Name the device in confirmations: `Power Off “Office PC”?`. Confirm buttons should restate the action and device (e.g. `Restart “Office PC”`), not a generic “Confirm”.
 - Do not anthropomorphize the relay (“brain”, “magic”).
 - Do not promise physical outcomes the API cannot verify.
 
 ---
 
-## 9. Review checklist (PR / release)
+## 9. Visual anti-patterns (professional remote-mgmt tone)
+
+Aim for Tailscale / UniFi–like restraint: calm neutrals, clear status, dense-but-legible controls.
+
+**Do not introduce:**
+
+| Anti-pattern | Why |
+|---|---|
+| Gaming / neon / “cyber” chrome | Undermines trust for power control |
+| Glassmorphism, blur stacks, heavy glow | Noise; hurts contrast and a11y |
+| Flashy celebration animations on commands | Commands are operational, not rewards |
+| Purple-on-white / indigo glow “AI default” themes | Brand is dark neutrals + blue accent |
+| Card-heavy dashboard hero chrome | Devices list is a control surface, not a marketing page |
+| Color-only status | Always pair status color with text (`Online` / `Offline` / command labels) |
+
+Motion: prefer subtle Material defaults (progress, pull-to-refresh). No status “pulse” or particle effects unless accessibility-safe and purposeful.
+
+---
+
+## 10. Review checklist (PR / release)
 
 - [ ] Connection vs PC state still separated  
 - [ ] Disruptive commands still confirm with device name  

@@ -62,16 +62,28 @@ Command/status helpers also live in `Networking/Models.swift` (Swift functions),
 
 ---
 
-## 4. Gaps vs a production component library
+## 4. Design-system primitives (`ui/designsystem/`)
+
+| Component | Purpose | Consumers (target) |
+|---|---|---|
+| `EmptyState` | Title + message + optional CTA | Devices empty, sparse sections |
+| `ErrorState` | Title + message + Retry | Devices / Detail / Account load failures |
+| `LoadingState` | Centered progress + a11y label | Full-screen loads |
+| `StatusBadge` | Text + tint for connection/command/trial | Fleet summary, command rows |
+| `Spacing` / token aliases | Shared `dp` scale | New layouts |
+
+Palette remains in `ui/theme/Color.kt` + `Theme.kt`; design system wraps it.
+
+---
+
+## 5. Gaps vs a production component library
 
 | Gap | Severity | Suggested home |
 |---|---|---|
 | Top app bar / overflow menu | Medium | `OnOffTopBar` |
-| Empty state | Medium | Shared; Devices empty is inline |
-| Error + retry | Medium | Detail/Devices already pattern inline |
 | Skeleton / shimmer loading | Low | Optional |
 | Status / trial banner | Medium | Extract from Devices |
-| Command status chip | Low | Wrap `commandStatusLabel` |
+| Command status chip | Low | Wrap `commandStatusLabel` / `StatusBadge` |
 | Primary / secondary / destructive buttons | Low | Thin wrappers over M3 |
 | Snackbar message catalog | Low | Centralize strings |
 | Chart component | Medium | Extract `TempHistoryChart` from detail |
@@ -83,11 +95,11 @@ Command/status helpers also live in `Networking/Models.swift` (Swift functions),
 
 ---
 
-## 5. Extraction priority (shippable, non-breaking)
+## 6. Extraction priority (shippable, non-breaking)
 
-1. **S** — Extract `EmptyState` + `ErrorRetry` used by Devices/Detail (copy-paste → shared).  
-2. **S** — Extract `TempHistoryChart` from `DeviceDetailScreen.kt`.  
-3. **M** — Replace emoji menu with `OnOffTopBar` + Material Icons.  
+1. **S** — Land `EmptyState` / `ErrorState` / `LoadingState` / `StatusBadge` (approved).  
+2. **S** — Extract `TempHistoryChart` from `DeviceDetailScreen.kt` (later).  
+3. **M** — Replace emoji menu with `OnOffTopBar` + Material Icons (deferred polish).  
 4. **M** — Extract trial/billing banner composable shared by Devices + Billing.  
 5. **S** — Mirror any new Android pure helpers on iOS (or later `commonMain`).
 

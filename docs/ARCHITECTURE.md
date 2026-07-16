@@ -238,3 +238,25 @@ CI validates **compile** (Android assemble / iOS simulator build), not behavior.
 **Gaps vs world-class:** No shared core, no test pyramid, incomplete security hardening (pinning, biometrics, R8), incomplete product surface (sleep/hibernate/ownership/firmware OTA), iOS push and store distribution unfinished, design system is palette-only (see [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md)).
 
 **Recommended posture:** Evolve Android in place; extract shared logic for KMP only after seams and tests exist. Do **not** rewrite the Compose UI or replace SwiftUI wholesale in one jump.
+
+---
+
+## 9. Target modular shape (evolution)
+
+Keep UI in `:app` (and SwiftUI on iOS). Extract inward:
+
+```
+android/
+  settings.gradle.kts
+    include(":app")
+    include(":shared:model")      # Phase 2a — DTOs / CommandType / ApiException
+    include(":shared:network")    # Phase 2c — API interface (later)
+    include(":shared:data")       # Phase 2d — repository (later)
+  app/                            # Compose UI, Graph, push, session wiring
+  shared/
+    model/                        # Pure Kotlin (+ serialization)
+    network/                      # Optional follow-on
+    data/                         # Optional follow-on
+```
+
+Design-system Compose primitives stay under `app/.../ui/designsystem/` until a CMP UI phase (if ever). See [`KMP_MIGRATION_PLAN.md`](KMP_MIGRATION_PLAN.md).

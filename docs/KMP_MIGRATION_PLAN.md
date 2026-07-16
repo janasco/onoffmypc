@@ -47,8 +47,9 @@ Related: [`ARCHITECTURE.md`](ARCHITECTURE.md), [`MOBILE_ROADMAP.md`](MOBILE_ROAD
 
 **Exit criteria for Phase 1:**
 - [x] Architecture / UX / component docs written
-- [ ] Unit tests on pure helpers (recommended before moves — see awaiting approval **N1**)
-- [ ] Inventory of “move first” vs “stay platform” files (below)
+- [ ] Unit tests on pure helpers (slice **S5**)
+- [x] Inventory of “move first” vs “stay platform” files (below)
+- [ ] Design-system + UX slices stable on Android (slices **S1–S4**)
 
 ### Move-first candidates (Phase 2)
 
@@ -74,27 +75,38 @@ Related: [`ARCHITECTURE.md`](ARCHITECTURE.md), [`MOBILE_ROADMAP.md`](MOBILE_ROAD
 
 ## 4. Phase 2 — Extract shared API / models / repos / logic
 
-### 4.1 Gradle shape (proposed)
+### 4.1 Gradle shape (Phase 2a — Android/JVM first)
+
+Prefer the **smallest safe extract** before full multiplatform:
 
 ```
 android/
-  settings.gradle.kts          # include(":app", ":shared")
-  shared/                      # NEW kotlin("multiplatform")
+  settings.gradle.kts
+    include(":app")
+    include(":shared:model")     # JVM or android library first
+  shared/model/                  # DTOs / CommandType / ApiException
+  app/                           # depends on project(":shared:model")
+```
+
+Later (still Phase 2): `:shared:network`, then convert modules to `kotlin("multiplatform")` with `commonMain` when iOS consumption is ready.
+
+```
+android/
+  shared/                      # eventual kotlin("multiplatform")
     src/commonMain/kotlin/…
-    src/androidMain/kotlin/…   # initially empty or thin
+    src/androidMain/kotlin/…
     src/iosMain/kotlin/…       # empty until Phase 3
-  app/                         # depends on project(":shared")
 ```
 
 Keep the **Gradle root in `android/`** initially to avoid relocating CI. Optionally later promote a repo-root Gradle for iOS framework export.
 
 ### 4.2 Suggested move order (each PR shippable)
 
-1. **Skeleton** — empty `:shared` with `commonMain` hello + Android dependency (no behavior change).  
-2. **Models** — move `Models.kt`; fix package `com.onoffmypc.shared.model`; Android imports update.  
-3. **Pure presentation** — move command/status helpers; Compose wrappers stay in `:app` mapping enums → `Color`.  
+1. **`:shared:model`** — move `Models.kt`; package `com.onoffmypc.shared.model`; Android imports update. Prefer JVM/Android target first (no iOS yet).  
+2. **Pure presentation** — move command/status *string* helpers; Compose `Color` mapping stays in `:app`.  
+3. **`:shared:network`** — API interface / converters only if models extract soaked; OkHttp wiring may stay in `:app`.  
 4. **ApiConfig** — base URL + path constants.  
-5. **Repository interface** — `OnOffRepository` interface in common; Android class implements with Retrofit (still in `:app` or `androidMain`).  
+5. **Repository interface** — `OnOffRepository` interface in shared; Android class implements with Retrofit.  
 6. **Optional:** generate Kotlin serialization models as single source; iOS continues Codable until Phase 3 framework.
 
 ### 4.3 iOS in Phase 2
@@ -194,16 +206,25 @@ No UI screenshot farm required for Phase 2.
 
 ---
 
-## 9. Awaiting approval — KMP-specific next slices
+## 9. Do-not-break rules
 
-**Do not start until approved** (overlaps [`MOBILE_ROADMAP.md`](MOBILE_ROADMAP.md)):
+1. One module extract (or one screen migration) per PR.  
+2. `./gradlew :app:assembleDebug` (+ unit tests) green before merge.  
+3. Smoke: session, devices list, power confirm, device detail.  
+4. Zero intentional user-facing regression in extract PRs.  
+5. Do not delete Swift until CMP/shared parity for that screen.  
+6. Preserve command/status honesty semantics.  
+7. No secrets in shared modules.
+
+---
+
+## 10. Approved KMP-prep slices (this program)
+
+Full audit plan approved. KMP-specific work in this program:
 
 | ID | Size | Work |
 |---|---|---|
-| **N1** | S | Unit-test pure helpers **before** moving them |
-| **N4** | M | Add empty `:shared` KMP module + `:app` dependency |
-| **N5** | M | Move models + presentation helpers into `commonMain` |
-| **N8** | M | Introduce `SessionStorage` expect/actual; keep Android EncryptedSharedPreferences behavior |
-| **N9** | M | Spike Ktor client for `GET /auth/me` only behind feature flag / debug build |
+| **S5** | M | Unit-test pure helpers **before / with** model extract |
+| **S6** | L | `:shared:model` extract (Android/JVM first); defer `:shared:network` if risky |
 
-**Recommended KMP sequence if approved:** N1 → N4 → N5 → N8 → (decide Retrofit-keep vs Ktor) → N9.
+**Still deferred until asked:** empty multiplatform skeleton-only PR, `SessionStorage` expect/actual, Ktor spike, CMP iOS shell.

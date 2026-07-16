@@ -6,7 +6,7 @@
 - iOS: system SwiftUI + hardcoded brand accents in views / `Assets.xcassets`  
 - Web (reference, not in this repo): dark-first neutrals + blue accent (mobile comments claim parity)
 
-This file documents **what exists** versus a **target** token/component system. Implementation of the target is **not** started; treat targets as backlog for incremental adoption (see [`MOBILE_ROADMAP.md`](MOBILE_ROADMAP.md)).
+This file documents **what exists** versus a **target** token/component system. Incremental adoption lives under `android/app/.../ui/designsystem/` (tokens + Empty/Error/Loading/StatusBadge) without rewriting the app. See [`MOBILE_ROADMAP.md`](MOBILE_ROADMAP.md).
 
 ---
 
@@ -75,9 +75,9 @@ Defined as top-level `Color` vals in `Color.kt`:
 
 ---
 
-## 3. Target tokens (proposed — do not implement until approved)
+## 3. Target tokens (approved — adopt incrementally)
 
-Keep Material 3 as the **engine**; wrap brand tokens so Compose (and later CMP) stay consistent.
+Keep Material 3 as the **engine**; wrap brand tokens so Compose (and later CMP) stay consistent. Prefer `ui/designsystem/` aliases over scattering raw `dp` / one-off colors.
 
 ### 3.1 Color roles (target)
 
@@ -120,26 +120,24 @@ Prefer one expressive brand family for `displayBrand` later; until then, stick t
 | `radius.sm` | 8 | Chips / small controls |
 | `radius.md` | 12 | Cards |
 
-### 3.4 Target shared components (see also COMPONENT_LIBRARY)
+### 3.4 Shared components (see also COMPONENT_LIBRARY)
 
-Promote first (Android-only, then share semantics with iOS):
+| Priority | Component | Notes |
+|---|---|---|
+| Done / landing | `EmptyState` / `ErrorState` / `LoadingState` / `StatusBadge` | `ui/designsystem/` |
+| Exists | `PowerControls`, `DeviceStatusSummary`, command helpers | `ui/components/` |
+| Later | `OnOffTopBar`, trial banner extract, chart extract | Non-blocking polish |
 
-1. `OnOffTopBar` — logo/title + overflow (replace emoji menu)
-2. `StatusBanner` — trial / billing / error / free-access
-3. `EmptyState` / `ErrorState` / `LoadingState`
-4. `PowerControls` (already shared within Android)
-5. `DeviceStatusSummary` (already)
-6. `CommandStatusChip`
-7. `PrimaryButton` / `DestructiveTextButton` wrappers
+**Motion restraint:** Material progress + pull-to-refresh only; no glassmorphism, glow stacks, or celebratory command animations ([`UX_GUIDELINES.md`](UX_GUIDELINES.md)).
 
 ---
 
 ## 4. Adoption strategy (incremental)
 
-1. **Document + enforce** existing palette usage (this file + UX guidelines) — no code churn.
-2. Add `Typography.kt` / `Dimens.kt` that **alias** current values; migrate 1–2 screens.
-3. Extract repeated empty/error/loading UI from Devices/Detail.
-4. Align iOS `Color`/`Font` helpers to the same names (Swift), without KMP yet.
-5. Only after Phase 2–3 of KMP: move pure token constants into `commonMain`.
+1. Document palette + UX anti-patterns (done).
+2. Add design-system tokens (`Spacing`, status colors) wrapping `Color.kt` / M3.
+3. Migrate Devices, Device detail, Account, Login to Empty/Error/Loading/StatusBadge where natural.
+4. Align iOS helpers later (Swift), without KMP yet.
+5. After KMP Phase 2–3: move pure token constants into `commonMain` if useful.
 
 **Anti-goals:** Full visual redesign, purple/glow “AI default” themes, card-heavy dashboard chrome, rewriting every screen to a new design language in one PR.
