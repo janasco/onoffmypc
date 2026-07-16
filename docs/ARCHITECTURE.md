@@ -213,7 +213,7 @@ Interpreted against the product list in the audit brief and current `README.md` 
 
 | Kind | Status |
 |---|---|
-| Unit tests (`src/test`) | **None** |
+| Unit tests (`src/test`) | **Present** — `CommandPresentation`, status helpers, `ApiErrorMapping`, fleet summary; `:shared:model` serialization |
 | Instrumented / Compose UI tests | **None** |
 | iOS XCTest | **None** in repo |
 
