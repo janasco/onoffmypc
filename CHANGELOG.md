@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-07-16
+
+### Fixed
+- Free-access Card used invalid `Modifier =` named arg; switched to positional `Modifier.fillMaxWidth()`.
+
 ## [0.3.6] - 2026-07-16
 
 ### Fixed

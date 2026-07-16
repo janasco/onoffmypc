@@ -126,7 +126,7 @@ fun BillingScreen(
 
             if (!s.billing_enabled) {
                 Spacer(Modifier.height(16.dp))
-                Card(Modifier = Modifier.fillMaxWidth()) {
+                Card(Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             "Free full access",
