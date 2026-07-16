@@ -43,7 +43,7 @@ The first submission can't be fully automated — you set up the listing + polic
    - **Privacy policy** URL → `https://onoffmypc.com/privacy-policy`
    - **Data safety** form — declare what's collected (email for the account; device telemetry). No ad SDKs.
    - **Content rating** questionnaire
-   - **Target audience** (not children), **App access** (note it needs an account + invite code — provide test credentials for review), **Ads** = none
+   - **Target audience** (not children), **App access** (account required — provide test credentials for review; registration may be open or invite-gated depending on the current `registration_mode` admin setting), **Ads** = none
 6. **Production** — Release → Production → create release → upload (or promote the tested build) → submit for review.
 
 ## Versioning
