@@ -3,7 +3,7 @@ package com.onoffmypc.android.ui.devices
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onoffmypc.android.Graph
-import com.onoffmypc.android.data.model.ApiException
+import com.onoffmypc.android.data.isTrialLockError
 import com.onoffmypc.android.data.model.BillingStatus
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
@@ -118,10 +118,7 @@ class DevicesViewModel : ViewModel() {
 
     fun consumeUpgradePrompt() = _state.update { it.copy(upgradeDeviceId = null) }
 
-    private fun isTrialExpired(e: Throwable): Boolean =
-        e is ApiException && (
-            e.httpCode == 402 || e.serverCode == "trial_expired" || e.serverCode == "device_locked"
-        )
+    private fun isTrialExpired(e: Throwable): Boolean = isTrialLockError(e)
 
     fun addDevice(name: String) {
         viewModelScope.launch {

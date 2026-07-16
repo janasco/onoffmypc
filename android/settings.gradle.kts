@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "OnOffMyPC"
 include(":app")
+include(":shared:model")

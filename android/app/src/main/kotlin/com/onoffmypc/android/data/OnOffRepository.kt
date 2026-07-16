@@ -1,7 +1,6 @@
 package com.onoffmypc.android.data
 
 import com.onoffmypc.android.data.model.ApiError
-import com.onoffmypc.android.data.model.ApiException
 import com.onoffmypc.android.data.model.CommandRequest
 import com.onoffmypc.android.data.model.CommandResponse
 import com.onoffmypc.android.data.model.ChangeEmailRequest
@@ -128,7 +127,7 @@ class OnOffRepository(
             res.isSuccessful -> Result.failure(Exception("Empty response"))
             else -> {
                 val err = parseError(res)
-                Result.failure(ApiException(res.code(), err?.code, err?.error ?: "Request failed (${res.code()})"))
+                Result.failure(mapHttpFailure(res.code(), err))
             }
         }
     } catch (_: Exception) {

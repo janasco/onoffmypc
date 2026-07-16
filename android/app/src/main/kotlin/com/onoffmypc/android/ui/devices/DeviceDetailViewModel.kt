@@ -3,7 +3,7 @@ package com.onoffmypc.android.ui.devices
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onoffmypc.android.Graph
-import com.onoffmypc.android.data.model.ApiException
+import com.onoffmypc.android.data.isTrialLockError
 import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
@@ -132,10 +132,7 @@ class DeviceDetailViewModel : ViewModel() {
                         }
                     },
                     onFailure = { error ->
-                        if (error is ApiException && (
-                                error.httpCode == 402 || error.serverCode == "trial_expired" || error.serverCode == "device_locked"
-                            )
-                        ) {
+                        if (isTrialLockError(error)) {
                             _state.update { it.copy(upgradePrompt = true) }
                         } else {
                             _state.update {

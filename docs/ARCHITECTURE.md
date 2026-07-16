@@ -13,10 +13,11 @@ This document describes the **current** architecture. It is not a redesign propo
 
 ```
 onoffmypc-mobile/
-├── android/                 # Gradle root; single module :app
+├── android/                 # Gradle root; modules :app + :shared:model
 │   ├── app/src/main/kotlin/com/onoffmypc/android/
+│   ├── shared/model/        # JVM Kotlin DTOs (com.onoffmypc.shared.model)
 │   ├── gradle/libs.versions.toml
-│   └── settings.gradle.kts  # include(":app") only
+│   └── settings.gradle.kts  # include(":app"), include(":shared:model")
 ├── ios/                     # XcodeGen; SwiftUI client
 │   ├── project.yml
 │   └── OnOffMyPC/
@@ -27,7 +28,7 @@ onoffmypc-mobile/
 └── .github/workflows/       # Android CI/release + iOS simulator CI
 ```
 
-There is **no** shared Kotlin Multiplatform module, **no** feature modules, and **no** `commonMain` today. Android and iOS duplicate models, API shapes, and presentation logic independently.
+Android now has a JVM `:shared:model` module for API DTOs / `CommandType` / `ApiException` (`:app` re-exports via typealiases). There is still **no** KMP `commonMain`, **no** `:shared:network`, and iOS still duplicates models independently.
 
 ---
 
@@ -42,6 +43,7 @@ There is **no** shared Kotlin Multiplatform module, **no** feature modules, and 
 | State | MVVM + `StateFlow` / `collectAsStateWithLifecycle` | `*ViewModel.kt` |
 | DI | Manual singleton `Graph` | `Graph.kt`, init in `OnOffApp.kt` |
 | Domain/data | Single `OnOffRepository` | `data/OnOffRepository.kt` |
+| Shared models | JVM module `:shared:model` | `shared/model/` → `com.onoffmypc.shared.model` |
 | Network | Retrofit 2.11 + OkHttp 4.12 + kotlinx.serialization | `data/remote/` |
 | Auth session | Cookie jar → encrypted prefs | `SessionCookieJar.kt`, `SessionStore.kt` |
 | Push | FCM (optional until `google-services.json`) | `push/` |
@@ -71,7 +73,8 @@ com.onoffmypc.android/
     Constants.kt              # Api.BASE_URL
     SessionStore.kt           # EncryptedSharedPreferences
     OnOffRepository.kt        # All API call sites + Result mapping
-    model/Models.kt           # DTOs, CommandType, ApiException
+    model/Models.kt           # Typealiases → :shared:model
+    ApiErrorMapping.kt        # mapHttpFailure / isTrialLockError
     remote/
       ApiService.kt           # Retrofit interface
       ApiClient.kt            # OkHttp + Retrofit factory
@@ -235,7 +238,7 @@ CI validates **compile** (Android assemble / iOS simulator build), not behavior.
 
 **Strengths:** Clear MVVM, honest command/status language, encrypted session, thin dependency surface, feature-complete core control loop on Android, strong iOS feature parity for auth/devices/billing UI.
 
-**Gaps vs world-class:** No shared core, no test pyramid, incomplete security hardening (pinning, biometrics, R8), incomplete product surface (sleep/hibernate/ownership/firmware OTA), iOS push and store distribution unfinished, design system is palette-only (see [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md)).
+**Gaps vs world-class:** No KMP shared core yet (JVM `:shared:model` only), thin unit-test coverage, incomplete security hardening (pinning, biometrics, R8), incomplete product surface (sleep/hibernate/ownership/firmware OTA), iOS push and store distribution unfinished.
 
 **Recommended posture:** Evolve Android in place; extract shared logic for KMP only after seams and tests exist. Do **not** rewrite the Compose UI or replace SwiftUI wholesale in one jump.
 
@@ -249,12 +252,12 @@ Keep UI in `:app` (and SwiftUI on iOS). Extract inward:
 android/
   settings.gradle.kts
     include(":app")
-    include(":shared:model")      # Phase 2a — DTOs / CommandType / ApiException
+    include(":shared:model")      # Done — DTOs / CommandType / ApiException
     include(":shared:network")    # Phase 2c — API interface (later)
     include(":shared:data")       # Phase 2d — repository (later)
   app/                            # Compose UI, Graph, push, session wiring
   shared/
-    model/                        # Pure Kotlin (+ serialization)
+    model/                        # Pure Kotlin JVM (+ serialization) — present
     network/                      # Optional follow-on
     data/                         # Optional follow-on
 ```

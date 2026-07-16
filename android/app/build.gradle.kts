@@ -127,9 +127,12 @@ android {
 
     // Kotlin sources live under src/main/kotlin.
     sourceSets["main"].java.srcDirs("src/main/kotlin")
+    sourceSets["test"].java.srcDirs("src/test/kotlin")
 }
 
 dependencies {
+    implementation(project(":shared:model"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -163,4 +166,6 @@ dependencies {
     implementation(libs.androidx.browser)
 
     debugImplementation(libs.androidx.ui.tooling)
+
+    testImplementation(libs.junit)
 }

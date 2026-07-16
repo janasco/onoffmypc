@@ -364,8 +364,9 @@ private fun HistoryRow(r: PaymentRequestItem) {
     ) {
         Column {
             Text(r.device_name ?: r.method ?: r.plan, style = MaterialTheme.typography.bodyMedium)
-            if (r.device_name != null && r.method != null) {
-                Text(r.method, color = Muted, style = MaterialTheme.typography.labelSmall)
+            val method = r.method
+            if (r.device_name != null && method != null) {
+                Text(method, color = Muted, style = MaterialTheme.typography.labelSmall)
             }
             Text(fmtDate(r.created_at), color = Muted, style = MaterialTheme.typography.labelSmall)
         }

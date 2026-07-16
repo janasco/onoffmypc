@@ -43,16 +43,17 @@ fun connectionFromLastContact(lastSeenAt: String?, now: Instant = Instant.now())
 fun deviceStatusPresentation(
     lastSeenAt: String?,
     pcOn: Int?,
-    connection: DeviceConnectionState = connectionFromLastContact(lastSeenAt),
+    connection: DeviceConnectionState? = null,
     onlineLabel: String = "Online",
     now: Instant = Instant.now(),
 ): DeviceStatusPresentation {
-    val connectionLabel = when (connection) {
+    val resolvedConnection = connection ?: connectionFromLastContact(lastSeenAt, now)
+    val connectionLabel = when (resolvedConnection) {
         DeviceConnectionState.ONLINE -> onlineLabel
         DeviceConnectionState.OFFLINE -> "Offline"
         DeviceConnectionState.UNKNOWN -> "Status unknown"
     }
-    val connectionColor = when (connection) {
+    val connectionColor = when (resolvedConnection) {
         DeviceConnectionState.ONLINE -> Green
         DeviceConnectionState.OFFLINE -> Red
         DeviceConnectionState.UNKNOWN -> Muted
@@ -63,7 +64,7 @@ fun deviceStatusPresentation(
         else -> "PC state not reported"
     }
     return DeviceStatusPresentation(
-        connection = connection,
+        connection = resolvedConnection,
         connectionLabel = connectionLabel,
         connectionColor = connectionColor,
         pcStateLabel = pcStateLabel,
