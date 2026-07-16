@@ -46,6 +46,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.onoffmypc.android.ui.components.LogoutConfirmDialog
 import com.onoffmypc.android.ui.components.PasswordField
+import com.onoffmypc.android.ui.designsystem.ErrorState
+import com.onoffmypc.android.ui.designsystem.LoadingState
+import com.onoffmypc.android.ui.designsystem.Spacing
 import com.onoffmypc.android.ui.theme.Muted
 import com.onoffmypc.android.ui.theme.Red
 import com.onoffmypc.android.ui.theme.Yellow
@@ -95,14 +98,16 @@ fun AccountScreen(
         ) {
             val user = state.user
             when {
-                state.loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                state.loading -> LoadingState(
+                    contentDescription = "Loading account",
+                    modifier = Modifier.align(Alignment.Center),
+                )
 
-                user == null -> Text(
-                    text = state.error ?: "Couldn't load your account.",
-                    color = Muted,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(24.dp),
+                user == null -> ErrorState(
+                    title = "Couldn't load account",
+                    message = state.error ?: "Check your connection and try again.",
+                    modifier = Modifier.align(Alignment.Center),
+                    onRetry = vm::refresh,
                 )
 
                 else -> PullToRefreshBox(
@@ -114,7 +119,7 @@ fun AccountScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
+                        .padding(Spacing.md),
                 ) {
                     user.deletion_at?.let { da ->
                         DeletionCountdownCard(deletionAt = da, busy = state.busy, onCancel = vm::cancelDeletion)

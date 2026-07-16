@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.onoffmypc.android.ui.components.AppLogo
 import com.onoffmypc.android.ui.components.PasswordField
+import com.onoffmypc.android.ui.designsystem.Spacing
 import com.onoffmypc.android.ui.theme.Muted
 
 @Composable
@@ -43,17 +44,17 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(Spacing.lg),
         verticalArrangement = Arrangement.Center,
     ) {
         AppLogo()
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Spacing.md))
         Text("OnOffMyPC", style = MaterialTheme.typography.headlineMedium)
         Text(
             text = "Control your PC from anywhere.",
             style = MaterialTheme.typography.bodyMedium,
             color = Muted,
-            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp),
+            modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.lg),
         )
 
         OutlinedTextField(

@@ -14,10 +14,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,9 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,6 +50,10 @@ import com.onoffmypc.android.ui.components.LogoutConfirmDialog
 import com.onoffmypc.android.ui.components.PowerControls
 import com.onoffmypc.android.ui.components.DeviceStatusSummary
 import com.onoffmypc.android.ui.components.deviceStatusPresentation
+import com.onoffmypc.android.ui.designsystem.EmptyState
+import com.onoffmypc.android.ui.designsystem.ErrorState
+import com.onoffmypc.android.ui.designsystem.LoadingState
+import com.onoffmypc.android.ui.designsystem.Spacing
 import com.onoffmypc.android.ui.theme.Muted
 import androidx.compose.ui.graphics.Color
 import com.onoffmypc.android.ui.theme.Accent
@@ -135,26 +135,17 @@ fun DevicesScreen(
                 .padding(padding),
         ) {
             when {
-                state.loading -> CircularProgressIndicator(
-                    Modifier
-                        .align(Alignment.Center)
-                        .clearAndSetSemantics { contentDescription = "Loading devices" },
+                state.loading -> LoadingState(
+                    contentDescription = "Loading devices",
+                    modifier = Modifier.align(Alignment.Center),
                 )
 
-                state.error != null -> Column(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text("Couldn't load devices", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        "Check your connection and try again.",
-                        color = Muted,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Button(onClick = vm::load) { Text("Retry") }
-                }
+                state.error != null -> ErrorState(
+                    title = "Couldn't load devices",
+                    message = "Check your connection and try again.",
+                    modifier = Modifier.align(Alignment.Center),
+                    onRetry = vm::load,
+                )
 
                 else -> PullToRefreshBox(
                     isRefreshing = state.refreshing,
@@ -163,7 +154,12 @@ fun DevicesScreen(
                 ) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp),
+                        contentPadding = PaddingValues(
+                            start = Spacing.md,
+                            top = Spacing.md,
+                            end = Spacing.md,
+                            bottom = 88.dp,
+                        ),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         val user = state.user
@@ -178,24 +174,21 @@ fun DevicesScreen(
                                 item { TrialBanner(billing = b, onUpgrade = { onBilling(null) }) }
                             }
                         }
+                        if (state.devices.isNotEmpty()) {
+                            item {
+                                FleetSummaryCard(
+                                    summary = computeFleetSummary(state.devices, state.billing),
+                                )
+                            }
+                        }
                         if (state.devices.isEmpty()) {
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 48.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    Text("No devices yet", style = MaterialTheme.typography.titleMedium)
-                                    Spacer(Modifier.height(6.dp))
-                                    Text(
-                                        "Add your first device to view its connection and last-reported PC status.",
-                                        color = Muted,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                    Spacer(Modifier.height(12.dp))
-                                    Button(onClick = { showAdd = true }) { Text("Add device") }
-                                }
+                                EmptyState(
+                                    title = "No devices yet",
+                                    message = "Add your first device to view its connection and last-reported PC status.",
+                                    actionLabel = "Add device",
+                                    onAction = { showAdd = true },
+                                )
                             }
                         } else {
                             items(state.devices, key = { it.id }) { device ->

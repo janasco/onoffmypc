@@ -77,7 +77,9 @@ fun DeleteDeviceDialog(device: Device, onDismiss: () -> Unit, onConfirm: () -> U
         onDismissRequest = onDismiss,
         title = { Text("Delete device?") },
         text = { Text("\"${device.name}\" will be removed permanently if it has no purchase or payment under review. Purchased access must be transferred through support before deletion.") },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Delete", color = Red) } },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text("Delete “${device.name}”", color = Red) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

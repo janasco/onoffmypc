@@ -80,21 +80,30 @@ fun PowerControls(
     }
 
     confirmation?.let { type ->
+        val confirmLabel = confirmActionLabel(type, deviceName)
         AlertDialog(
             onDismissRequest = { confirmation = null },
-            title = { Text("${type.label} “$deviceName”?") },
+            title = { Text("$confirmLabel?") },
             text = { Text(commandConsequence(type, deviceName)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmation = null
                     onCommand(type)
-                }) { Text(type.label, color = Red) }
+                }) { Text(confirmLabel, color = Red) }
             },
             dismissButton = {
                 TextButton(onClick = { confirmation = null }) { Text("Cancel") }
             },
         )
     }
+}
+
+/** Explicit confirm copy naming the action and device (never a generic “Confirm”). */
+fun confirmActionLabel(type: CommandType, deviceName: String): String = when (type) {
+    CommandType.POWER_ON -> "Power On “$deviceName”"
+    CommandType.POWER_OFF -> "Power Off “$deviceName”"
+    CommandType.POWER_OFF_FORCE -> "Force Off “$deviceName”"
+    CommandType.RESET -> "Restart “$deviceName”"
 }
 
 @Composable
