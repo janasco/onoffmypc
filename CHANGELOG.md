@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- Logout now unregisters the FCM push token with the API before clearing the session (Android via `PushManager.unregisterIfPossible`; iOS when `Session.pushToken` is set).
+
 ## [0.3.7] - 2026-07-16
 
 ### Fixed

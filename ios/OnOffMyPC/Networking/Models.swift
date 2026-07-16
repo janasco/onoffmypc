@@ -7,6 +7,10 @@ struct GoogleAuthRequest: Encodable { let credential: String }
 struct SocialAuthRequest: Encodable { let credential: String }
 struct RegisterRequest: Encodable { let email: String; let password: String }
 struct ForgotPasswordRequest: Encodable { let email: String }
+struct PushRegisterRequest: Encodable {
+    let token: String
+    let platform: String = "ios"
+}
 struct ChangeEmailRequest: Encodable { let new_email: String; let password: String }
 struct ChangePasswordRequest: Encodable { let current_password: String; let new_password: String }
 struct CommandRequest: Encodable { let type: String }

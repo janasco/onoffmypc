@@ -140,6 +140,11 @@ final class APIClient {
     func cancelDeletion() async throws { _ = try await send("POST", "auth/account/cancel-deletion") }
 
     func logout() async {
+        // Unregister FCM while the session is still valid (no-op until push stores a token).
+        if let token = Session.pushToken, !token.isEmpty {
+            _ = try? await send("POST", "push/unregister", body: PushRegisterRequest(token: token))
+            Session.pushToken = nil
+        }
         _ = try? await send("POST", "auth/logout")
         Session.cookie = nil
     }

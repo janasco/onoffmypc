@@ -25,6 +25,7 @@ import com.onoffmypc.android.data.model.PushRegisterRequest
 import com.onoffmypc.android.data.model.RegisterRequest
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.remote.ApiService
+import com.onoffmypc.android.push.PushManager
 import kotlinx.serialization.json.Json
 import retrofit2.Response
 
@@ -112,6 +113,8 @@ class OnOffRepository(
         call { api.sendCommand(id, CommandRequest(type.wire)) }
 
     suspend fun logout() {
+        // Drop this device's push token while the session cookie is still valid.
+        runCatching { PushManager.unregisterIfPossible() }
         runCatching { api.logout() }
         session.clear()
     }

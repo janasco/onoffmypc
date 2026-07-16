@@ -7,6 +7,7 @@ import Security
 enum Session {
     private static let service = "com.onoffmypc.app"
     private static let account = "session-cookie"
+    private static let pushTokenKey = "fcm-push-token"
 
     static var isLoggedIn: Bool { cookie != nil }
 
@@ -14,6 +15,18 @@ enum Session {
         get { read() }
         set {
             if let value = newValue { save(value) } else { delete() }
+        }
+    }
+
+    /// FCM registration token for this install (set when push is wired). Cleared on logout.
+    static var pushToken: String? {
+        get { UserDefaults.standard.string(forKey: pushTokenKey) }
+        set {
+            if let value = newValue, !value.isEmpty {
+                UserDefaults.standard.set(value, forKey: pushTokenKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: pushTokenKey)
+            }
         }
     }
 
