@@ -11,6 +11,7 @@
 #include <DHT.h>
 #include <esp_random.h>
 #include "certs.h"
+#include "generated/onoff_design_tokens.h"
 
 using namespace websockets;
 
@@ -34,84 +35,104 @@ using namespace websockets;
 
 // ── Provisioning portal ───────────────────────────────────────────────────────
 
-static const char SETUP_PAGE[] PROGMEM = R"HTML(<!DOCTYPE html>
+static const char SETUP_PAGE[] PROGMEM =
+R"HTML(<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OnOffMyPC Setup</title>
-<style>
+<style>)HTML"
+OMP_SETUP_THEME_CSS
+R"HTML(
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#f0f0f0;
-  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
-.card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:2rem;
-  width:100%;max-width:380px}
-h1{font-size:1.2rem;margin-bottom:.25rem}
-p{font-size:.85rem;color:#888;margin-bottom:1.5rem;line-height:1.5}
-a{color:#3b82f6}
-label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;
-  color:#888;margin:.75rem 0 .25rem}
-input,select{width:100%;background:#0f0f0f;border:1px solid #2a2a2a;border-radius:6px;
-  color:#f0f0f0;font-size:.875rem;padding:.55rem .75rem}
-small{display:block;font-size:.7rem;color:#555;margin-top:.25rem}
-button{margin-top:1.5rem;width:100%;background:#3b82f6;color:#fff;border:none;
-  border-radius:6px;padding:.7rem;font-size:.9rem;cursor:pointer;font-weight:600}
-.row{display:flex;gap:.5rem;align-items:stretch}
+html{color-scheme:dark}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:linear-gradient(180deg,var(--omp-bg),#101612);
+  color:var(--omp-text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.25rem}
+.card{background:var(--omp-surface);border:1px solid var(--omp-border);border-radius:16px;padding:2rem;
+  width:100%;max-width:430px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+.eyebrow{color:var(--omp-action);font-size:.7rem;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;margin-bottom:.55rem}
+h1{font-size:1.5rem;line-height:1.2;letter-spacing:-.025em;margin-bottom:.5rem}
+p{font-size:.925rem;color:var(--omp-muted);margin-bottom:1.5rem;line-height:1.55}
+p strong{color:var(--omp-text)}
+a{color:var(--omp-link);text-underline-offset:2px}
+label{display:block;font-size:.75rem;letter-spacing:.01em;color:var(--omp-muted);
+  margin:1rem 0 .35rem;font-weight:650}
+input,select{width:100%;min-height:48px;background:var(--omp-bg);border:1px solid var(--omp-border);
+  border-radius:10px;color:var(--omp-text);font-size:1rem;padding:.7rem .85rem;outline:none}
+input:focus,select:focus{border-color:var(--omp-action);box-shadow:0 0 0 3px rgba(59,130,246,.22)}
+input::placeholder{color:var(--omp-muted);opacity:1}
+small{display:block;font-size:.75rem;color:var(--omp-muted);margin-top:.35rem;line-height:1.4}
+button{margin-top:1.5rem;width:100%;min-height:48px;background:var(--omp-action);color:var(--omp-action-text);
+  border:none;border-radius:10px;padding:.7rem 1rem;font-size:.95rem;cursor:pointer;font-weight:700}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--omp-focus);outline-offset:2px}
+button:disabled{opacity:.55;cursor:wait}
+.row{display:flex;gap:.6rem;align-items:stretch}
 .row input{flex:1}
-.mini{margin-top:0;width:auto;padding:.55rem .7rem;background:#2a2a2a;font-weight:500;
-  font-size:.75rem;white-space:nowrap}
-.reveal{margin-top:0;width:auto;padding:0 .8rem;background:#2a2a2a;font-weight:500;font-size:.75rem}
-.hint{color:#3b82f6;font-size:.7rem;margin-top:.25rem}
+.mini,.reveal{margin-top:0;width:auto;min-width:64px;padding:.55rem .75rem;background:var(--omp-surface-subtle);
+  color:var(--omp-text);border:1px solid var(--omp-border);font-weight:650;font-size:.8rem;white-space:nowrap}
+.hint{color:var(--omp-link);font-size:.75rem;margin-top:.4rem;line-height:1.4}
+.form-error{margin-top:1rem;padding:.75rem;border:1px solid var(--omp-danger);border-radius:10px;
+  background:color-mix(in srgb,var(--omp-danger) 12%,var(--omp-bg));color:var(--omp-danger);
+  font-size:.8rem;font-weight:650;line-height:1.45}
+[hidden]{display:none!important}
+details{margin:.9rem 0 0;background:var(--omp-bg);border:1px solid var(--omp-border);border-radius:10px;padding:.75rem}
+summary{cursor:pointer;min-height:44px;color:var(--omp-muted);font-size:.8rem;font-weight:650;display:flex;align-items:center}
+@media(max-width:420px){body{padding:.75rem}.card{padding:1.4rem}.row{gap:.4rem}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="card">
+<div class="eyebrow">Device setup</div>
 <h1>OnOffMyPC Setup</h1>
 <p>Get your <strong>pairing code</strong> from
 <a href="https://app.onoffmypc.com">app.onoffmypc.com</a>
 (tap your device → Pairing code), then fill in the form.</p>
-<form method="POST" action="/save">
-<label>Pairing Code</label>
-<input name="pair_code" id="pair" autocomplete="off" placeholder="e.g. 7QK2-9F3D" style="text-transform:uppercase;letter-spacing:.05em">
-<small>One short code — the device fetches its own credentials. Works once, expires in 15 min.</small>
-<label>WiFi Network</label>
+<form method="POST" action="/save" id="setup-form" autocomplete="off">
+<label for="pair">Pairing code</label>
+<input name="pair_code" id="pair" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="16" pattern="[A-Za-z0-9-]{4,16}" aria-describedby="pair-help" placeholder="e.g. 7QK2-9F3D" style="text-transform:uppercase;letter-spacing:.05em">
+<small id="pair-help">One short code — the device fetches its own credentials. Works once, expires in 15 min.</small>
+<label for="ssid">Wi-Fi network</label>
 <div class="row">
-<input name="ssid" id="ssid" list="nets" required autocomplete="off" placeholder="Pick or type your WiFi">
-<button type="button" class="mini" id="rescan" onclick="scan()">Scan</button>
+<input name="ssid" id="ssid" list="nets" required autocomplete="off" maxlength="64" aria-describedby="scanmsg" placeholder="Pick or type your Wi-Fi network">
+<button type="button" class="mini" id="rescan" aria-controls="nets scanmsg" onclick="scan()">Scan</button>
 </div>
 <datalist id="nets"></datalist>
-<div class="hint" id="scanmsg">Scanning for networks…</div>
-<label>WiFi Password</label>
+<div class="hint" id="scanmsg" role="status" aria-live="polite" aria-atomic="true">Scanning for networks…</div>
+<label for="pass">Wi-Fi password</label>
 <div class="row">
-<input type="password" name="pass" id="pass" autocomplete="new-password" placeholder="Leave blank if open">
-<button type="button" class="reveal" onclick="tog('pass',this)">Show</button>
+<input type="password" name="pass" id="pass" autocomplete="new-password" maxlength="64" placeholder="Leave blank if open">
+<button type="button" class="reveal" data-label="Wi-Fi password" aria-controls="pass" aria-label="Show Wi-Fi password" onclick="tog('pass',this)">Show</button>
 </div>
-<details style="margin:.5rem 0">
-<summary style="cursor:pointer;font-size:.75rem;color:#888">Advanced: enter Device ID + Token instead</summary>
-<label>Device ID</label>
-<input name="device_id" autocomplete="off" placeholder="Paste from dashboard">
-<label>Device Token</label>
+<details>
+<summary>Advanced: enter Device ID + Token instead</summary>
+<label for="device-id">Device ID</label>
+<input name="device_id" id="device-id" autocomplete="off" maxlength="64" spellcheck="false" placeholder="Paste from dashboard">
+<label for="tok">Device token</label>
 <div class="row">
-<input type="password" name="device_token" id="tok" autocomplete="off" placeholder="Paste from dashboard">
-<button type="button" class="reveal" onclick="tog('tok',this)">Show</button>
+<input type="password" name="device_token" id="tok" autocomplete="off" maxlength="128" placeholder="Paste from dashboard">
+<button type="button" class="reveal" data-label="device token" aria-controls="tok" aria-label="Show device token" onclick="tog('tok',this)">Show</button>
 </div>
 </details>
-<label>PC MAC Address <small style="display:inline;text-transform:none">(for Wake-on-LAN)</small></label>
-<input name="pc_mac" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off">
-<small>Run <strong>ipconfig /all</strong> (Windows) or <strong>ip link</strong> (Linux/Mac)</small>
-<label>Setup PIN</label>
-<input name="setup_pin" required autocomplete="off" inputmode="numeric" placeholder="Printed in serial console">
-<small>Find the 6-digit PIN in the ESP Web Tools / serial output when provisioning starts.</small>
-<button type="submit">Save &amp; Connect</button>
+<label for="pc-mac">PC MAC address <small style="display:inline;text-transform:none">(for Wake-on-LAN)</small></label>
+<input name="pc_mac" id="pc-mac" maxlength="17" pattern="([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}" aria-describedby="mac-help" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off" autocapitalize="characters" spellcheck="false">
+<small id="mac-help">Run <strong>ipconfig /all</strong> (Windows) or <strong>ip link</strong> (Linux/Mac)</small>
+<label for="setup-pin">Setup PIN</label>
+<input name="setup_pin" id="setup-pin" required autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" aria-describedby="pin-help" placeholder="Printed in serial console">
+<small id="pin-help">Find the 6-digit PIN in the ESP Web Tools / serial output when provisioning starts.</small>
+<div class="form-error" id="form-error" role="alert" tabindex="-1" hidden></div>
+<button type="submit">Save &amp; connect</button>
 </form>
 </div>
 <script>
-function tog(id,b){var e=document.getElementById(id);
-  if(e.type==='password'){e.type='text';b.textContent='Hide';}
-  else{e.type='password';b.textContent='Show';}}
+function tog(id,b){var e=document.getElementById(id),show=e.type==='password';
+  e.type=show?'text':'password';b.textContent=show?'Hide':'Show';
+  b.setAttribute('aria-label',(show?'Hide ':'Show ')+(b.dataset.label||'password'));}
 function bars(r){return r>=-55?'▂▄▆█':r>=-65?'▂▄▆ ':r>=-75?'▂▄  ':'▂   ';}
 function scan(){var m=document.getElementById('scanmsg'),b=document.getElementById('rescan');
-  m.textContent='Scanning for networks…';b.disabled=true;
+  m.textContent='Scanning for networks…';m.setAttribute('aria-busy','true');b.disabled=true;
   fetch('/scan').then(r=>r.json()).then(list=>{
     var dl=document.getElementById('nets');dl.innerHTML='';
     list.sort((a,c)=>c.rssi-a.rssi);
@@ -120,38 +141,61 @@ function scan(){var m=document.getElementById('scanmsg'),b=document.getElementBy
       var o=document.createElement('option');
       o.value=n.ssid;o.label=bars(n.rssi)+(n.secure?' 🔒':'');dl.appendChild(o);});
     var c=Object.keys(seen).length;
-    m.textContent=c?('Found '+c+' network'+(c>1?'s':'')+' — pick from the list or type your own'):'No networks found — type your WiFi name';
-  }).catch(()=>{m.textContent='Scan failed — type your WiFi name manually';})
-   .finally(()=>{b.disabled=false;});}
+    m.textContent=c?('Found '+c+' network'+(c>1?'s':'')+' — pick from the list or type your own'):'No networks found — type your Wi-Fi network name';
+  }).catch(()=>{m.textContent='Scan failed — type your Wi-Fi network name manually';})
+   .finally(()=>{m.setAttribute('aria-busy','false');b.disabled=false;});}
+function formError(message,field){var e=document.getElementById('form-error');
+  e.textContent=message;e.hidden=false;e.focus();if(field){field.setAttribute('aria-invalid','true');
+  field.setAttribute('aria-errormessage','form-error');}}
+document.getElementById('setup-form').addEventListener('submit',function(event){
+  var e=document.getElementById('form-error'),pair=document.getElementById('pair'),
+      device=document.getElementById('device-id'),token=document.getElementById('tok');
+  e.hidden=true;[pair,device,token].forEach(function(field){field.removeAttribute('aria-invalid');
+    field.removeAttribute('aria-errormessage');});
+  if(!this.checkValidity()){event.preventDefault();this.reportValidity();return;}
+  if(!pair.value.trim()&&(!device.value.trim()||!token.value.trim())){
+    event.preventDefault();formError('Enter a pairing code, or enter both the Device ID and device token.',
+      !device.value.trim()?device:token);
+  }
+});
 scan();
 </script>
 </body>
 </html>)HTML";
 
-static const char SAVED_PAGE[] PROGMEM = R"(<!DOCTYPE html>
+static const char SAVED_PAGE[] PROGMEM =
+R"HTML(<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Saved — OnOffMyPC</title>
-<style>
+<style>)HTML"
+OMP_SETUP_THEME_CSS
+R"HTML(
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#f0f0f0;
-  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
-.card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:2rem;
-  width:100%;max-width:380px;text-align:center}
-h1{font-size:1.25rem;margin-bottom:.75rem;color:#22c55e}
-p{font-size:.875rem;color:#888;line-height:1.6}
+html{color-scheme:dark}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:linear-gradient(180deg,var(--omp-bg),#101612);
+  color:var(--omp-text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.25rem}
+.card{background:var(--omp-surface);border:1px solid var(--omp-border);border-radius:16px;padding:2.25rem;
+  width:100%;max-width:430px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+.eyebrow{color:var(--omp-action);font-size:.7rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:.7rem}
+.check{width:48px;height:48px;margin:0 auto 1rem;border-radius:999px;background:var(--omp-success-container);color:var(--omp-success);
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700}
+h1{font-size:1.5rem;line-height:1.2;letter-spacing:-.025em;margin-bottom:.75rem}
+p{font-size:.925rem;color:var(--omp-muted);line-height:1.6}
 </style>
 </head>
 <body>
 <div class="card">
-<h1>&#10003; Saved</h1>
+<div class="eyebrow">Device setup</div>
+<div class="check" aria-hidden="true">&#10003;</div>
+<h1>Settings saved</h1>
 <p>Device is restarting and connecting to your network.<br><br>
 Watch the LED — solid means it's online and ready.</p>
 </div>
 </body>
-</html>)";
+</html>)HTML";
 
 // ── Globals ───────────────────────────────────────────────────────────────────
 
@@ -386,8 +430,8 @@ void startProvisioning() {
     String pcMac = stripWs(httpServer.arg("pc_mac"));
     String pin   = stripWs(httpServer.arg("setup_pin"));
 
-    if (fieldTooLong(ssid, 64, "WiFi SSID") ||
-        fieldTooLong(pass, 64, "WiFi password") ||
+    if (fieldTooLong(ssid, 64, "Wi-Fi network name") ||
+        fieldTooLong(pass, 64, "Wi-Fi password") ||
         fieldTooLong(pair, 16, "Pairing code") ||
         fieldTooLong(devId, 64, "Device ID") ||
         fieldTooLong(token, 128, "Device token") ||
@@ -406,7 +450,7 @@ void startProvisioning() {
 
     const bool haveManual = !devId.isEmpty() && !token.isEmpty();
     if (ssid.isEmpty() || (pair.isEmpty() && !haveManual)) {
-      httpServer.send(400, "text/plain", "Enter a pairing code (or WiFi + Device ID/Token)");
+      httpServer.send(400, "text/plain", "Enter a pairing code (or Wi-Fi details + Device ID/token)");
       return;
     }
 

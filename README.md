@@ -9,6 +9,11 @@ It is not the cloud API, web dashboard, mobile client, or public artifact
 repository. Those are `onoffmypc-app`, `onoffmypc-web`, `onoffmypc-mobile`, and
 `onoffmypc-release` respectively.
 
+The captive provisioning portal consumes a compact generated header from
+`onoffmypc-design`. The checked-in file under `src/generated/` contains only
+offline-safe color tokens and CSS; firmware has no runtime package or network
+dependency on the design repository.
+
 ## Current device contract
 
 - Target: ESP32 DevKit/classic ESP32 via PlatformIO `esp32dev`.
@@ -31,10 +36,13 @@ implemented.
 pio run -e esp32dev
 pio test -e native
 pio check -e esp32dev
+python3 tools/check_portal.py
 ```
 
 Native tests do not replace TLS, provisioning, watchdog, GPIO, malformed-frame,
-or interrupted-flash tests on a lab board.
+or interrupted-flash tests on a lab board. The dependency-free portal check
+guards offline operation, generated-token adoption, labeled inputs, touch
+targets, reduced-motion behavior, and announced Wi-Fi scan state.
 
 ## Release
 

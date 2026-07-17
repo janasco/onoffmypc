@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Added a dependency-free captive-portal contract check and pull-request CI for
+  labeled inputs, touch targets, announced scan state, offline-safe assets,
+  generated design tokens, native unit tests, and ESP32 compilation.
+
+### Changed
+- Rebuilt the offline provisioning and saved-confirmation pages with generated
+  `@onoffmypc/design` 0.1 tokens, clearer setup hierarchy, larger controls,
+  visible focus, programmatically associated labels, descriptive password
+  reveal controls, announced Wi-Fi scan state, constrained PIN and MAC entry,
+  accessible in-page credential validation, readable supporting text, and
+  accurate restarting/connecting feedback. The portal remains fully embedded
+  with no runtime dependency.
+
 ## [1.3.6] - 2026-07-07
 
 ### Changed

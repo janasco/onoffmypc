@@ -1,0 +1,26 @@
+name: Firmware CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Validate offline portal contract
+        run: python3 tools/check_portal.py
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+      - name: Run native tests
+        run: pio test -e native
+      - name: Compile ESP32 firmware
+        run: pio run -e esp32dev

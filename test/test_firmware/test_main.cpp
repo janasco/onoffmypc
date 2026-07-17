@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
+#include "generated/onoff_design_tokens.h"
 
 // ── WoL packet builder (extracted from main.cpp) ──────────────────────────────
 
@@ -53,6 +54,18 @@ static std::string buildTelemetry(const char* deviceId, bool pcOn,
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
+
+void test_generated_design_tokens() {
+  TEST_ASSERT_EQUAL_STRING("#0C100E", OMP_COLOR_BACKGROUND);
+  TEST_ASSERT_EQUAL_STRING("#141A16", OMP_COLOR_SURFACE);
+  TEST_ASSERT_EQUAL_STRING("#93C5FD", OMP_COLOR_LINK);
+  TEST_ASSERT_EQUAL_STRING("#3B82F6", OMP_COLOR_ACTION);
+  TEST_ASSERT_EQUAL_STRING("#061225", OMP_COLOR_ACTION_TEXT);
+  TEST_ASSERT_EQUAL_STRING("#60A5FA", OMP_COLOR_FOCUS);
+  TEST_ASSERT_NOT_NULL(strstr(OMP_SETUP_THEME_CSS, "--omp-bg:"));
+  TEST_ASSERT_NOT_NULL(strstr(OMP_SETUP_THEME_CSS, "--omp-action-text:"));
+  TEST_ASSERT_NOT_NULL(strstr(OMP_SETUP_THEME_CSS, "--omp-success-container:"));
+}
 
 void test_wol_packet_length() {
   uint8_t packet[102];
@@ -147,6 +160,8 @@ void test_telemetry_type_field() {
 
 int main() {
   UNITY_BEGIN();
+
+  RUN_TEST(test_generated_design_tokens);
 
   RUN_TEST(test_wol_packet_length);
   RUN_TEST(test_wol_packet_sync_bytes);
