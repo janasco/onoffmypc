@@ -17,6 +17,7 @@ struct PowerCommandControls: View {
                 spacing: AppSpacing.small
             ) {
                 commandButton(.powerOn, role: .informational)
+                commandButton(.sleep, role: .neutral)
                 commandButton(.powerOff, role: .danger)
                 if includeForceOff { commandButton(.powerOffForce, role: .danger) }
                 commandButton(.reset, role: .warning)
@@ -48,7 +49,7 @@ struct PowerCommandControls: View {
 
     private func commandButton(_ type: CommandType, role: AppStatusRole) -> some View {
         Button {
-            if type == .powerOn {
+            if type == .powerOn || type == .sleep {
                 onCommand(type)
             } else {
                 confirmation = type
@@ -67,6 +68,7 @@ struct PowerCommandControls: View {
         case .powerOff: return "power.circle"
         case .powerOffForce: return "exclamationmark.octagon"
         case .reset: return "arrow.clockwise"
+        case .sleep: return "moon.fill"
         }
     }
 
@@ -80,6 +82,8 @@ struct PowerCommandControls: View {
             return "This asks “\(deviceName)” to hold the PC power button for 6 seconds. Power may be cut immediately and unsaved work could be lost. Use only when normal Power Off does not work."
         case .powerOn:
             return "This asks “\(deviceName)” to turn the PC on."
+        case .sleep:
+            return "This asks “\(deviceName)” to sleep. Open apps stay in memory; nothing is closed."
         }
     }
 }

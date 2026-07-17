@@ -414,6 +414,7 @@ private fun commandLabel(type: String?): String = when (type) {
     "power_off" -> "Power Off"
     "power_off_force" -> "Force Off"
     "reset" -> "Reset"
+    "sleep" -> "Sleep"
     else -> type ?: "Unknown command"
 }
 

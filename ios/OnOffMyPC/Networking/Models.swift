@@ -171,6 +171,7 @@ enum CommandType: String, CaseIterable, Identifiable {
     case powerOff = "power_off"
     case powerOffForce = "power_off_force"
     case reset = "reset"
+    case sleep = "sleep"
 
     var id: String { rawValue }
     var label: String {
@@ -179,6 +180,7 @@ enum CommandType: String, CaseIterable, Identifiable {
         case .powerOff: return "Power Off"
         case .powerOffForce: return "Force Off"
         case .reset: return "Reset"
+        case .sleep: return "Sleep"
         }
     }
 }

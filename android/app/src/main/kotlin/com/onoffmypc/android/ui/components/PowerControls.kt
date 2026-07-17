@@ -64,6 +64,13 @@ fun PowerControls(
                         accessibilityLabel = "Power On $deviceName",
                     ) { onCommand(CommandType.POWER_ON) }
                     CmdButton(
+                        label = "Sleep",
+                        style = CommandButtonStyle.Neutral,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !commandInFlight,
+                        accessibilityLabel = "Sleep $deviceName",
+                    ) { onCommand(CommandType.SLEEP) }
+                    CmdButton(
                         label = "Power Off",
                         style = CommandButtonStyle.DestructiveTonal,
                         modifier = Modifier.fillMaxWidth(),
@@ -99,17 +106,24 @@ fun PowerControls(
                             accessibilityLabel = "Power On $deviceName",
                         ) { onCommand(CommandType.POWER_ON) }
                         CmdButton(
+                            label = "Sleep",
+                            style = CommandButtonStyle.Neutral,
+                            modifier = Modifier.weight(1f),
+                            enabled = !commandInFlight,
+                            accessibilityLabel = "Sleep $deviceName",
+                        ) { onCommand(CommandType.SLEEP) }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    ) {
+                        CmdButton(
                             label = "Power Off",
                             style = CommandButtonStyle.DestructiveTonal,
                             modifier = Modifier.weight(1f),
                             enabled = !commandInFlight,
                             accessibilityLabel = "Power Off $deviceName",
                         ) { confirmation = CommandType.POWER_OFF }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                    ) {
                         CmdButton(
                             label = "Force Off",
                             style = CommandButtonStyle.DestructiveOutline,
@@ -117,14 +131,14 @@ fun PowerControls(
                             enabled = !commandInFlight,
                             accessibilityLabel = "Force Off $deviceName",
                         ) { confirmation = CommandType.POWER_OFF_FORCE }
-                        CmdButton(
-                            label = "Reset",
-                            style = CommandButtonStyle.PowerReset,
-                            modifier = Modifier.weight(1f),
-                            enabled = !commandInFlight,
-                            accessibilityLabel = "Reset $deviceName",
-                        ) { confirmation = CommandType.RESET }
                     }
+                    CmdButton(
+                        label = "Reset",
+                        style = CommandButtonStyle.PowerReset,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !commandInFlight,
+                        accessibilityLabel = "Reset $deviceName",
+                    ) { confirmation = CommandType.RESET }
                 }
             }
         }
@@ -185,6 +199,7 @@ private enum class CommandButtonStyle {
     PowerReset,
     DestructiveTonal,
     DestructiveOutline,
+    Neutral,
 }
 
 /** Explicit confirm copy naming the action and device (never a generic “Confirm”). */
@@ -193,6 +208,7 @@ fun confirmActionLabel(type: CommandType, deviceName: String): String = when (ty
     CommandType.POWER_OFF -> "Power Off “$deviceName”"
     CommandType.POWER_OFF_FORCE -> "Force Off “$deviceName”"
     CommandType.RESET -> "Restart “$deviceName”"
+    CommandType.SLEEP -> "Sleep “$deviceName”"
 }
 
 @Composable
@@ -248,6 +264,12 @@ private fun CmdButton(
                 contentColor = MaterialTheme.colorScheme.error,
             ),
         ) { Text(label) }
+
+        CommandButtonStyle.Neutral -> FilledTonalButton(
+            onClick = onClick,
+            modifier = buttonModifier,
+            enabled = enabled,
+        ) { Text(label) }
     }
 }
 
@@ -259,4 +281,5 @@ private fun commandConsequence(type: CommandType, deviceName: String): String = 
     CommandType.POWER_OFF_FORCE ->
         "This asks “$deviceName” to hold the PC power button for 6 seconds. Power may be cut immediately and unsaved work could be lost. Use only when normal Power Off does not work."
     CommandType.POWER_ON -> "This asks “$deviceName” to turn the PC on."
+    CommandType.SLEEP -> "This asks “$deviceName” to sleep. Open apps stay in memory; nothing is closed."
 }

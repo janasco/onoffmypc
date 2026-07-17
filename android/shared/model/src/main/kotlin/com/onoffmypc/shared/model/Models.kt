@@ -214,4 +214,5 @@ enum class CommandType(val wire: String, val label: String) {
     POWER_OFF("power_off", "Power Off"),
     POWER_OFF_FORCE("power_off_force", "Force Off"),
     RESET("reset", "Reset"),
+    SLEEP("sleep", "Sleep"),
 }
