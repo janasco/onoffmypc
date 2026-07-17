@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pair this computer — OnOffMyPC</title>
+<style>
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Sora, sans-serif;
+    background: #0b1c30;
+    color: #eaf1ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+  }
+  main { width: 320px; text-align: center; }
+  h1 { font-size: 20px; margin-bottom: 8px; }
+  p { color: #9fb0c9; font-size: 14px; margin-top: 0; }
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 20px;
+    letter-spacing: 0.2em;
+    text-align: center;
+    text-transform: uppercase;
+    padding: 12px;
+    margin: 16px 0;
+    border-radius: 8px;
+    border: 1px solid #3f465c;
+    background: #131b2e;
+    color: #eaf1ff;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background: #006c49;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: default; }
+  #status { min-height: 20px; margin-top: 12px; font-size: 13px; }
+  #status.error { color: #ff8a80; }
+  #status.ok { color: #6ffbbe; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Pair this computer</h1>
+  <p>Open OnOffMyPC on your phone or the web, choose “Add device”, and enter the pairing code it shows you below.</p>
+  <input id="code" maxlength="8" autofocus placeholder="ABC123" />
+  <button id="submit">Pair</button>
+  <p id="status" role="status" aria-live="polite"></p>
+</main>
+<script src="./pairing.js"></script>
+</body>
+</html>
