@@ -66,6 +66,7 @@ fun DevicesScreen(
     onAccount: () -> Unit,
     onBilling: (String?) -> Unit,
     onLoggedOut: () -> Unit,
+    onDashboardMockup: () -> Unit = {},
     vm: DevicesViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -115,6 +116,10 @@ fun DevicesScreen(
                             DropdownMenuItem(
                                 text = { Text("Account") },
                                 onClick = { menuOpen = false; onAccount() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Dashboard concept") },
+                                onClick = { menuOpen = false; onDashboardMockup() },
                             )
                             DropdownMenuItem(
                                 text = { Text("Logout") },

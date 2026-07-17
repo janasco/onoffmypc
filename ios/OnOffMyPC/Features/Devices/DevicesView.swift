@@ -1,9 +1,16 @@
 import SwiftUI
 
 private enum DevicesSheet: Identifiable {
-    case account, addDevice
+    case account, addDevice, dashboardMockup
     case billing(String?)
-    var id: Int { switch self { case .account: return 0; case .addDevice: return 1; case .billing: return 2 } }
+    var id: Int {
+        switch self {
+        case .account: return 0
+        case .addDevice: return 1
+        case .billing: return 2
+        case .dashboardMockup: return 3
+        }
+    }
 }
 
 struct DevicesView: View {
@@ -41,6 +48,11 @@ struct DevicesView: View {
                             } label: {
                                 Label("Device Unlocks", systemImage: "creditcard")
                             }
+                            Button {
+                                sheet = .dashboardMockup
+                            } label: {
+                                Label("Dashboard concept", systemImage: "square.grid.2x2")
+                            }
                             Button(role: .destructive) {
                                 showLogoutConfirm = true
                             } label: {
@@ -63,6 +75,7 @@ struct DevicesView: View {
             case .account: AccountView()
             case .addDevice: AddDeviceView(vm: vm)
             case .billing(let deviceId): BillingView(initialDeviceId: deviceId)
+            case .dashboardMockup: DashboardMockupView()
             }
         }
         .alert("Sign out?", isPresented: $showLogoutConfirm) {
