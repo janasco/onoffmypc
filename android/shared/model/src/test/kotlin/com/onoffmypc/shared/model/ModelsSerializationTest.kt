@@ -22,5 +22,7 @@ class ModelsSerializationTest {
         assertEquals("power_on", CommandType.POWER_ON.wire)
         assertEquals("reset", CommandType.RESET.wire)
         assertEquals("Reset", CommandType.RESET.label)
+        assertEquals("sleep", CommandType.SLEEP.wire)
+        assertEquals("Sleep", CommandType.SLEEP.label)
     }
 }

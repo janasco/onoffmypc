@@ -10,6 +10,7 @@ import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.MeResponse
 import com.onoffmypc.android.data.model.NewDevice
 import com.onoffmypc.android.ui.components.commandRequestFeedback
+import com.onoffmypc.shared.model.ApiException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +28,9 @@ data class DevicesUiState(
     val createdDevice: NewDevice? = null,
     val upgradeDeviceId: String? = null,
     val commandInFlightDeviceIds: Set<String> = emptySet(),
+    val bulkCommandInFlight: Boolean = false,
+    val selectMode: Boolean = false,
+    val selectedDeviceIds: Set<String> = emptySet(),
 )
 
 class DevicesViewModel : ViewModel() {
@@ -112,6 +116,108 @@ class DevicesViewModel : ViewModel() {
                 _state.update {
                     it.copy(commandInFlightDeviceIds = it.commandInFlightDeviceIds - device.id)
                 }
+            }
+        }
+    }
+
+    fun toggleSelectMode() {
+        _state.update {
+            val newMode = !it.selectMode
+            it.copy(
+                selectMode = newMode,
+                selectedDeviceIds = if (newMode) emptySet() else it.selectedDeviceIds
+            )
+        }
+    }
+
+    fun toggleDeviceSelected(deviceId: String) {
+        _state.update {
+            val currentSelected = it.selectedDeviceIds
+            val newSelected = if (deviceId in currentSelected) {
+                currentSelected - deviceId
+            } else {
+                currentSelected + deviceId
+            }
+            it.copy(selectedDeviceIds = newSelected)
+        }
+    }
+
+    fun clearSelection() {
+        _state.update {
+            it.copy(
+                selectMode = false,
+                selectedDeviceIds = emptySet()
+            )
+        }
+    }
+
+    fun sendBulkCommand(type: CommandType) {
+        val selectedIds = _state.value.selectedDeviceIds
+        val targets = _state.value.devices.filter { it.id in selectedIds }
+        if (targets.isEmpty() || _state.value.bulkCommandInFlight) return
+
+        _state.update { it.copy(bulkCommandInFlight = true) }
+        viewModelScope.launch {
+            var sent = 0
+            var queued = 0
+            val failed = mutableListOf<String>()
+            var stoppedAt = -1
+
+            try {
+                for (i in targets.indices) {
+                    val device = targets[i]
+                    _state.update { it.copy(commandInFlightDeviceIds = it.commandInFlightDeviceIds + device.id) }
+                    
+                    val result = repo.sendCommand(device.id, type)
+                    
+                    _state.update { it.copy(commandInFlightDeviceIds = it.commandInFlightDeviceIds - device.id) }
+
+                    result.fold(
+                        onSuccess = { response ->
+                            if (response.delivered) {
+                                sent++
+                            } else {
+                                queued++
+                            }
+                        },
+                        onFailure = { error ->
+                            if (error is ApiException && error.httpCode == 429) {
+                                stoppedAt = i
+                            } else {
+                                failed.add(device.name)
+                            }
+                        }
+                    )
+
+                    if (stoppedAt >= 0) {
+                        break
+                    }
+                }
+            } finally {
+                _state.update { it.copy(bulkCommandInFlight = false) }
+            }
+
+            val label = type.label
+            val parts = mutableListOf<String>()
+            if (sent > 0) parts.add("sent to $sent")
+            if (queued > 0) parts.add("queued for $queued offline")
+            if (failed.isNotEmpty()) parts.add("rejected for ${failed.size}")
+            if (stoppedAt >= 0) {
+                val remaining = targets.size - stoppedAt
+                parts.add("stopped by the rate limit with $remaining remaining — wait a minute and retry those")
+            }
+            val summary = "$label: ${parts.joinToString(", ").ifEmpty { "nothing sent" }}."
+
+            _state.update {
+                it.copy(
+                    message = summary,
+                    selectMode = stoppedAt >= 0,
+                    selectedDeviceIds = if (stoppedAt >= 0) {
+                        targets.subList(stoppedAt, targets.size).map { d -> d.id }.toSet()
+                    } else {
+                        emptySet()
+                    }
+                )
             }
         }
     }

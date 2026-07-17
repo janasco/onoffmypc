@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -58,6 +59,18 @@ import com.onoffmypc.android.ui.designsystem.LoadingState
 import com.onoffmypc.android.ui.designsystem.Spacing
 import com.onoffmypc.android.ui.designsystem.StatusRole
 import com.onoffmypc.android.ui.designsystem.statusPalette
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.OutlinedButton
+import com.onoffmypc.android.ui.components.confirmActionLabel
+import com.onoffmypc.android.ui.theme.OnOffTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,6 +92,7 @@ fun DevicesScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var confirmLogout by remember { mutableStateOf(false) }
     var hasResumedOnce by remember { mutableStateOf(false) }
+    var bulkConfirmCommand by remember { mutableStateOf<CommandType?>(null) }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -103,6 +117,14 @@ fun DevicesScreen(
                     }
                 },
                 actions = {
+                    if (state.devices.isNotEmpty()) {
+                        TextButton(
+                            onClick = { vm.toggleSelectMode() },
+                            modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                        ) {
+                            Text(if (state.selectMode) "Done" else "Select")
+                        }
+                    }
                     Box {
                         TextButton(
                             onClick = { menuOpen = true },
@@ -132,7 +154,9 @@ fun DevicesScreen(
         },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(onClick = { showAdd = true }) { Text("Add device") }
+            if (!state.selectMode) {
+                ExtendedFloatingActionButton(onClick = { showAdd = true }) { Text("Add device") }
+            }
         },
     ) { padding ->
         Box(
@@ -153,60 +177,83 @@ fun DevicesScreen(
                     onRetry = vm::load,
                 )
 
-                else -> PullToRefreshBox(
-                    isRefreshing = state.refreshing,
-                    onRefresh = vm::refresh,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = Spacing.md,
-                            top = Spacing.md,
-                            end = Spacing.md,
-                            bottom = 88.dp,
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        val user = state.user
-                        if (user?.deletion_at != null) {
-                            item { DeletionBanner(onManage = onAccount) }
+                else -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        if (state.selectMode) {
+                            BulkActionBar(
+                                selectedCount = state.selectedDeviceIds.size,
+                                bulkSendBusy = state.bulkCommandInFlight,
+                                onBulkCommand = { type ->
+                                    if (type == CommandType.POWER_ON || type == CommandType.SLEEP) {
+                                        vm.sendBulkCommand(type)
+                                    } else {
+                                        bulkConfirmCommand = type
+                                    }
+                                }
+                            )
                         }
-                        if (user != null && !user.email_verified) {
-                            item { VerifyEmailBanner(onResend = vm::resendVerification) }
-                        }
-                        state.billing?.let { b ->
-                            if (b.billing_enabled && !b.is_lifetime && (b.devices.isEmpty() || b.devices.any { !it.unlocked })) {
-                                item { TrialBanner(billing = b, onUpgrade = { onBilling(null) }) }
-                            }
-                        }
-                        if (state.devices.isNotEmpty()) {
-                            item {
-                                FleetSummaryCard(
-                                    summary = computeFleetSummary(state.devices, state.billing),
-                                )
-                            }
-                        }
-                        if (state.devices.isEmpty()) {
-                            item {
-                                EmptyState(
-                                    title = "No devices yet",
-                                    message = "Add your first device to view its connection and last-reported PC status.",
-                                    actionLabel = "Add device",
-                                    onAction = { showAdd = true },
-                                )
-                            }
-                        } else {
-                            items(state.devices, key = { it.id }) { device ->
-                                DeviceCard(
-                                    device = device,
-                                    commandInFlight = device.id in state.commandInFlightDeviceIds,
-                                    onOpen = { onOpen(device) },
-                                    onCommand = { type -> vm.sendCommand(device, type) },
-                                    onRename = { renaming = device },
-                                    onDelete = { deleting = device },
-                                    onReplace = { replacing = device },
-                                )
+
+                        PullToRefreshBox(
+                            isRefreshing = state.refreshing,
+                            onRefresh = vm::refresh,
+                            modifier = Modifier.fillMaxSize().weight(1f),
+                        ) {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(
+                                    start = Spacing.md,
+                                    top = Spacing.md,
+                                    end = Spacing.md,
+                                    bottom = 88.dp,
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                val user = state.user
+                                if (user?.deletion_at != null) {
+                                    item { DeletionBanner(onManage = onAccount) }
+                                }
+                                if (user != null && !user.email_verified) {
+                                    item { VerifyEmailBanner(onResend = vm::resendVerification) }
+                                }
+                                state.billing?.let { b ->
+                                    if (b.billing_enabled && !b.is_lifetime && (b.devices.isEmpty() || b.devices.any { !it.unlocked })) {
+                                        item { TrialBanner(billing = b, onUpgrade = { onBilling(null) }) }
+                                    }
+                                }
+                                if (state.devices.isNotEmpty()) {
+                                    item {
+                                        FleetSummaryCard(
+                                            summary = computeFleetSummary(state.devices, state.billing),
+                                        )
+                                    }
+                                }
+                                if (state.devices.isEmpty()) {
+                                    item {
+                                        EmptyState(
+                                            title = "No devices yet",
+                                            message = "Add your first device to view its connection and last-reported PC status.",
+                                            actionLabel = "Add device",
+                                            onAction = { showAdd = true },
+                                        )
+                                    }
+                                } else {
+                                    items(state.devices, key = { it.id }) { device ->
+                                        DeviceCard(
+                                            device = device,
+                                            commandInFlight = device.id in state.commandInFlightDeviceIds,
+                                            selectMode = state.selectMode,
+                                            selected = device.id in state.selectedDeviceIds,
+                                            onSelectedChange = { selected ->
+                                                vm.toggleDeviceSelected(device.id)
+                                            },
+                                            onOpen = { onOpen(device) },
+                                            onCommand = { type -> vm.sendCommand(device, type) },
+                                            onRename = { renaming = device },
+                                            onDelete = { deleting = device },
+                                            onReplace = { replacing = device },
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -279,12 +326,57 @@ fun DevicesScreen(
             dismissButton = { TextButton(onClick = { vm.consumeUpgradePrompt() }) { Text("Not now") } },
         )
     }
+
+    bulkConfirmCommand?.let { type ->
+        val selectedIds = state.selectedDeviceIds
+        val count = selectedIds.size
+        val targetNames = state.devices
+            .filter { it.id in selectedIds }
+            .map { it.name }
+        val namesSummary = if (targetNames.size <= 4) {
+            targetNames.joinToString(", ")
+        } else {
+            targetNames.take(4).joinToString(", ") + " and ${targetNames.size - 4} more"
+        }
+        val label = type.label
+        val message = when (type) {
+            CommandType.POWER_OFF ->
+                "This asks the targets to press the PC power button. The computers may begin shutting down, and unsaved work could be lost."
+            CommandType.RESET ->
+                "This asks the targets to press the PC reset switch. The computers will restart immediately and unsaved work could be lost."
+            CommandType.POWER_OFF_FORCE ->
+                "This asks the targets to hold the PC power button for 6 seconds. Power may be cut immediately and unsaved work could be lost. Use only when normal Power Off does not work."
+            else -> ""
+        }
+        AlertDialog(
+            onDismissRequest = { bulkConfirmCommand = null },
+            title = { Text("$label $count device${if (count == 1) "" else "s"}?") },
+            text = { Text("$message Targets: $namesSummary.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        bulkConfirmCommand = null
+                        vm.sendBulkCommand(type)
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) { Text("$label all") }
+            },
+            dismissButton = {
+                TextButton(onClick = { bulkConfirmCommand = null }) { Text("Cancel") }
+            },
+        )
+    }
 }
 
 @Composable
 private fun DeviceCard(
     device: Device,
     commandInFlight: Boolean,
+    selectMode: Boolean,
+    selected: Boolean,
+    onSelectedChange: (Boolean) -> Unit,
     onOpen: () -> Unit,
     onCommand: (CommandType) -> Unit,
     onRename: () -> Unit,
@@ -299,42 +391,63 @@ private fun DeviceCard(
     var menuOpen by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (selectMode) {
+                    Modifier.clickable { onSelectedChange(!selected) }
+                } else {
+                    Modifier
+                }
+            ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = if (selected && selectMode) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            },
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (selectMode) {
+                    Checkbox(
+                        checked = selected,
+                        onCheckedChange = onSelectedChange,
+                        modifier = Modifier.padding(end = Spacing.xs)
+                    )
+                }
                 Text(
                     text = device.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                Box {
-                    TextButton(
-                        onClick = { menuOpen = true },
-                        modifier = Modifier
-                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-                            .semantics {
-                                contentDescription = "Device actions for ${device.name}"
-                            },
-                    ) { Text("⋮") }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Rename") },
-                            onClick = { menuOpen = false; onRename() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Replace token") },
-                            onClick = { menuOpen = false; onReplace() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
-                            onClick = { menuOpen = false; onDelete() },
-                        )
+                if (!selectMode) {
+                    Box {
+                        TextButton(
+                            onClick = { menuOpen = true },
+                            modifier = Modifier
+                                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                .semantics {
+                                    contentDescription = "Device actions for ${device.name}"
+                                },
+                        ) { Text("⋮") }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Rename") },
+                                onClick = { menuOpen = false; onRename() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Replace token") },
+                                onClick = { menuOpen = false; onReplace() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                onClick = { menuOpen = false; onDelete() },
+                            )
+                        }
                     }
                 }
             }
@@ -350,19 +463,125 @@ private fun DeviceCard(
                     modifier = Modifier.padding(Spacing.smMd),
                 )
             }
-            Spacer(Modifier.height(12.dp))
-            PowerControls(
-                deviceName = device.name,
-                commandInFlight = commandInFlight,
-                onCommand = onCommand,
-            )
-            Spacer(Modifier.height(4.dp))
-            TextButton(
-                onClick = onOpen,
-                modifier = Modifier.semantics {
-                    contentDescription = "View details for ${device.name}"
-                },
-            ) { Text("View details →") }
+            if (!selectMode) {
+                Spacer(Modifier.height(12.dp))
+                PowerControls(
+                    deviceName = device.name,
+                    commandInFlight = commandInFlight,
+                    onCommand = onCommand,
+                )
+                Spacer(Modifier.height(4.dp))
+                TextButton(
+                    onClick = onOpen,
+                    modifier = Modifier.semantics {
+                        contentDescription = "View details for ${device.name}"
+                    },
+                ) { Text("View details →") }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BulkActionBar(
+    selectedCount: Int,
+    bulkSendBusy: Boolean,
+    onBulkCommand: (CommandType) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "$selectedCount selected",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (bulkSendBusy) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+            ) {
+                val enabled = !bulkSendBusy && selectedCount > 0
+                val operational = OnOffTheme.status
+
+                Button(
+                    onClick = { onBulkCommand(CommandType.POWER_ON) },
+                    enabled = enabled,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = operational.powerOnBackground,
+                        contentColor = operational.powerOnForeground,
+                    ),
+                    modifier = Modifier.semantics { contentDescription = "Bulk Power On" }
+                ) {
+                    Text("Power On")
+                }
+
+                FilledTonalButton(
+                    onClick = { onBulkCommand(CommandType.SLEEP) },
+                    enabled = enabled,
+                    modifier = Modifier.semantics { contentDescription = "Bulk Sleep" }
+                ) {
+                    Text("Sleep")
+                }
+
+                FilledTonalButton(
+                    onClick = { onBulkCommand(CommandType.POWER_OFF) },
+                    enabled = enabled,
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = operational.powerOffBackground,
+                        contentColor = operational.powerOffForeground,
+                    ),
+                    modifier = Modifier.semantics { contentDescription = "Bulk Power Off" }
+                ) {
+                    Text("Power Off")
+                }
+
+                OutlinedButton(
+                    onClick = { onBulkCommand(CommandType.POWER_OFF_FORCE) },
+                    enabled = enabled,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                    modifier = Modifier.semantics { contentDescription = "Bulk Force Off" }
+                ) {
+                    Text("Force Off")
+                }
+
+                Button(
+                    onClick = { onBulkCommand(CommandType.RESET) },
+                    enabled = enabled,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = operational.powerResetBackground,
+                        contentColor = operational.powerResetForeground,
+                    ),
+                    modifier = Modifier.semantics { contentDescription = "Bulk Reset" }
+                ) {
+                    Text("Reset")
+                }
+            }
         }
     }
 }
