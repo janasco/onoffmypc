@@ -21,6 +21,11 @@ test('win32 maps power_off/power_off_force/reset to shutdown.exe', () => {
   assert.deepEqual(resolveAction('win32', 'reset'), ['shutdown', ['/r', '/f', '/t', '0']])
 })
 
+test('sleep maps to systemctl suspend on linux and SetSuspendState on win32', () => {
+  assert.deepEqual(resolveAction('linux', 'sleep'), ['systemctl', ['suspend']])
+  assert.deepEqual(resolveAction('win32', 'sleep'), ['rundll32.exe', ['powrprof.dll,SetSuspendState', '0,1,0']])
+})
+
 test('unsupported platform (e.g. darwin) resolves to null, not a crash', () => {
   assert.equal(resolveAction('darwin', 'power_off'), null)
 })

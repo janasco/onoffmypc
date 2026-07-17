@@ -2,26 +2,34 @@
 
 Linux/Windows companion agent. Runs in the system tray, reports hardware
 telemetry (CPU load, RAM, GPU temperature, Wi-Fi signal) and handles
-software-side shutdown/restart commands over the same device pairing protocol
-the ESP32/ESP8266 firmware already uses.
+software-side shutdown/restart/sleep commands over the same device pairing
+protocol the ESP32/ESP8266 firmware already uses.
 
 ## Why this exists alongside the firmware relay
 
 The firmware device is wired directly to the PC's power/reset pins because
 Wake-on-LAN is unreliable in practice (NIC/BIOS/driver support varies) — it's
 the only thing that can power a PC back on from fully off. This agent runs
-*inside* the OS, so it can do two things the firmware can't:
+*inside* the OS, so it can do things the firmware can't:
 
 - Report real hardware telemetry (CPU/GPU/RAM) — the firmware only has a
   room-temperature/humidity sensor and RSSI, nothing about the PC's internals.
-- Ask the OS to shut down or restart cleanly, rather than the firmware's
-  physical button-press simulation.
+- Ask the OS to shut down, restart, or sleep cleanly, rather than the
+  firmware's physical button-press simulation.
 
 It deliberately **does not implement Power On** — if this process isn't
 running, the PC is off, and nothing in-OS can turn it back on. That command
 stays the firmware's (or Wake-on-LAN's) job. A `power_on` command sent to a
 device paired via this agent is left un-acknowledged; the server's existing
 cron expires stale pending commands.
+
+**Sleep is agent-only for the opposite reason**: the firmware's relay pin can
+only simulate a power-button press, and whether that press sleeps, shuts
+down, or does nothing at all depends on the target PC's own OS power
+settings — the firmware has no way to guarantee sleep, so it doesn't claim
+`sleep` as a supported type at all. This agent calls the OS suspend API
+directly (`systemctl suspend` on Linux, `SetSuspendState` via `powrprof.dll`
+on Windows), so it's the only reliable place for this command to live.
 
 Note also that "Force Off" here is weaker than the firmware's hardware
 version: if the OS is hung badly enough to need a force-off, this agent (which
