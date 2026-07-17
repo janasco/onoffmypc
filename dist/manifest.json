@@ -1,0 +1,27 @@
+{
+  "$schema": "../schema/generated-manifest.schema.json",
+  "designVersion": "0.1.0",
+  "generatedAt": "deterministic",
+  "sources": {
+    "tokens": "47a9fb61ef067eacbdb29345429ba4f668a3d88121ed1e5a71dace1e170bb1de",
+    "states": "5c02d9d3709eb8b031657d66b6a8e4d111f61a745083e952dfbb4a4db157742f",
+    "content": "f2222e3b0b95be1486fd0a021677083f2768c82afac54d45c4450cb9f453fdec",
+    "mark": "829b0ffa997d9e0d63b8a3291426bb52349869f526735698c339c26a4a65f507",
+    "icons": "707ba1b800b27cb7fcf8fd07a25d076164c7ffeef88ed2842dace82230e6f56f"
+  },
+  "artifacts": {
+    "web/onoffmypc-tokens.css": "6bc12c3a682fe5f2c51644c3873d1efdfd6279c377a47a90f1e81b26e226dd8e",
+    "web/onoffmypc-states.css": "01ad471e347d2ffc00bbed0465956a61a135382accf50c9a6bdc054e772b3364",
+    "web/onoffmypc-a11y.css": "d942c8694a2cade85854c94cd69168dfda4a9b9df65c88a75ac2da6e0cd90218",
+    "web/states.json": "3e36c666a3e6cba4469ed3f09e9d5fff75babe83d8726232254cb0ebcf138844",
+    "web/content.en.json": "f2222e3b0b95be1486fd0a021677083f2768c82afac54d45c4450cb9f453fdec",
+    "compose/OnOffTokens.kt": "02223fa2487d5d9ffbf5ca4d9ca7e4b9e86a440cbc75ae100532b6c24cd2246d",
+    "compose/OnOffStates.kt": "9eebe9e01d19d7020d581da9f4d6f8a97c30968d0fe1415f358dc1b93965ebae",
+    "swift/OnOffTokens.swift": "654a5cd8010703c1288bf87142a7b1e2d8b29f6b9b3c70a4d88ed0929b6d28bf",
+    "swift/OnOffStates.swift": "a188970ce230a8e4715e158c067d923e9c32ba71f3fc1b6fcc99afc2eebd10a1",
+    "firmware/onoff_design_tokens.h": "bdb1ed73950f6e6bac7e441bd3ce8f34b4358756a774e98c14060fb2f5e5bb10",
+    "email/onoffEmailTokens.ts": "c22ef5a7d406548d3eb70bf5e639e059f89212eb9451de349662125aacc6f58c",
+    "assets/onoffmypc-mark.svg": "829b0ffa997d9e0d63b8a3291426bb52349869f526735698c339c26a4a65f507",
+    "assets/onoff-icons.svg": "707ba1b800b27cb7fcf8fd07a25d076164c7ffeef88ed2842dace82230e6f56f"
+  }
+}

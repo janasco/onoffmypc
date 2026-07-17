@@ -1,0 +1,19 @@
+{
+  "name": "@onoffmypc/design",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cross-platform visual language, product-state presentation, and generated design artifacts for OnOffMyPC.",
+  "type": "module",
+  "packageManager": "pnpm@11.11.0",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/build.mjs --check",
+    "check:consumers": "node scripts/check-consumers.mjs",
+    "sync:consumers": "node scripts/sync-consumers.mjs",
+    "test": "node --check scripts/build.mjs && node --check examples/gallery.js && node --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}

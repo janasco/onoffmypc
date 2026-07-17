@@ -1,0 +1,21 @@
+/* Generated from @onoffmypc/design 0.1.0. Do not edit. */
+.omp-status,
+[data-omp-tone] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--omp-space-1);
+  min-height: 24px;
+  border-radius: var(--omp-radius-pill);
+  padding: 2px var(--omp-space-2);
+  color: var(--omp-tone-foreground);
+  background: var(--omp-tone-container);
+  font-size: var(--omp-font-size-caption);
+  font-weight: var(--omp-font-weight-semibold);
+  line-height: 1.35;
+}
+
+[data-omp-tone="positive"] { --omp-tone-foreground: var(--omp-color-status-positive-foreground); --omp-tone-container: var(--omp-color-status-positive-container); }
+[data-omp-tone="attention"] { --omp-tone-foreground: var(--omp-color-status-attention-foreground); --omp-tone-container: var(--omp-color-status-attention-container); }
+[data-omp-tone="critical"] { --omp-tone-foreground: var(--omp-color-status-critical-foreground); --omp-tone-container: var(--omp-color-status-critical-container); }
+[data-omp-tone="info"] { --omp-tone-foreground: var(--omp-color-status-info-foreground); --omp-tone-container: var(--omp-color-status-info-container); }
+[data-omp-tone="neutral"] { --omp-tone-foreground: var(--omp-color-status-neutral-foreground); --omp-tone-container: var(--omp-color-status-neutral-container); }

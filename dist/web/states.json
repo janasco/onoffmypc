@@ -1,0 +1,207 @@
+{
+  "$schema": "../schema/states.schema.json",
+  "version": "0.1.0",
+  "connection": {
+    "online": {
+      "label": "Online",
+      "tone": "positive",
+      "icon": "connection-online",
+      "evidence": "Verified live service connection",
+      "description": "The device is connected to the OnOffMyPC service."
+    },
+    "offline": {
+      "label": "Offline",
+      "tone": "critical",
+      "icon": "connection-offline",
+      "evidence": "No verified live service connection",
+      "description": "The device is not currently connected. Show its last contact time when known."
+    },
+    "unknown": {
+      "label": "Status unavailable",
+      "tone": "neutral",
+      "icon": "status-unknown",
+      "evidence": "Live connection status could not be established",
+      "description": "Do not present an API failure as proof that the device is offline."
+    }
+  },
+  "pc": {
+    "on": {
+      "label": "On",
+      "tone": "positive",
+      "icon": "power",
+      "evidence": "Latest timestamped PC power telemetry reported on",
+      "description": "Always show when the state was observed."
+    },
+    "off": {
+      "label": "Off",
+      "tone": "neutral",
+      "icon": "power-off",
+      "evidence": "Latest timestamped PC power telemetry reported off",
+      "description": "Always show when the state was observed."
+    },
+    "stale": {
+      "label": "Last reported state",
+      "tone": "attention",
+      "icon": "clock",
+      "evidence": "A power report exists but is older than the product freshness threshold",
+      "description": "Use ‘Last reported On/Off’ instead of presenting a stale value as current."
+    },
+    "unknown": {
+      "label": "Not reported",
+      "tone": "neutral",
+      "icon": "status-unknown",
+      "evidence": "No usable timestamped PC power telemetry",
+      "description": "Never infer PC state from connection state or command acknowledgement."
+    }
+  },
+  "command": {
+    "pending": {
+      "label": "Queued",
+      "tone": "attention",
+      "icon": "clock",
+      "evidence": "The service accepted the request but has not recorded a socket write",
+      "description": "Show the expiry time and make clear that the physical action has not occurred."
+    },
+    "sent": {
+      "label": "Awaiting acknowledgement",
+      "tone": "info",
+      "icon": "send",
+      "evidence": "A write to an open device socket was attempted",
+      "description": "A socket write is not proof that the device processed the request."
+    },
+    "delivered": {
+      "label": "Device acknowledged",
+      "tone": "info",
+      "icon": "device-check",
+      "evidence": "The authenticated device acknowledged receipt or action initiation",
+      "description": "Never label this Success, Complete, or PC confirmed."
+    },
+    "expired": {
+      "label": "Expired",
+      "tone": "critical",
+      "icon": "expired",
+      "evidence": "The service expiry window elapsed without acknowledgement",
+      "description": "State that no further attempt will be made."
+    },
+    "confirmed": {
+      "label": "PC state confirmed",
+      "tone": "positive",
+      "icon": "check",
+      "availability": "reserved",
+      "evidence": "Future command-linked timestamped telemetry confirms the requested physical result",
+      "description": "Do not render until the backend supplies this evidence explicitly."
+    }
+  },
+  "scheduledCommand": {
+    "pending": {
+      "label": "Scheduled",
+      "tone": "attention",
+      "icon": "clock"
+    },
+    "sent": {
+      "label": "Dispatched",
+      "tone": "info",
+      "icon": "send"
+    },
+    "expired": {
+      "label": "Expired",
+      "tone": "critical",
+      "icon": "expired"
+    },
+    "cancelled": {
+      "label": "Cancelled",
+      "tone": "neutral",
+      "icon": "close"
+    }
+  },
+  "provisioning": {
+    "awaiting_details": {
+      "label": "Ready for setup",
+      "tone": "info",
+      "icon": "settings",
+      "led": "setup access point active"
+    },
+    "wifi_connecting": {
+      "label": "Connecting to Wi-Fi",
+      "tone": "attention",
+      "icon": "wifi",
+      "led": "fast blink"
+    },
+    "service_connecting": {
+      "label": "Connecting to OnOffMyPC",
+      "tone": "attention",
+      "icon": "cloud",
+      "led": "slow blink"
+    },
+    "ready": {
+      "label": "Online and ready",
+      "tone": "positive",
+      "icon": "check",
+      "led": "solid"
+    },
+    "error": {
+      "label": "Setup needs attention",
+      "tone": "critical",
+      "icon": "warning",
+      "led": "implementation-defined error pattern"
+    }
+  },
+  "access": {
+    "free": {
+      "label": "Access included",
+      "tone": "positive",
+      "icon": "check"
+    },
+    "trial_active": {
+      "label": "Trial active",
+      "tone": "info",
+      "icon": "clock"
+    },
+    "trial_expired": {
+      "label": "Trial ended",
+      "tone": "attention",
+      "icon": "expired"
+    },
+    "checkout_pending": {
+      "label": "Payment processing",
+      "tone": "attention",
+      "icon": "clock"
+    },
+    "unlocked": {
+      "label": "Device unlocked",
+      "tone": "positive",
+      "icon": "check"
+    },
+    "grandfathered": {
+      "label": "Lifetime access",
+      "tone": "positive",
+      "icon": "check"
+    }
+  },
+  "commandAction": {
+    "power_on": {
+      "label": "Power On",
+      "tone": "info",
+      "icon": "power",
+      "confirmation": "optional"
+    },
+    "power_off": {
+      "label": "Power Off",
+      "tone": "power-off",
+      "icon": "power-off",
+      "confirmation": "required"
+    },
+    "power_off_force": {
+      "label": "Force Off",
+      "tone": "danger",
+      "icon": "warning",
+      "confirmation": "required-with-consequence"
+    },
+    "reset": {
+      "label": "Reset",
+      "tone": "power-reset",
+      "icon": "restart",
+      "confirmation": "required"
+    }
+  }
+}

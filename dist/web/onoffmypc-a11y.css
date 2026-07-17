@@ -1,0 +1,36 @@
+/* Generated from @onoffmypc/design 0.1.0. Do not edit. */
+[data-contrast="more"] {
+  --omp-color-border-default: var(--omp-color-border-strong);
+  --omp-color-text-secondary: var(--omp-color-text-primary);
+}
+[data-contrast="more"] a { text-decoration: underline; }
+[data-contrast="more"] :focus-visible { outline-width: 4px; }
+
+[data-motion="reduce"] *,
+[data-motion="reduce"] *::before,
+[data-motion="reduce"] *::after {
+  scroll-behavior: auto !important;
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+@media (forced-colors: active) {
+  :root { --omp-color-focus-ring: Highlight; }
+  button, .button-link { border: 1px solid ButtonText; }
+}
+
+[data-forced-colors="preview"] {
+  --omp-color-background-canvas: Canvas;
+  --omp-color-background-surface: Canvas;
+  --omp-color-background-subtle: Canvas;
+  --omp-color-text-primary: CanvasText;
+  --omp-color-text-secondary: CanvasText;
+  --omp-color-text-link: LinkText;
+  --omp-color-border-default: CanvasText;
+  --omp-color-border-strong: CanvasText;
+  --omp-color-action-primary-background: ButtonFace;
+  --omp-color-action-primary-foreground: ButtonText;
+  --omp-color-focus-ring: Highlight;
+}
+[data-forced-colors="preview"] * { box-shadow: none !important; }
