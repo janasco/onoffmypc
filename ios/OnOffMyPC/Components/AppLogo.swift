@@ -11,6 +11,11 @@ struct AppLogo: View {
             .scaledToFit()
             .frame(width: size, height: size)
             .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                    .stroke(AppColors.border.opacity(0.7), lineWidth: 1)
+            }
+            .shadow(color: Color.black.opacity(0.08), radius: size * 0.12, y: size * 0.04)
             .accessibilityLabel("OnOffMyPC logo")
     }
 }

@@ -24,6 +24,14 @@ committed (it's in `.gitignore`), so `project.yml` is the source of truth for
 targets/settings. Add/remove files by dropping them under `OnOffMyPC/` and
 re-running `xcodegen generate`.
 
+### Shared design source
+
+`OnOffMyPC/Design/Generated/OnOffTokens.swift` and `OnOffStates.swift` are
+vendored, generated outputs from `@onoffmypc/design`; do not edit them by hand.
+`Components/AppDesignSystem.swift` is the native SwiftUI adapter that adds
+dynamic light/dark and Increase Contrast behavior while keeping navigation,
+forms, sheets, alerts, and accessibility semantics native to iOS.
+
 ## Build & run (needs a Mac + Xcode 16 or newer)
 > XcodeGen generates the current project format, which requires **Xcode 16+** to open.
 ```bash
@@ -49,6 +57,7 @@ ios/
 └── OnOffMyPC/
     ├── OnOffMyPCApp.swift       @main + AppState + RootView (login vs devices)
     ├── Components/             Shared logo, power controls, and device-status UI
+    ├── Design/Generated/       Vendored @onoffmypc/design Swift outputs
     ├── Networking/
     │   ├── APIClient.swift      URLSession; cookie-session auth
     │   ├── Session.swift        Keychain-backed session cookie

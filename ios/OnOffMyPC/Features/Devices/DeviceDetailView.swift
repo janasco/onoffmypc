@@ -11,9 +11,11 @@ struct DeviceDetailView: View {
     @State private var showDelete = false
     @State private var showReplace = false
     @State private var showBilling = false
+    @State private var managementInFlight = false
 
     var body: some View {
         content
+        .appScreenBackground()
         .navigationTitle(vm.device?.name ?? device.name)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { if renameText.isEmpty { renameText = device.name } }
@@ -30,6 +32,7 @@ struct DeviceDetailView: View {
                         }
                     }
             }
+            .interactiveDismissDisabled()
         }
         .sheet(isPresented: $showBilling, onDismiss: {
             Task { await vm.refreshBilling() }
@@ -43,13 +46,13 @@ struct DeviceDetailView: View {
         .alert("Delete device?", isPresented: $showDelete) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
-                Task { if await vm.delete(id: device.id, appState) { dismiss() } }
+                Task { await deleteDevice() }
             }
         } message: {
             Text("\"\(vm.device?.name ?? device.name)\" will be removed permanently if it has no purchase or payment under review. Purchased access must be transferred through support before deletion.")
         }
         .confirmationDialog("Replace device token?", isPresented: $showReplace, titleVisibility: .visible) {
-            Button("Generate new token") { Task { await vm.replaceToken(id: device.id, appState) } }
+            Button("Generate new token") { Task { await replaceToken() } }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Use this if the ESP hardware was swapped or damaged. A new token is generated and the old one stops working.")
@@ -59,30 +62,26 @@ struct DeviceDetailView: View {
     @ViewBuilder
     private var content: some View {
         if vm.loading && vm.device == nil {
-            ProgressView("Loading device details…")
+            AppProgressState(label: "Loading device details…")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .accessibilityLabel("Loading device details")
         } else if vm.device == nil {
-            VStack(spacing: 10) {
-                Image(systemName: "wifi.exclamationmark")
-                    .font(.largeTitle)
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-                Text("Couldn't load device").font(.headline)
-                Text(vm.error ?? "Check your connection and try again.")
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                Button("Retry") { Task { await vm.refresh(id: device.id, appState) } }
-            }
-            .padding()
+            AppEmptyState(
+                systemImage: "wifi.exclamationmark",
+                title: "Couldn’t load device",
+                message: vm.error ?? "Check your connection and try again.",
+                actionTitle: "Retry",
+                action: { Task { await vm.refresh(id: device.id, appState) } }
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List {
                 if let warning = vm.refreshWarning {
                     Section {
-                        Label(warning, systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.orange)
+                        AppMessageBanner(message: warning, role: .warning)
                         Button("Retry now") { Task { await vm.refresh(id: device.id, appState) } }
+                            .font(.subheadline.weight(.semibold))
                     }
+                    .appListRow()
                 }
                 statusSection
                 telemetrySection
@@ -91,6 +90,7 @@ struct DeviceDetailView: View {
                 historySection
                 manageSection
             }
+            .appFormBackground()
             .refreshable { await vm.refresh(id: device.id, appState) }
         }
     }
@@ -108,6 +108,7 @@ struct DeviceDetailView: View {
                 LabeledContent("Firmware", value: version)
             }
         }
+        .appListRow()
     }
 
     private var telemetrySection: some View {
@@ -125,9 +126,10 @@ struct DeviceDetailView: View {
                 LabeledContent("Recorded", value: telemetryAge(latest.recorded_at))
             } else {
                 Text("No telemetry received yet.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppColors.textSecondary)
             }
         }
+        .appListRow()
     }
 
     private var controlsSection: some View {
@@ -139,6 +141,7 @@ struct DeviceDetailView: View {
                 Task { await vm.send(type, id: device.id, appState) }
             }
         }
+        .appListRow()
     }
 
     private var tempPoints: [(Int, Double)] {
@@ -158,6 +161,7 @@ struct DeviceDetailView: View {
                             y: .value("°C", point.1)
                         )
                         .interpolationMethod(.catmullRom)
+                        .foregroundStyle(AppColors.action)
                     }
                 }
                 .frame(height: 160)
@@ -165,55 +169,66 @@ struct DeviceDetailView: View {
                 .accessibilityValue(temperatureRangeAccessibility)
             } else {
                 Text("Not enough telemetry yet to draw a temperature chart.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppColors.textSecondary)
             }
         }
+        .appListRow()
     }
 
     private var historySection: some View {
         Section("Recent commands") {
             if vm.commands.isEmpty {
-                Text("No commands yet.").foregroundStyle(.secondary)
+                Text("No commands yet.").foregroundStyle(AppColors.textSecondary)
             } else {
                 ForEach(vm.commands, id: \.rowId) { command in
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .leading, spacing: AppSpacing.small) {
                         Text(commandLabel(command.type))
-                        Text(commandStatusText(command.status))
-                            .font(.caption)
-                            .foregroundStyle(commandStatusColor(command.status))
+                            .font(.subheadline.weight(.semibold))
+                        AppStatusBadge(
+                            text: commandStatusText(command.status),
+                            role: commandStatusRole(command.status)
+                        )
                     }
+                    .padding(.vertical, AppSpacing.xSmall)
                 }
             }
         }
+        .appListRow()
     }
 
     private var manageSection: some View {
         Section("Manage") {
-            HStack {
+            if managementInFlight {
+                AppInlineProgress(label: "Updating device…")
+            }
+            VStack(alignment: .leading, spacing: AppSpacing.small) {
+                AppFieldLabel("Device name")
                 TextField("Device name", text: $renameText)
                     .autocorrectionDisabled()
+                    .textFieldStyle(AppTextFieldStyle())
+                    .disabled(managementInFlight)
                 Button("Rename") {
-                    Task { await vm.rename(renameText, id: device.id, appState) }
+                    Task { await renameDevice() }
                 }
-                .disabled(renameText.trimmingCharacters(in: .whitespaces).isEmpty)
+                .buttonStyle(AppSecondaryButtonStyle(fullWidth: false))
+                .disabled(
+                    managementInFlight || renameText.trimmingCharacters(in: .whitespaces).isEmpty
+                )
             }
             Button("Replace token") { showReplace = true }
+                .disabled(managementInFlight)
             Button("Delete device", role: .destructive) { showDelete = true }
+                .disabled(managementInFlight)
         }
+        .appListRow()
     }
 
     @ViewBuilder
     private var toastView: some View {
         if let toast = vm.toast {
-            Text(toast)
-                .font(.subheadline)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: Capsule())
+            AppToast(message: toast)
+                .padding(.horizontal, AppSpacing.large)
                 .padding(.bottom, 24)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(toast)
-                .accessibilityAddTraits(.updatesFrequently)
                 .task(id: toast) {
                     try? await Task.sleep(nanoseconds: 2_500_000_000)
                     vm.toast = nil
@@ -225,6 +240,30 @@ struct DeviceDetailView: View {
         let values = tempPoints.map { $0.1 }
         guard let minimum = values.min(), let maximum = values.max() else { return "No temperature data" }
         return String(format: "Minimum %.1f degrees Celsius, maximum %.1f degrees Celsius", minimum, maximum)
+    }
+
+    @MainActor
+    private func renameDevice() async {
+        guard !managementInFlight else { return }
+        managementInFlight = true
+        defer { managementInFlight = false }
+        await vm.rename(renameText, id: device.id, appState)
+    }
+
+    @MainActor
+    private func replaceToken() async {
+        guard !managementInFlight else { return }
+        managementInFlight = true
+        defer { managementInFlight = false }
+        await vm.replaceToken(id: device.id, appState)
+    }
+
+    @MainActor
+    private func deleteDevice() async {
+        guard !managementInFlight else { return }
+        managementInFlight = true
+        defer { managementInFlight = false }
+        if await vm.delete(id: device.id, appState) { dismiss() }
     }
 
     private func telemetryAge(_ iso: String?) -> String {

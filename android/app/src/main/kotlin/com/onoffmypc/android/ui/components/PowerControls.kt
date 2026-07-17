@@ -1,16 +1,24 @@
 package com.onoffmypc.android.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -20,15 +28,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.onoffmypc.android.data.model.CommandType
-import com.onoffmypc.android.ui.theme.Green
-import com.onoffmypc.android.ui.theme.Muted
-import com.onoffmypc.android.ui.theme.Red
-import com.onoffmypc.android.ui.theme.Yellow
+import com.onoffmypc.android.ui.designsystem.Spacing
+import com.onoffmypc.android.ui.designsystem.shouldUseSingleColumnLayout
+import com.onoffmypc.android.ui.theme.OnOffTheme
 
 /** Power controls shared by list and detail views. Disruptive commands require
  *  target-specific confirmation; controls lock while a request is in flight. */
@@ -40,41 +50,108 @@ fun PowerControls(
     modifier: Modifier = Modifier,
 ) {
     var confirmation by remember { mutableStateOf<CommandType?>(null) }
+    val fontScale = LocalDensity.current.fontScale
 
     Column(modifier) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CmdButton(
-                "Power On", Green, Modifier.weight(1f), !commandInFlight, "Power On $deviceName",
-            ) {
-                onCommand(CommandType.POWER_ON)
-            }
-            CmdButton(
-                "Power Off", Red, Modifier.weight(1f), !commandInFlight, "Power Off $deviceName",
-            ) {
-                confirmation = CommandType.POWER_OFF
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CmdButton(
-                "Force Off", Red, Modifier.weight(1f), !commandInFlight, "Force Off $deviceName",
-            ) {
-                confirmation = CommandType.POWER_OFF_FORCE
-            }
-            CmdButton(
-                "Reset", Yellow, Modifier.weight(1f), !commandInFlight, "Reset $deviceName",
-            ) {
-                confirmation = CommandType.RESET
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            if (shouldUseSingleColumnLayout(maxWidth.value, fontScale)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    CmdButton(
+                        label = "Power On",
+                        style = CommandButtonStyle.PowerOn,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !commandInFlight,
+                        accessibilityLabel = "Power On $deviceName",
+                    ) { onCommand(CommandType.POWER_ON) }
+                    CmdButton(
+                        label = "Power Off",
+                        style = CommandButtonStyle.DestructiveTonal,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !commandInFlight,
+                        accessibilityLabel = "Power Off $deviceName",
+                    ) { confirmation = CommandType.POWER_OFF }
+                    CmdButton(
+                        label = "Force Off",
+                        style = CommandButtonStyle.DestructiveOutline,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !commandInFlight,
+                        accessibilityLabel = "Force Off $deviceName",
+                    ) { confirmation = CommandType.POWER_OFF_FORCE }
+                    CmdButton(
+                        label = "Reset",
+                        style = CommandButtonStyle.PowerReset,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !commandInFlight,
+                        accessibilityLabel = "Reset $deviceName",
+                    ) { confirmation = CommandType.RESET }
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    ) {
+                        CmdButton(
+                            label = "Power On",
+                            style = CommandButtonStyle.PowerOn,
+                            modifier = Modifier.weight(1f),
+                            enabled = !commandInFlight,
+                            accessibilityLabel = "Power On $deviceName",
+                        ) { onCommand(CommandType.POWER_ON) }
+                        CmdButton(
+                            label = "Power Off",
+                            style = CommandButtonStyle.DestructiveTonal,
+                            modifier = Modifier.weight(1f),
+                            enabled = !commandInFlight,
+                            accessibilityLabel = "Power Off $deviceName",
+                        ) { confirmation = CommandType.POWER_OFF }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    ) {
+                        CmdButton(
+                            label = "Force Off",
+                            style = CommandButtonStyle.DestructiveOutline,
+                            modifier = Modifier.weight(1f),
+                            enabled = !commandInFlight,
+                            accessibilityLabel = "Force Off $deviceName",
+                        ) { confirmation = CommandType.POWER_OFF_FORCE }
+                        CmdButton(
+                            label = "Reset",
+                            style = CommandButtonStyle.PowerReset,
+                            modifier = Modifier.weight(1f),
+                            enabled = !commandInFlight,
+                            accessibilityLabel = "Reset $deviceName",
+                        ) { confirmation = CommandType.RESET }
+                    }
+                }
             }
         }
         if (commandInFlight) {
-            Spacer(Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Spacer(Modifier.height(Spacing.sm))
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clearAndSetSemantics {
+                        contentDescription = "Submitting command request"
+                        liveRegion = LiveRegionMode.Polite
+                    },
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                shape = MaterialTheme.shapes.small,
             ) {
-                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                Text("Submitting command request…", color = Muted)
+                Row(
+                    modifier = Modifier.padding(Spacing.smMd),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Text(
+                        "Submitting command request…",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
         }
     }
@@ -86,16 +163,28 @@ fun PowerControls(
             title = { Text("$confirmLabel?") },
             text = { Text(commandConsequence(type, deviceName)) },
             confirmButton = {
-                TextButton(onClick = {
-                    confirmation = null
-                    onCommand(type)
-                }) { Text(confirmLabel, color = Red) }
+                TextButton(
+                    onClick = {
+                        confirmation = null
+                        onCommand(type)
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) { Text(confirmLabel) }
             },
             dismissButton = {
                 TextButton(onClick = { confirmation = null }) { Text("Cancel") }
             },
         )
     }
+}
+
+private enum class CommandButtonStyle {
+    PowerOn,
+    PowerReset,
+    DestructiveTonal,
+    DestructiveOutline,
 }
 
 /** Explicit confirm copy naming the action and device (never a generic “Confirm”). */
@@ -107,26 +196,58 @@ fun confirmActionLabel(type: CommandType, deviceName: String): String = when (ty
 }
 
 @Composable
-fun RowScope.CmdButton(
+private fun CmdButton(
     label: String,
-    color: Color,
+    style: CommandButtonStyle,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     accessibilityLabel: String = label,
     onClick: () -> Unit,
 ) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.semantics { contentDescription = accessibilityLabel },
-        enabled = enabled,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = color,
-            contentColor = Color.White,
-            disabledContainerColor = color.copy(alpha = 0.45f),
-            disabledContentColor = Color.White.copy(alpha = 0.7f),
-        ),
-    ) {
-        Text(label)
+    val operational = OnOffTheme.status
+    val buttonModifier = modifier
+        .defaultMinSize(minHeight = 48.dp)
+        .semantics { contentDescription = accessibilityLabel }
+    when (style) {
+        CommandButtonStyle.PowerOn -> Button(
+            onClick = onClick,
+            modifier = buttonModifier,
+            enabled = enabled,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = operational.powerOnBackground,
+                contentColor = operational.powerOnForeground,
+            ),
+        ) { Text(label) }
+
+        CommandButtonStyle.PowerReset -> Button(
+            onClick = onClick,
+            modifier = buttonModifier,
+            enabled = enabled,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = operational.powerResetBackground,
+                contentColor = operational.powerResetForeground,
+            ),
+        ) { Text(label) }
+
+        CommandButtonStyle.DestructiveTonal -> FilledTonalButton(
+            onClick = onClick,
+            modifier = buttonModifier,
+            enabled = enabled,
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = operational.powerOffBackground,
+                contentColor = operational.powerOffForeground,
+            ),
+        ) { Text(label) }
+
+        CommandButtonStyle.DestructiveOutline -> OutlinedButton(
+            onClick = onClick,
+            modifier = buttonModifier,
+            enabled = enabled,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error,
+            ),
+        ) { Text(label) }
     }
 }
 

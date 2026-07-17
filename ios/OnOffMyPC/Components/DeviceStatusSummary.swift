@@ -9,7 +9,7 @@ enum DeviceConnectionState: Equatable {
 struct DeviceStatusPresentation {
     let connection: DeviceConnectionState
     let connectionLabel: String
-    let connectionColor: Color
+    let connectionRole: AppStatusRole
     let pcStateLabel: String
     let lastContactLabel: String
 
@@ -52,22 +52,39 @@ struct DeviceStatusSummary: View {
     let presentation: DeviceStatusPresentation
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack {
-                Label(presentation.connectionLabel, systemImage: "circle.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(presentation.connectionColor)
-                Spacer()
-                Text(presentation.lastContactLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: AppSpacing.small) {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: AppSpacing.small) {
+                    connectionBadge
+                    Spacer(minLength: AppSpacing.small)
+                    lastContact
+                }
+                VStack(alignment: .leading, spacing: AppSpacing.small) {
+                    connectionBadge
+                    lastContact
+                }
             }
-            Text(presentation.pcStateLabel)
+            Label(presentation.pcStateLabel, systemImage: "desktopcomputer")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppColors.textSecondary)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(presentation.accessibilityLabel)
+    }
+
+    private var connectionBadge: some View {
+        AppStatusBadge(
+            text: presentation.connectionLabel,
+            role: presentation.connectionRole,
+            systemImage: "circle.fill"
+        )
+    }
+
+    private var lastContact: some View {
+        Text(presentation.lastContactLabel)
+            .font(.caption)
+            .foregroundStyle(AppColors.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -78,17 +95,17 @@ private func makeDeviceStatus(
     onlineLabel: String
 ) -> DeviceStatusPresentation {
     let connectionLabel: String
-    let connectionColor: Color
+    let connectionRole: AppStatusRole
     switch connection {
     case .online:
         connectionLabel = onlineLabel
-        connectionColor = .green
+        connectionRole = .positive
     case .offline:
         connectionLabel = "Offline"
-        connectionColor = .red
+        connectionRole = .danger
     case .unknown:
         connectionLabel = "Status unknown"
-        connectionColor = .secondary
+        connectionRole = .neutral
     }
 
     let pcStateLabel: String
@@ -104,7 +121,7 @@ private func makeDeviceStatus(
     return DeviceStatusPresentation(
         connection: connection,
         connectionLabel: connectionLabel,
-        connectionColor: connectionColor,
+        connectionRole: connectionRole,
         pcStateLabel: pcStateLabel,
         lastContactLabel: lastContactText(lastSeenAt)
     )

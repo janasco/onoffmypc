@@ -3,6 +3,7 @@ package com.onoffmypc.android.ui.devices
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -45,16 +47,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.ui.components.PowerControls
-import com.onoffmypc.android.ui.components.commandStatusColor
 import com.onoffmypc.android.ui.components.commandStatusLabel
+import com.onoffmypc.android.ui.components.commandStatusRole
 import com.onoffmypc.android.ui.components.DeviceStatusSummary
 import com.onoffmypc.android.ui.components.deviceStatusPresentation
 import com.onoffmypc.android.ui.designsystem.ErrorState
 import com.onoffmypc.android.ui.designsystem.LoadingState
 import com.onoffmypc.android.ui.designsystem.Spacing
 import com.onoffmypc.android.ui.designsystem.StatusBadge
-import com.onoffmypc.android.ui.theme.Accent
-import com.onoffmypc.android.ui.theme.Muted
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -93,7 +93,9 @@ fun DeviceDetailScreen(
                 navigationIcon = {
                     TextButton(
                         onClick = onBack,
-                        modifier = Modifier.semantics { contentDescription = "Back to devices" },
+                        modifier = Modifier
+                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                            .semantics { contentDescription = "Back to devices" },
                     ) { Text("←") }
                 },
             )
@@ -180,11 +182,29 @@ private fun DetailContent(
                     softError = state.error != null,
                     onRetry = onRetry,
                 )
-                DetailSection.Power -> PowerControls(
-                    deviceName = device.name,
-                    commandInFlight = state.commandInFlight,
-                    onCommand = onCommand,
-                )
+                DetailSection.Power -> Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                ) {
+                    Column(Modifier.padding(Spacing.md)) {
+                        Text("Power controls", style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.height(Spacing.xs))
+                        Text(
+                            "Requests are sent to the device; acknowledgement does not confirm the PC's final state.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Spacer(Modifier.height(Spacing.md))
+                        PowerControls(
+                            deviceName = device.name,
+                            commandInFlight = state.commandInFlight,
+                            onCommand = onCommand,
+                        )
+                    }
+                }
                 DetailSection.Activity -> ActivitySection(commands = state.commands)
                 DetailSection.Telemetry -> TelemetrySection(
                     latest = latest,
@@ -210,16 +230,35 @@ private fun OverviewSection(
     softError: Boolean,
     onRetry: () -> Unit,
 ) {
-    Text("Device status", style = MaterialTheme.typography.titleSmall, color = Muted)
-    Spacer(Modifier.height(Spacing.sm - Spacing.xs))
-    DeviceStatusSummary(status)
-    firmware?.let {
-        Spacer(Modifier.height(Spacing.xs))
-        Text("Firmware $it", color = Muted, style = MaterialTheme.typography.labelMedium)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.padding(Spacing.md)) {
+            Text("Device status", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(Spacing.sm))
+            DeviceStatusSummary(status)
+            firmware?.let {
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    "Firmware $it",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+        }
     }
     if (softError) {
-        Spacer(Modifier.height(Spacing.sm + Spacing.xs))
-        Card(Modifier.fillMaxWidth()) {
+        Spacer(Modifier.height(Spacing.smMd))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 12.dp),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -227,7 +266,7 @@ private fun OverviewSection(
             ) {
                 Text(
                     "Some device information could not be refreshed.",
-                    color = Muted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f).padding(vertical = 12.dp),
                 )
                 TextButton(onClick = onRetry) { Text("Retry") }
@@ -238,10 +277,18 @@ private fun OverviewSection(
 
 @Composable
 private fun ActivitySection(commands: List<Command>) {
-    Text("Command history", style = MaterialTheme.typography.titleSmall, color = Muted)
+    Text(
+        "Command history",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Spacer(Modifier.height(Spacing.sm))
     if (commands.isEmpty()) {
-        Text("No commands yet.", color = Muted, style = MaterialTheme.typography.bodySmall)
+        Text(
+            "No commands yet.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+        )
     } else {
         commands.forEach { CommandRow(it) }
     }
@@ -281,7 +328,11 @@ private fun TelemetrySection(
         Modifier.fillMaxWidth(),
     )
     Spacer(Modifier.height(Spacing.md))
-    Text("Temperature — last 7 days", style = MaterialTheme.typography.titleSmall, color = Muted)
+    Text(
+        "Temperature — last 7 days",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Spacer(Modifier.height(Spacing.sm))
     TemperatureChart(historyTemps)
 }
@@ -293,7 +344,11 @@ private fun SettingsSection(
     firmware: String?,
     lastSeenAt: String?,
 ) {
-    Text("Device settings", style = MaterialTheme.typography.titleSmall, color = Muted)
+    Text(
+        "Device settings",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Spacer(Modifier.height(Spacing.sm))
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(Spacing.md)) {
@@ -312,14 +367,18 @@ private fun SettingsSection(
     Spacer(Modifier.height(Spacing.sm))
     Text(
         "Rename, replace token, and delete are available from the device card on the Devices list.",
-        color = Muted,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         style = MaterialTheme.typography.bodySmall,
     )
 }
 
 @Composable
 private fun SettingsRow(label: String, value: String) {
-    Text(label, color = Muted, style = MaterialTheme.typography.labelSmall)
+    Text(
+        label,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.labelSmall,
+    )
     Text(value, style = MaterialTheme.typography.bodyMedium)
 }
 
@@ -336,12 +395,16 @@ private fun CommandRow(command: Command) {
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         ) {
             Text(commandLabel(command.type), style = MaterialTheme.typography.bodyMedium)
-            Text(fmtDateTime(command.created_at), style = MaterialTheme.typography.labelSmall, color = Muted)
+            Text(
+                fmtDateTime(command.created_at),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         Spacer(Modifier.height(2.dp))
         StatusBadge(
             label = commandStatusLabel(command.status),
-            color = commandStatusColor(command.status),
+            role = commandStatusRole(command.status),
         )
     }
 }
@@ -365,9 +428,19 @@ private fun fmtDateTime(iso: String?): String {
 
 @Composable
 private fun StatCard(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = Color.Unspecified) {
-    Card(modifier) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
         Column(Modifier.padding(12.dp)) {
-            Text(label, color = Muted, style = MaterialTheme.typography.labelSmall)
+            Text(
+                label,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+            )
             Text(value, color = valueColor, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
     }
@@ -376,12 +449,17 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
 @Composable
 private fun TemperatureChart(temps: List<Double>) {
     if (temps.size < 2) {
-        Text("Not enough data yet for a chart.", color = Muted, style = MaterialTheme.typography.bodySmall)
+        Text(
+            "Not enough data yet for a chart.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+        )
         return
     }
     val minT = temps.min()
     val maxT = temps.max()
     val range = (maxT - minT).let { if (it == 0.0) 1.0 else it }
+    val chartColor = MaterialTheme.colorScheme.primary
 
     Canvas(
         modifier = Modifier
@@ -404,13 +482,21 @@ private fun TemperatureChart(temps: List<Double>) {
         }
         drawPath(
             path = path,
-            color = Accent,
+            color = chartColor,
             style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
         )
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text("%.1f°C".format(minT), color = Muted, style = MaterialTheme.typography.labelSmall)
-        Text("%.1f°C".format(maxT), color = Muted, style = MaterialTheme.typography.labelSmall)
+        Text(
+            "%.1f°C".format(minT),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelSmall,
+        )
+        Text(
+            "%.1f°C".format(maxT),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelSmall,
+        )
     }
 }
 

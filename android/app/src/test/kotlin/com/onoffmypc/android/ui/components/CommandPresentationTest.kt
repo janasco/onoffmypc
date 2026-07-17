@@ -1,10 +1,9 @@
 package com.onoffmypc.android.ui.components
 
 import com.onoffmypc.shared.model.CommandType
-import com.onoffmypc.android.ui.theme.Accent
-import com.onoffmypc.android.ui.theme.Muted
-import com.onoffmypc.android.ui.theme.Red
-import com.onoffmypc.android.ui.theme.Yellow
+import com.onoffmypc.android.ui.designsystem.StatusRole
+import com.onoffmypc.android.ui.designsystem.toStatusRole
+import com.onoffmypc.design.generated.OnOffTone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -50,7 +49,7 @@ class CommandPresentationTest {
     @Test
     fun commandStatusLabel_honestLifecycle() {
         assertEquals("Queued", commandStatusLabel("pending"))
-        assertEquals("Awaiting device acknowledgement", commandStatusLabel("sent"))
+        assertEquals("Awaiting acknowledgement", commandStatusLabel("sent"))
         assertEquals("Device acknowledged (PC state not confirmed)", commandStatusLabel("delivered"))
         assertEquals("Expired — not acknowledged", commandStatusLabel("expired"))
         assertEquals("Unknown", commandStatusLabel(null))
@@ -58,12 +57,18 @@ class CommandPresentationTest {
     }
 
     @Test
-    fun commandStatusColor_matchesLifecycle() {
-        assertEquals(Yellow, commandStatusColor("pending"))
-        assertEquals(Yellow, commandStatusColor("sent"))
-        assertEquals(Accent, commandStatusColor("delivered"))
-        assertEquals(Red, commandStatusColor("expired"))
-        assertEquals(Muted, commandStatusColor(null))
+    fun commandStatusRole_matchesLifecycle() {
+        assertEquals(StatusRole.Pending, commandStatusRole("pending"))
+        assertEquals(StatusRole.Information, commandStatusRole("sent"))
+        assertEquals(StatusRole.Information, commandStatusRole("delivered"))
+        assertEquals(StatusRole.Danger, commandStatusRole("expired"))
+        assertEquals(StatusRole.Positive, commandStatusRole("confirmed"))
+        assertEquals(StatusRole.Unknown, commandStatusRole(null))
+    }
+
+    @Test
+    fun powerOnAction_isInformationalRatherThanPositiveEvidence() {
+        assertEquals(StatusRole.Information, OnOffTone.PowerOn.toStatusRole())
     }
 
     @Test

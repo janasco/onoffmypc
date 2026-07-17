@@ -6,8 +6,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 
 @Composable
 fun LoadingState(
@@ -21,6 +23,7 @@ fun LoadingState(
         CircularProgressIndicator(
             Modifier.clearAndSetSemantics {
                 this.contentDescription = contentDescription
+                liveRegion = LiveRegionMode.Polite
             },
         )
     }

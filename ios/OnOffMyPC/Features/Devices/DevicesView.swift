@@ -16,12 +16,14 @@ struct DevicesView: View {
         NavigationStack {
             content
                 .navigationTitle("Your Devices")
+                .appScreenBackground()
                 .navigationDestination(for: Device.self) { device in
                     DeviceDetailView(device: device)
                 }
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
                         AppLogo(size: 26)
+                            .accessibilityHidden(true)
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button { sheet = .addDevice } label: { Image(systemName: "plus") }
@@ -80,30 +82,26 @@ struct DevicesView: View {
     @ViewBuilder
     private var content: some View {
         if vm.loading && vm.devices.isEmpty {
-            ProgressView("Loading devices…")
-                .accessibilityLabel("Loading devices")
+            AppProgressState(label: "Loading devices…")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let error = vm.error, vm.devices.isEmpty {
-            VStack(spacing: 10) {
-                Image(systemName: "wifi.exclamationmark")
-                    .font(.largeTitle)
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-                Text("Couldn't load devices").font(.headline)
-                Text(error).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                Button("Retry") { Task { await vm.load(appState) } }
-            }
-            .padding()
+            AppEmptyState(
+                systemImage: "wifi.exclamationmark",
+                title: "Couldn’t load devices",
+                message: error,
+                actionTitle: "Retry",
+                action: { Task { await vm.load(appState) } }
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if vm.devices.isEmpty {
-            VStack(spacing: 8) {
-                Image(systemName: "desktopcomputer").font(.largeTitle).foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-                Text("No devices yet").font(.headline)
-                Text("Add your first device to view its connection and last-reported PC status.")
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                Button("Add device") { sheet = .addDevice }
-            }
-            .padding()
+            AppEmptyState(
+                systemImage: "desktopcomputer",
+                title: "No devices yet",
+                message: "Add your first device to view its connection and last-reported PC status.",
+                actionTitle: "Add device",
+                action: { sheet = .addDevice }
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List {
                 if let b = vm.billing,
@@ -111,6 +109,16 @@ struct DevicesView: View {
                    !(b.is_lifetime ?? false),
                    b.devices == nil || b.devices?.contains(where: { $0.unlocked != true }) == true {
                     TrialBanner(billing: b) { sheet = .billing(nil) }
+                        .listRowInsets(
+                            EdgeInsets(
+                                top: AppSpacing.small,
+                                leading: AppSpacing.standard,
+                                bottom: AppSpacing.small,
+                                trailing: AppSpacing.standard
+                            )
+                        )
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                 }
                 ForEach(vm.devices) { device in
                     DeviceRow(
@@ -119,23 +127,29 @@ struct DevicesView: View {
                     ) { type in
                         Task { await vm.send(type, to: device, appState) }
                     }
+                    .listRowInsets(
+                        EdgeInsets(
+                            top: AppSpacing.small,
+                            leading: AppSpacing.standard,
+                            bottom: AppSpacing.small,
+                            trailing: AppSpacing.standard
+                        )
+                    )
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
             }
+            .listStyle(.plain)
+            .appFormBackground()
         }
     }
 
     @ViewBuilder
     private var toastView: some View {
         if let toast = vm.toast {
-            Text(toast)
-                .font(.subheadline)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: Capsule())
+            AppToast(message: toast)
+                .padding(.horizontal, AppSpacing.large)
                 .padding(.bottom, 24)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(toast)
-                .accessibilityAddTraits(.updatesFrequently)
                 .task(id: toast) {
                     try? await Task.sleep(nanoseconds: 2_500_000_000)
                     vm.toast = nil
@@ -159,28 +173,58 @@ private struct TrialBanner: View {
     var body: some View {
         let locked = billing.devices?.filter { $0.unlocked != true } ?? []
         let expired = locked.contains { $0.pending != true && deviceTrialExpired($0) }
-        HStack {
-            Text(bannerText(expired))
-                .font(.subheadline)
-                .foregroundStyle(expired ? Color.red : Color.primary)
-            Spacer()
-            Button(expired ? "Unlock" : "Manage", action: onUpgrade)
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+            || (billing.devices == nil && billing.trial_expired == true)
+        AppSurface {
+            VStack(alignment: .leading, spacing: AppSpacing.medium) {
+                AppStatusBadge(
+                    text: bannerStatus(expired),
+                    role: bannerRole(expired)
+                )
+                Text(bannerText(expired))
+                    .font(.subheadline)
+                    .foregroundStyle(AppColors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button(expired ? "Unlock device" : "Manage access", action: onUpgrade)
+                    .buttonStyle(AppSecondaryButtonStyle(fullWidth: false))
+            }
         }
-        .listRowBackground((expired ? Color.red : Color.accentColor).opacity(0.12))
+    }
+
+    private var pendingCheckoutCount: Int {
+        let locked = billing.devices?.filter { $0.unlocked != true } ?? []
+        return locked.filter(\.polarCheckoutPending).count
+    }
+
+    private var pendingReviewCount: Int {
+        let locked = billing.devices?.filter { $0.unlocked != true } ?? []
+        return locked.filter(\.legacyPaymentPending).count
+    }
+
+    private func bannerStatus(_ expired: Bool) -> String {
+        if expired { return "Trial ended" }
+        if pendingCheckoutCount > 0 { return "Checkout pending" }
+        if pendingReviewCount > 0 { return "Payment review" }
+        return "Device access"
+    }
+
+    private func bannerRole(_ expired: Bool) -> AppStatusRole {
+        if expired { return .warning }
+        if pendingCheckoutCount > 0 || pendingReviewCount > 0 { return .warning }
+        return .informational
     }
 
     private func bannerText(_ expired: Bool) -> String {
         let locked = billing.devices?.filter { $0.unlocked != true } ?? []
         let expiredCount = locked.filter { $0.pending != true && deviceTrialExpired($0) }.count
-        let pendingCount = locked.filter { $0.pending == true }.count
         let days = locked.filter { $0.pending != true }.compactMap { daysLeft($0.trial_ends_at) }.min()
         if expiredCount > 0 {
             return "\(expiredCount) device trial\(expiredCount == 1 ? " has" : "s have") ended. Unlock each for $\(billing.price ?? 15) one time."
         }
-        if !locked.isEmpty, locked.allSatisfy({ $0.pending == true }) {
-            return "\(pendingCount) device payment\(pendingCount == 1 ? " is" : "s are") under review."
+        if pendingCheckoutCount > 0 {
+            return "\(pendingCheckoutCount) device checkout\(pendingCheckoutCount == 1 ? " is" : "s are") ready to continue."
+        }
+        if pendingReviewCount > 0 {
+            return "\(pendingReviewCount) legacy device payment\(pendingReviewCount == 1 ? " is" : "s are") under review."
         }
         if locked.isEmpty, billing.devices == nil, billing.trial_expired == true {
             return "Free trial ended. Unlock a device for $\(billing.price ?? 15) one time."
@@ -218,18 +262,42 @@ private struct DeviceRow: View {
 
     var body: some View {
         let status = deviceStatusFromLastContact(lastSeenAt: device.last_seen_at, pcOn: device.pc_on)
-        VStack(alignment: .leading, spacing: 10) {
-            NavigationLink(value: device) {
-                Text(device.name).font(.headline)
+        AppSurface {
+            VStack(alignment: .leading, spacing: AppSpacing.standard) {
+                NavigationLink(value: device) {
+                    HStack(spacing: AppSpacing.medium) {
+                        Image(systemName: "desktopcomputer")
+                            .font(.headline)
+                            .foregroundStyle(AppColors.action)
+                            .frame(width: 40, height: 40)
+                            .background(AppColors.actionSoft, in: RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+                            .accessibilityHidden(true)
+                        Text(device.name)
+                            .font(.headline)
+                            .foregroundStyle(AppColors.textPrimary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(AppColors.textSecondary)
+                            .accessibilityHidden(true)
+                    }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Opens device details")
+
+                Divider()
+                    .overlay(AppColors.border)
+
+                DeviceStatusSummary(presentation: status)
+                PowerCommandControls(
+                    deviceName: device.name,
+                    commandInFlight: commandInFlight,
+                    includeForceOff: false,
+                    onCommand: onCommand
+                )
             }
-            DeviceStatusSummary(presentation: status)
-            PowerCommandControls(
-                deviceName: device.name,
-                commandInFlight: commandInFlight,
-                includeForceOff: false,
-                onCommand: onCommand
-            )
         }
-        .padding(.vertical, 6)
     }
 }

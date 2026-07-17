@@ -3,6 +3,7 @@ package com.onoffmypc.android.ui.devices
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -54,11 +56,8 @@ import com.onoffmypc.android.ui.designsystem.EmptyState
 import com.onoffmypc.android.ui.designsystem.ErrorState
 import com.onoffmypc.android.ui.designsystem.LoadingState
 import com.onoffmypc.android.ui.designsystem.Spacing
-import com.onoffmypc.android.ui.theme.Muted
-import androidx.compose.ui.graphics.Color
-import com.onoffmypc.android.ui.theme.Accent
-import com.onoffmypc.android.ui.theme.Red
-import com.onoffmypc.android.ui.theme.Yellow
+import com.onoffmypc.android.ui.designsystem.StatusRole
+import com.onoffmypc.android.ui.designsystem.statusPalette
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,7 +96,7 @@ fun DevicesScreen(
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        AppLogo(size = 30.dp)
+                        AppLogo(size = 30.dp, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("OnOffMyPC")
                     }
@@ -106,7 +105,9 @@ fun DevicesScreen(
                     Box {
                         TextButton(
                             onClick = { menuOpen = true },
-                            modifier = Modifier.semantics { contentDescription = "Open menu" },
+                            modifier = Modifier
+                                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                .semantics { contentDescription = "Open menu" },
                         ) {
                             Text("☰", style = MaterialTheme.typography.headlineSmall)
                         }
@@ -292,20 +293,29 @@ private fun DeviceCard(
     )
     var menuOpen by remember { mutableStateOf(false) }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = device.name,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
                 Box {
                     TextButton(
                         onClick = { menuOpen = true },
-                        modifier = Modifier.semantics {
-                            contentDescription = "Device actions for ${device.name}"
-                        },
+                        modifier = Modifier
+                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                            .semantics {
+                                contentDescription = "Device actions for ${device.name}"
+                            },
                     ) { Text("⋮") }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(
@@ -317,15 +327,24 @@ private fun DeviceCard(
                             onClick = { menuOpen = false; onReplace() },
                         )
                         DropdownMenuItem(
-                            text = { Text("Delete", color = Red) },
+                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
                             onClick = { menuOpen = false; onDelete() },
                         )
                     }
                 }
             }
 
-            Spacer(Modifier.height(6.dp))
-            DeviceStatusSummary(status)
+            Spacer(Modifier.height(Spacing.xs))
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                DeviceStatusSummary(
+                    presentation = status,
+                    modifier = Modifier.padding(Spacing.smMd),
+                )
+            }
             Spacer(Modifier.height(12.dp))
             PowerControls(
                 deviceName = device.name,
@@ -345,7 +364,8 @@ private fun DeviceCard(
 
 @Composable
 private fun DeletionBanner(onManage: () -> Unit) {
-    Card(colors = CardDefaults.cardColors(containerColor = Red.copy(alpha = 0.15f))) {
+    val palette = statusPalette(StatusRole.Danger)
+    Card(colors = CardDefaults.cardColors(containerColor = palette.container)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -356,7 +376,7 @@ private fun DeletionBanner(onManage: () -> Unit) {
             Text(
                 text = "Account scheduled for deletion.",
                 style = MaterialTheme.typography.bodySmall,
-                color = Red,
+                color = palette.content,
                 modifier = Modifier.weight(1f),
             )
             TextButton(onClick = onManage) { Text("Cancel") }
@@ -366,7 +386,8 @@ private fun DeletionBanner(onManage: () -> Unit) {
 
 @Composable
 private fun VerifyEmailBanner(onResend: () -> Unit) {
-    Card(colors = CardDefaults.cardColors(containerColor = Yellow.copy(alpha = 0.15f))) {
+    val palette = statusPalette(StatusRole.Pending)
+    Card(colors = CardDefaults.cardColors(containerColor = palette.container)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -377,6 +398,7 @@ private fun VerifyEmailBanner(onResend: () -> Unit) {
             Text(
                 text = "Verify your email to secure your account.",
                 style = MaterialTheme.typography.bodySmall,
+                color = palette.content,
                 modifier = Modifier.weight(1f),
             )
             TextButton(onClick = onResend) { Text("Resend") }
@@ -390,14 +412,16 @@ private fun TrialBanner(
     onUpgrade: () -> Unit,
 ) {
     val locked = billing.devices.filter { !it.unlocked }
-    val actionable = locked.filter { !it.pending }
-    val expiredCount = actionable.count { deviceTrialExpired(it) }
-    val pendingCount = locked.count { it.pending }
-    val days = actionable.mapNotNull { trialDaysLeft(it.trial_ends_at) }.minOrNull()
+    val trialDevices = locked.filter { !it.pending }
+    val expiredCount = trialDevices.count { deviceTrialExpired(it) }
+    val pendingCheckoutCount = locked.count { it.polarCheckoutPending }
+    val pendingReviewCount = locked.count { it.legacyPaymentPending }
+    val days = trialDevices.mapNotNull { trialDaysLeft(it.trial_ends_at) }.minOrNull()
         ?: trialDaysLeft(billing.trial_ends_at)
     val expired = if (billing.devices.isEmpty()) billing.trial_expired else expiredCount > 0
-    val tint = if (expired) Red else Accent
-    Card(colors = CardDefaults.cardColors(containerColor = tint.copy(alpha = 0.12f))) {
+    val needsAttention = expired || pendingCheckoutCount > 0 || pendingReviewCount > 0
+    val palette = statusPalette(if (needsAttention) StatusRole.Pending else StatusRole.Information)
+    Card(colors = CardDefaults.cardColors(containerColor = palette.container)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -408,16 +432,25 @@ private fun TrialBanner(
             Text(
                 text = when {
                     expiredCount > 0 -> "$expiredCount device trial${if (expiredCount == 1) " has" else "s have"} ended. Unlock each for $${billing.price} one time."
-                    actionable.isEmpty() && pendingCount > 0 -> "$pendingCount device payment${if (pendingCount == 1) " is" else "s are"} under review."
+                    pendingCheckoutCount > 0 -> "$pendingCheckoutCount device checkout${if (pendingCheckoutCount == 1) " is" else "s are"} ready to continue."
+                    pendingReviewCount > 0 -> "$pendingReviewCount legacy device payment${if (pendingReviewCount == 1) " is" else "s are"} under review."
                     billing.devices.isEmpty() && expired -> "Free trial ended. Unlock a device for $${billing.price} one time."
                     days != null -> "Device trial: $days day${if (days == 1L) "" else "s"} left on the next device."
                     else -> "Each device includes a free trial."
                 },
-                color = if (expired) Red else Color.Unspecified,
+                color = palette.content,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onUpgrade) { Text(if (expired) "Unlock" else "Manage") }
+            TextButton(onClick = onUpgrade) {
+                Text(
+                    when {
+                        expired -> "Unlock"
+                        pendingCheckoutCount > 0 -> "Continue"
+                        else -> "Manage"
+                    },
+                )
+            }
         }
     }
 }

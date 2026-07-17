@@ -48,5 +48,37 @@ class FleetSummaryTest {
         )
         assertEquals(2, summary.attentionCount)
         assertEquals(true, summary.attentionLabel?.contains("trial") == true)
+        assertEquals(true, summary.attentionLabel?.contains("under review") == true)
+    }
+
+    @Test
+    fun computeFleetSummary_distinguishesResumableCheckoutFromLegacyReview() {
+        val billing = BillingStatus(
+            plan = "free",
+            devices = listOf(
+                BillingDevice(
+                    id = "1",
+                    name = "Checkout",
+                    unlocked = false,
+                    pending = true,
+                    pending_provider = "polar",
+                    trial_expired = true,
+                ),
+                BillingDevice(
+                    id = "2",
+                    name = "Review",
+                    unlocked = false,
+                    pending = true,
+                    pending_provider = "manual",
+                    trial_expired = true,
+                ),
+            ),
+        )
+
+        val summary = computeFleetSummary(emptyList(), billing)
+
+        assertEquals(2, summary.attentionCount)
+        assertEquals(true, summary.attentionLabel?.contains("ready to continue") == true)
+        assertEquals(true, summary.attentionLabel?.contains("under review") == true)
     }
 }

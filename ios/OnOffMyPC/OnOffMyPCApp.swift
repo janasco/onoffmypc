@@ -9,6 +9,7 @@ struct OnOffMyPCApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .tint(AppColors.action)
                 .onOpenURL { url in _ = GoogleSignInManager.handle(url) }
         }
     }
@@ -37,10 +38,13 @@ struct RootView: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        if appState.loggedIn {
-            DevicesView()
-        } else {
-            LoginView()
+        ZStack {
+            AppColors.canvas.ignoresSafeArea()
+            if appState.loggedIn {
+                DevicesView()
+            } else {
+                LoginView()
+            }
         }
     }
 }

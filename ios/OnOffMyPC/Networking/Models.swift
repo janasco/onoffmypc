@@ -210,13 +210,14 @@ func commandRequestFeedback(
 
 /// Honest lifecycle labels shared by every command-history presentation.
 func commandStatusText(_ status: String?) -> String {
+    guard let status else { return "Unknown" }
+    guard let generated = onOffCommandStates[status] else {
+        return status.replacingOccurrences(of: "_", with: " ").capitalized
+    }
     switch status {
-    case "pending": return "Queued"
-    case "sent": return "Awaiting device acknowledgement"
-    case "delivered": return "Device acknowledged (PC state not confirmed)"
-    case "expired": return "Expired — not acknowledged"
-    case nil: return "Unknown"
-    default: return status?.replacingOccurrences(of: "_", with: " ").capitalized ?? "Unknown"
+    case "delivered": return "\(generated.label) (PC state not confirmed)"
+    case "expired": return "\(generated.label) — not acknowledged"
+    default: return generated.label
     }
 }
 

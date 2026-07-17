@@ -1,12 +1,8 @@
 package com.onoffmypc.android.ui.auth
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -21,15 +17,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.onoffmypc.android.ui.components.AppLogo
 import com.onoffmypc.android.ui.components.PasswordField
+import com.onoffmypc.android.ui.designsystem.AuthLayout
 import com.onoffmypc.android.ui.designsystem.Spacing
-import com.onoffmypc.android.ui.theme.Muted
 
 @Composable
 fun LoginScreen(
@@ -41,26 +40,15 @@ fun LoginScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(Spacing.lg),
-        verticalArrangement = Arrangement.Center,
+    AuthLayout(
+        title = "OnOffMyPC",
+        subtitle = "Control your PC from anywhere.",
     ) {
-        AppLogo()
-        Spacer(Modifier.height(Spacing.md))
-        Text("OnOffMyPC", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            text = "Control your PC from anywhere.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Muted,
-            modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.lg),
-        )
-
         OutlinedTextField(
             value = state.email,
             onValueChange = vm::onEmail,
             label = { Text("Email") },
+            enabled = !state.loading,
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email,
@@ -75,6 +63,7 @@ fun LoginScreen(
             value = state.password,
             label = "Password",
             imeAction = ImeAction.Done,
+            enabled = !state.loading,
             onValueChange = vm::onPassword,
         )
 
@@ -84,6 +73,7 @@ fun LoginScreen(
                 text = it,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
             )
         }
 
@@ -92,7 +82,11 @@ fun LoginScreen(
         Button(
             onClick = { vm.login(onLoggedIn) },
             enabled = !state.loading,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    contentDescription = if (state.loading) "Signing in" else "Sign in"
+                },
         ) {
             if (state.loading) {
                 CircularProgressIndicator(
@@ -138,12 +132,14 @@ fun LoginScreen(
 
         TextButton(
             onClick = onForgotPassword,
+            enabled = !state.loading,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
             Text("Forgot password?")
         }
         TextButton(
             onClick = onRegister,
+            enabled = !state.loading,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
             Text("Don't have an account? Register")

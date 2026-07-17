@@ -1,19 +1,26 @@
 package com.onoffmypc.android.ui.designsystem
 
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import com.onoffmypc.design.generated.OnOffRadius
+import com.onoffmypc.design.generated.OnOffSpacing
 
 /** Shared spacing scale — aliases common paddings used across screens. */
 object Spacing {
-    val xs: Dp = 4.dp
-    val sm: Dp = 8.dp
-    val md: Dp = 16.dp
-    val lg: Dp = 24.dp
-    val xl: Dp = 48.dp
+    val xs: Dp = OnOffSpacing.x1
+    val sm: Dp = OnOffSpacing.x2
+    val smMd: Dp = OnOffSpacing.x3
+    val md: Dp = OnOffSpacing.x4
+    val mdLg: Dp = OnOffSpacing.x5
+    val lg: Dp = OnOffSpacing.x6
+    val xlg: Dp = OnOffSpacing.x8
+    val xl: Dp = OnOffSpacing.x12
 }
 
 /** Corner radii used by new design-system surfaces. */
 object Radius {
-    val sm: Dp = 8.dp
-    val md: Dp = 12.dp
+    val compact: Dp = OnOffRadius.compact
+    val sm: Dp = OnOffRadius.small
+    val md: Dp = OnOffRadius.card
+    val lg: Dp = OnOffRadius.large
+    val pill: Dp = OnOffRadius.pill
 }

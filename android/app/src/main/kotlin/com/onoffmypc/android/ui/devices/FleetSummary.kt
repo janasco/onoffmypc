@@ -2,7 +2,8 @@ package com.onoffmypc.android.ui.devices
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,7 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import com.onoffmypc.android.data.model.BillingStatus
 import com.onoffmypc.android.data.model.Device
@@ -22,8 +23,7 @@ import com.onoffmypc.android.ui.components.DeviceConnectionState
 import com.onoffmypc.android.ui.components.connectionFromLastContact
 import com.onoffmypc.android.ui.designsystem.Spacing
 import com.onoffmypc.android.ui.designsystem.StatusBadge
-import com.onoffmypc.android.ui.designsystem.StatusColors
-import com.onoffmypc.android.ui.theme.Muted
+import com.onoffmypc.android.ui.designsystem.StatusRole
 
 /**
  * Fleet counts derived from the devices list + optional billing attention.
@@ -58,18 +58,23 @@ fun computeFleetSummary(
     var attentionLabel: String? = null
     if (billing != null && billing.billing_enabled && !billing.is_lifetime) {
         val locked = billing.devices.filter { !it.unlocked }
-        val expired = locked.count { it.trial_expired == true || trialHasEndedLocal(it.trial_ends_at) }
-        val pending = locked.count { it.pending }
-        attention = expired + pending
-        attentionLabel = when {
-            expired > 0 && pending > 0 ->
-                "$expired trial ended · $pending payment under review"
-            expired > 0 ->
-                "$expired device trial${if (expired == 1) "" else "s"} ended — unlock needed"
-            pending > 0 ->
-                "$pending payment${if (pending == 1) "" else "s"} under review"
-            else -> null
+        val expired = locked.count {
+            !it.pending && (it.trial_expired == true || trialHasEndedLocal(it.trial_ends_at))
         }
+        val pendingCheckout = locked.count { it.polarCheckoutPending }
+        val pendingReview = locked.count { it.legacyPaymentPending }
+        attention = expired + pendingCheckout + pendingReview
+        val attentionParts = mutableListOf<String>()
+        if (expired > 0) {
+            attentionParts += "$expired device trial${if (expired == 1) "" else "s"} ended"
+        }
+        if (pendingCheckout > 0) {
+            attentionParts += "$pendingCheckout checkout${if (pendingCheckout == 1) "" else "s"} ready to continue"
+        }
+        if (pendingReview > 0) {
+            attentionParts += "$pendingReview legacy payment${if (pendingReview == 1) "" else "s"} under review"
+        }
+        attentionLabel = attentionParts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
     }
 
     return FleetSummary(
@@ -91,6 +96,7 @@ private fun trialHasEndedLocal(iso: String?): Boolean {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FleetSummaryCard(summary: FleetSummary, modifier: Modifier = Modifier) {
     if (summary.total == 0) return
@@ -102,30 +108,30 @@ fun FleetSummaryCard(summary: FleetSummary, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .semantics { contentDescription = a11y },
+            .clearAndSetSemantics { contentDescription = a11y },
     ) {
         Column(Modifier.padding(Spacing.md)) {
             Text(
                 "Fleet",
                 style = MaterialTheme.typography.titleSmall,
-                color = Muted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(Spacing.sm))
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
                 FleetCount("Total", summary.total.toString())
-                StatusBadge(label = "${summary.online} online", color = StatusColors.online)
-                StatusBadge(label = "${summary.offline} offline", color = StatusColors.offline)
+                StatusBadge(label = "${summary.online} online", role = StatusRole.Online)
+                StatusBadge(label = "${summary.offline} offline", role = StatusRole.Offline)
                 if (summary.unknown > 0) {
-                    StatusBadge(label = "${summary.unknown} unknown", color = StatusColors.unknown)
+                    StatusBadge(label = "${summary.unknown} unknown", role = StatusRole.Unknown)
                 }
             }
             summary.attentionLabel?.let { label ->
                 Spacer(Modifier.height(Spacing.sm))
-                StatusBadge(label = label, color = StatusColors.pending)
+                StatusBadge(label = label, role = StatusRole.Pending)
             }
         }
     }
@@ -135,6 +141,10 @@ fun FleetSummaryCard(summary: FleetSummary, modifier: Modifier = Modifier) {
 private fun FleetCount(label: String, value: String) {
     Column(horizontalAlignment = Alignment.Start) {
         Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Muted)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

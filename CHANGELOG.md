@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Changed
+- Rebuilt Android and iOS around generated `@onoffmypc/design` 0.1 foundations
+  while preserving native Material 3 and SwiftUI behavior. Both platforms now
+  share adaptive green-neutral surfaces, blue ordinary actions, typed
+  operational status roles, consistent cards/forms/feedback, larger targets,
+  and clearer accessibility semantics without conflating acknowledgement with
+  confirmed PC state.
 - Logout now unregisters the FCM push token with the API before clearing the session (Android via `PushManager.unregisterIfPossible`; iOS when `Session.pushToken` is set).
 
 ## [0.3.7] - 2026-07-16

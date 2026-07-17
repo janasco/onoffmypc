@@ -1,12 +1,18 @@
-# Design system — current state & target
+# Design system — mobile adapter and migration record
 
-**Audited:** 2026-07-16  
-**Sources of truth today:**  
-- Android: `android/app/src/main/kotlin/com/onoffmypc/android/ui/theme/Color.kt`, `Theme.kt`  
-- iOS: system SwiftUI + hardcoded brand accents in views / `Assets.xcassets`  
-- Web (reference, not in this repo): dark-first neutrals + blue accent (mobile comments claim parity)
+**Audited:** 2026-07-16
 
-This file documents **what exists** versus a **target** token/component system. Incremental adoption lives under `android/app/.../ui/designsystem/` (tokens + Empty/Error/Loading/StatusBadge) without rewriting the app. See [`MOBILE_ROADMAP.md`](MOBILE_ROADMAP.md).
+**Canonical source:** `onoffmypc-design` tokens, state catalog, and guidance.
+
+**Android adapter:** generated Kotlin plus `ui/theme/` and `ui/designsystem/`.
+
+**iOS adapter:** generated Swift plus `Components/AppDesignSystem.swift`.
+
+This file began as the pre-shared-system audit and remains useful migration
+history. New token values, state meaning, component specifications, writing,
+and accessibility rules must be changed in `onoffmypc-design`, regenerated,
+and then adapted natively. Do not create a second canonical palette here. See
+[`MOBILE_ROADMAP.md`](MOBILE_ROADMAP.md).
 
 ---
 

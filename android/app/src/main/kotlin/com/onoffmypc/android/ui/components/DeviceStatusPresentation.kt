@@ -8,12 +8,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import com.onoffmypc.android.ui.theme.Green
-import com.onoffmypc.android.ui.theme.Muted
-import com.onoffmypc.android.ui.theme.Red
+import androidx.compose.ui.text.style.TextAlign
+import com.onoffmypc.android.ui.designsystem.Spacing
+import com.onoffmypc.android.ui.designsystem.StatusBadge
+import com.onoffmypc.android.ui.designsystem.StatusRole
 import java.time.Duration
 import java.time.Instant
 
@@ -26,7 +26,7 @@ enum class DeviceConnectionState {
 data class DeviceStatusPresentation(
     val connection: DeviceConnectionState,
     val connectionLabel: String,
-    val connectionColor: Color,
+    val connectionRole: StatusRole,
     val pcStateLabel: String,
     val lastContactLabel: String,
 ) {
@@ -53,10 +53,10 @@ fun deviceStatusPresentation(
         DeviceConnectionState.OFFLINE -> "Offline"
         DeviceConnectionState.UNKNOWN -> "Status unknown"
     }
-    val connectionColor = when (resolvedConnection) {
-        DeviceConnectionState.ONLINE -> Green
-        DeviceConnectionState.OFFLINE -> Red
-        DeviceConnectionState.UNKNOWN -> Muted
+    val connectionRole = when (resolvedConnection) {
+        DeviceConnectionState.ONLINE -> StatusRole.Online
+        DeviceConnectionState.OFFLINE -> StatusRole.Offline
+        DeviceConnectionState.UNKNOWN -> StatusRole.Unknown
     }
     val pcStateLabel = when (pcOn) {
         1 -> "Last reported PC state: on"
@@ -66,7 +66,7 @@ fun deviceStatusPresentation(
     return DeviceStatusPresentation(
         connection = resolvedConnection,
         connectionLabel = connectionLabel,
-        connectionColor = connectionColor,
+        connectionRole = connectionRole,
         pcStateLabel = pcStateLabel,
         lastContactLabel = lastContactLabel(lastSeenAt, now),
     )
@@ -84,22 +84,24 @@ fun DeviceStatusSummary(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         ) {
-            Text(
-                presentation.connectionLabel,
-                color = presentation.connectionColor,
-                style = MaterialTheme.typography.labelLarge,
+            StatusBadge(
+                label = presentation.connectionLabel,
+                role = presentation.connectionRole,
             )
             Text(
                 presentation.lastContactLabel,
-                color = Muted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.labelMedium,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f),
             )
         }
         Text(
             presentation.pcStateLabel,
-            color = Muted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
         )
     }

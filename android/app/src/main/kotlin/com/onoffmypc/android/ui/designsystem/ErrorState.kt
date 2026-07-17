@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import com.onoffmypc.android.ui.theme.Muted
 
 @Composable
 fun ErrorState(
@@ -34,7 +33,7 @@ fun ErrorState(
         Spacer(Modifier.height(Spacing.sm - Spacing.xs))
         Text(
             message,
-            color = Muted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )

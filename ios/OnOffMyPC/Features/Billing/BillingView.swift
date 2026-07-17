@@ -17,7 +17,8 @@ struct BillingView: View {
         NavigationStack {
             Group {
                 if vm.loading {
-                    ProgressView()
+                    AppProgressState(label: "Loading device access…")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let status = vm.status {
                     Form {
                         accessSection(status)
@@ -34,20 +35,30 @@ struct BillingView: View {
                         }
                         if vm.portalAvailable { billingPortalSection }
                     }
+                    .appFormBackground()
                 } else {
-                    Text(vm.error ?? "Couldn't load billing.")
-                        .foregroundStyle(.secondary)
+                    AppEmptyState(
+                        systemImage: "creditcard",
+                        title: "Couldn’t load device access",
+                        message: vm.error ?? "Check your connection and try again.",
+                        actionTitle: "Retry",
+                        action: { Task { await vm.load(initialDeviceId: initialDeviceId) } }
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
+            .appScreenBackground()
             .navigationTitle("Device Unlocks")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Done") { dismiss() }
+                        .disabled(vm.startingCheckout || vm.openingPortal)
                 }
             }
         }
         .task { await vm.load(initialDeviceId: initialDeviceId) }
         .refreshable { await vm.load(initialDeviceId: initialDeviceId) }
+        .interactiveDismissDisabled(vm.startingCheckout || vm.openingPortal)
         .onChange(of: scenePhase) { phase in
             guard phase == .active else { return }
             let returnedFromExternalURL = awaitingExternalReturn
@@ -71,8 +82,9 @@ struct BillingView: View {
 
     private func errorSection(_ error: String) -> some View {
         Section {
-            Text(error).foregroundStyle(.red).font(.caption)
+            AppMessageBanner(message: error, role: .danger, announces: true)
         }
+        .appListRow()
     }
 
     @ViewBuilder
@@ -80,14 +92,14 @@ struct BillingView: View {
         let devices = status.devices ?? []
         Section("Current access") {
             if !status.billingEnabled {
-                LabeledContent("Access model", value: "Free access")
+                AppStatusBadge(text: "Free access", role: .positive)
                 Text("All devices have full access while billing is off.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppColors.textSecondary)
             } else {
-                LabeledContent(
-                    "Access model",
-                    value: status.is_lifetime == true ? "Lifetime (legacy)" : "Per device"
+                AppStatusBadge(
+                    text: status.is_lifetime == true ? "Lifetime access" : "Per-device access",
+                    role: status.is_lifetime == true ? .positive : .informational
                 )
                 Text(
                     status.is_lifetime == true
@@ -95,16 +107,21 @@ struct BillingView: View {
                         : "\(devices.filter { $0.unlocked == true }.count) of \(devices.count) devices unlocked"
                 )
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppColors.textSecondary)
             }
         }
+        .appListRow()
     }
 
     private var freeAccessSection: some View {
         Section {
-            Text("Billing is currently off. Every device can use remote controls without a trial limit or unlock purchase.")
-                .foregroundStyle(.secondary)
+            AppMessageBanner(
+                message: "Billing is currently off. Every device can use remote controls without a trial limit or unlock purchase.",
+                role: .positive,
+                title: "Full device access"
+            )
         }
+        .appListRow()
     }
 
     @ViewBuilder
@@ -116,9 +133,10 @@ struct BillingView: View {
                     .fontWeight(.semibold)
                 Text("Pay once for the selected device. No subscription. Contact support before deleting a purchased device so its unlock can be transferred safely.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppColors.textSecondary)
             }
         }
+        .appListRow()
     }
 
     @ViewBuilder
@@ -126,56 +144,60 @@ struct BillingView: View {
         let devices = status.devices ?? []
         if status.is_lifetime == true {
             Section {
-                Label(
-                    "Your legacy Lifetime access covers every device. No additional purchase is needed.",
-                    systemImage: "checkmark.seal.fill"
+                AppMessageBanner(
+                    message: "Your legacy Lifetime access covers every device. No additional purchase is needed.",
+                    role: .positive,
+                    title: "Lifetime access"
                 )
-                .foregroundStyle(.green)
             }
+            .appListRow()
         } else {
             Section("Choose a device") {
                 if devices.isEmpty {
                     Text("Add a device before purchasing an unlock.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppColors.textSecondary)
                 } else {
                     ForEach(devices) { device in
                         Button {
                             vm.selectDevice(device.id)
                         } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: AppSpacing.small) {
+                                HStack {
                                     Text(device.name)
-                                        .foregroundStyle(.primary)
-                                    Text(deviceStatus(device))
-                                        .font(.caption)
-                                        .foregroundStyle(deviceStatusColor(device))
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(AppColors.textPrimary)
+                                    Spacer()
+                                    if vm.selectedDeviceId == device.id, device.unlocked != true {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(AppColors.action)
+                                            .accessibilityLabel("Selected")
+                                    }
                                 }
-                                Spacer()
-                                if device.unlocked == true {
-                                    Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
-                                } else if device.legacyPaymentPending {
-                                    Text("Under review")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(.orange)
-                                } else if vm.selectedDeviceId == device.id {
-                                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.accentColor)
-                                } else {
-                                    Text(device.polarCheckoutPending ? "Continue" : "Select")
-                                        .font(.caption.weight(.semibold))
-                                }
+                                AppStatusBadge(
+                                    text: deviceStatus(device),
+                                    role: deviceStatusRole(device)
+                                )
                             }
+                            .padding(.vertical, AppSpacing.xSmall)
+                            .contentShape(Rectangle())
                         }
                         .disabled(!device.checkoutEligible)
+                        .accessibilityAddTraits(
+                            vm.selectedDeviceId == device.id && device.unlocked != true
+                                ? .isSelected
+                                : []
+                        )
                     }
 
                     if devices.allSatisfy({ $0.unlocked == true }) {
-                        Text("All of your devices are unlocked.").foregroundStyle(.secondary)
+                        Text("All of your devices are unlocked.").foregroundStyle(AppColors.textSecondary)
                     } else if devices.contains(where: { $0.legacyPaymentPending }) {
                         Text("A legacy payment is still under review. Contact support if it needs attention.")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppColors.textSecondary)
                     }
                 }
             }
+            .appListRow()
         }
     }
 
@@ -186,7 +208,7 @@ struct BillingView: View {
             Section("Secure checkout — $\(price) one time") {
                 Text("Checkout for \(device.name) opens securely in your browser. Return here afterward and access will refresh automatically.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppColors.textSecondary)
                 Button {
                     Task {
                         if let url = await vm.startCheckout() {
@@ -200,31 +222,54 @@ struct BillingView: View {
                             : (device.polarCheckoutPending ? "Continue checkout" : "Pay now")
                     )
                 }
+                .buttonStyle(AppPrimaryButtonStyle())
                 .disabled(vm.startingCheckout || vm.openingPortal)
+                .accessibilityLabel(
+                    vm.startingCheckout
+                        ? "Opening checkout"
+                        : (device.polarCheckoutPending ? "Continue checkout" : "Pay now")
+                )
             }
+            .appListRow()
         }
     }
 
     private var historySection: some View {
         Section("Purchase history") {
             ForEach(vm.history) { request in
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text(request.device_name ?? request.method ?? request.plan)
-                        if request.device_name != nil, let method = request.method {
-                            Text(method).font(.caption).foregroundStyle(.secondary)
-                        }
-                        Text(String(request.created_at.prefix(10)))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                ViewThatFits(in: .horizontal) {
+                    HStack {
+                        purchaseDetails(request)
+                        Spacer()
+                        purchaseStatus(request)
                     }
-                    Spacer()
-                    Text(request.status)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(statusColor(request.status))
+                    VStack(alignment: .leading, spacing: AppSpacing.small) {
+                        purchaseDetails(request)
+                        purchaseStatus(request)
+                    }
                 }
             }
         }
+        .appListRow()
+    }
+
+    private func purchaseDetails(_ request: PaymentRequestItem) -> some View {
+        VStack(alignment: .leading) {
+            Text(request.device_name ?? request.method ?? request.plan)
+            if request.device_name != nil, let method = request.method {
+                Text(method).font(.caption).foregroundStyle(AppColors.textSecondary)
+            }
+            Text(String(request.created_at.prefix(10)))
+                .font(.caption)
+                .foregroundStyle(AppColors.textSecondary)
+        }
+    }
+
+    private func purchaseStatus(_ request: PaymentRequestItem) -> some View {
+        AppStatusBadge(
+            text: request.status.capitalized,
+            role: paymentStatusRole(request.status)
+        )
     }
 
     private var billingPortalSection: some View {
@@ -236,8 +281,11 @@ struct BillingView: View {
             } label: {
                 Text(vm.openingPortal ? "Opening…" : "Manage receipts")
             }
+            .buttonStyle(AppSecondaryButtonStyle(fullWidth: false))
             .disabled(vm.openingPortal || vm.startingCheckout)
+            .accessibilityLabel(vm.openingPortal ? "Opening receipts" : "Manage receipts")
         }
+        .appListRow()
     }
 
     private func openHostedURL(_ url: URL, checkoutDeviceId: String? = nil) {
@@ -262,11 +310,11 @@ struct BillingView: View {
         return "Ready to unlock"
     }
 
-    private func deviceStatusColor(_ device: BillingDevice) -> Color {
-        if device.unlocked == true { return .green }
-        if device.pending == true { return .orange }
-        if deviceTrialExpired(device) { return .red }
-        return .secondary
+    private func deviceStatusRole(_ device: BillingDevice) -> AppStatusRole {
+        if device.unlocked == true { return .positive }
+        if device.pending == true { return .warning }
+        if deviceTrialExpired(device) { return .warning }
+        return .informational
     }
 
     private func deviceTrialExpired(_ device: BillingDevice) -> Bool {
@@ -275,11 +323,11 @@ struct BillingView: View {
         return end <= Date()
     }
 
-    private func statusColor(_ status: String) -> Color {
+    private func paymentStatusRole(_ status: String) -> AppStatusRole {
         switch status.lowercased() {
-        case "approved", "paid", "succeeded", "completed": return .green
-        case "declined", "failed", "canceled", "cancelled", "refunded": return .red
-        default: return .orange
+        case "approved", "paid", "succeeded", "completed": return .positive
+        case "declined", "failed", "canceled", "cancelled", "refunded": return .danger
+        default: return .warning
         }
     }
 }

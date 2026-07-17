@@ -3,6 +3,7 @@ package com.onoffmypc.android.ui.account
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,10 +38,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,9 +57,7 @@ import com.onoffmypc.android.ui.components.PasswordField
 import com.onoffmypc.android.ui.designsystem.ErrorState
 import com.onoffmypc.android.ui.designsystem.LoadingState
 import com.onoffmypc.android.ui.designsystem.Spacing
-import com.onoffmypc.android.ui.theme.Muted
-import com.onoffmypc.android.ui.theme.Red
-import com.onoffmypc.android.ui.theme.Yellow
+import com.onoffmypc.android.ui.theme.OnOffTheme
 import kotlinx.coroutines.delay
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -66,6 +72,7 @@ fun AccountScreen(
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val statusColors = OnOffTheme.status
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -86,7 +93,15 @@ fun AccountScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Account") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("←") } },
+                navigationIcon = {
+                    TextButton(
+                        onClick = onBack,
+                        enabled = !state.busy,
+                        modifier = Modifier
+                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                            .semantics { contentDescription = "Back to devices" },
+                    ) { Text("←") }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -121,6 +136,10 @@ fun AccountScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(Spacing.md),
                 ) {
+                    if (state.busy) {
+                        AccountBusyIndicator()
+                        Spacer(Modifier.height(Spacing.smMd))
+                    }
                     user.deletion_at?.let { da ->
                         DeletionCountdownCard(deletionAt = da, busy = state.busy, onCancel = vm::cancelDeletion)
                         Spacer(Modifier.height(24.dp))
@@ -137,7 +156,11 @@ fun AccountScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Text("Email not verified", color = Yellow, style = MaterialTheme.typography.labelMedium)
+                                    Text(
+                                        "Email not verified",
+                                        color = statusColors.warning,
+                                        style = MaterialTheme.typography.labelMedium,
+                                    )
                                     TextButton(onClick = vm::resendVerify, enabled = !state.busy) { Text("Resend") }
                                 }
                             }
@@ -149,7 +172,11 @@ fun AccountScreen(
                     }
 
                     Spacer(Modifier.height(12.dp))
-                    OutlinedButton(onClick = onBilling, modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = onBilling,
+                        enabled = !state.busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
                         Text("Device unlocks & billing")
                     }
 
@@ -159,6 +186,7 @@ fun AccountScreen(
                         value = newEmail,
                         onValueChange = { newEmail = it },
                         label = { Text("New email") },
+                        enabled = !state.busy,
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth(),
@@ -168,6 +196,7 @@ fun AccountScreen(
                         value = emailPw,
                         label = "Current password",
                         imeAction = ImeAction.Done,
+                        enabled = !state.busy,
                     ) { emailPw = it }
                     Spacer(Modifier.height(8.dp))
                     Button(
@@ -177,11 +206,11 @@ fun AccountScreen(
 
                     Spacer(Modifier.height(24.dp))
                     SectionTitle("Security")
-                    PasswordField(curPw, "Current password", ImeAction.Next) { curPw = it }
+                    PasswordField(curPw, "Current password", ImeAction.Next, enabled = !state.busy) { curPw = it }
                     Spacer(Modifier.height(8.dp))
-                    PasswordField(newPw, "New password", ImeAction.Next) { newPw = it }
+                    PasswordField(newPw, "New password", ImeAction.Next, enabled = !state.busy) { newPw = it }
                     Spacer(Modifier.height(8.dp))
-                    PasswordField(confirmPw, "Confirm new password", ImeAction.Done) { confirmPw = it }
+                    PasswordField(confirmPw, "Confirm new password", ImeAction.Done, enabled = !state.busy) { confirmPw = it }
                     Spacer(Modifier.height(8.dp))
                     Button(
                         onClick = {
@@ -193,28 +222,36 @@ fun AccountScreen(
                     ) { Text("Change password") }
 
                     Spacer(Modifier.height(24.dp))
-                    OutlinedButton(onClick = { confirmLogout = true }, modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { confirmLogout = true },
+                        enabled = !state.busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
                         Text("Sign out")
                     }
 
                     Spacer(Modifier.height(24.dp))
-                    SectionTitle("Danger zone", color = Red)
+                    SectionTitle("Danger zone", color = MaterialTheme.colorScheme.error)
                     if (user.deletion_at == null) {
                         Text(
                             text = "Deletes your account after a 15-day grace period — all devices, commands, and telemetry. You can cancel any time before then.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Muted,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(Modifier.height(8.dp))
                         Button(
                             onClick = { showDelete = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = Red, contentColor = Color.White),
+                            enabled = !state.busy,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError,
+                            ),
                         ) { Text("Delete account") }
                     } else {
                         Text(
                             text = "Your account is scheduled for deletion. Use “Keep my account” above to cancel.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Muted,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Spacer(Modifier.height(24.dp))
@@ -242,6 +279,27 @@ fun AccountScreen(
 }
 
 @Composable
+private fun AccountBusyIndicator() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { liveRegion = LiveRegionMode.Polite },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(Spacing.smMd),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(modifier = Modifier.defaultMinSize(20.dp, 20.dp), strokeWidth = 2.dp)
+            Text("Updating account…", style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@Composable
 private fun DeletionCountdownCard(deletionAt: String, busy: Boolean, onCancel: () -> Unit) {
     val target = remember(deletionAt) {
         runCatching { OffsetDateTime.parse(deletionAt).toInstant().toEpochMilli() }.getOrNull()
@@ -257,12 +315,14 @@ private fun DeletionCountdownCard(deletionAt: String, busy: Boolean, onCancel: (
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Red.copy(alpha = 0.12f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+        ),
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
                 text = "Account scheduled for deletion",
-                color = Red,
+                color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
@@ -276,7 +336,7 @@ private fun DeletionCountdownCard(deletionAt: String, busy: Boolean, onCancel: (
             Spacer(Modifier.height(6.dp))
             Text(
                 text = "Your account and all data will be permanently deleted when the timer ends. Cancel any time before then.",
-                color = Muted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall,
             )
             Spacer(Modifier.height(12.dp))
@@ -298,20 +358,33 @@ private fun formatCountdown(ms: Long): String {
 }
 
 @Composable
-private fun SectionTitle(text: String, color: Color = Muted) {
+private fun SectionTitle(text: String, color: Color? = null) {
     Text(
         text = text.uppercase(),
         style = MaterialTheme.typography.labelSmall,
-        color = color,
+        color = color ?: MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(bottom = 8.dp),
     )
 }
 
 @Composable
 private fun ProfileRow(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = Muted)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -319,6 +392,8 @@ private fun ProfileRow(label: String, value: String) {
 private fun DeleteAccountDialog(email: String, busy: Boolean, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     var typed by remember { mutableStateOf("") }
     val matches = typed.trim().equals(email, ignoreCase = true)
+    val emailFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { emailFocus.requestFocus() }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Delete your account?") },
@@ -327,7 +402,7 @@ private fun DeleteAccountDialog(email: String, busy: Boolean, onDismiss: () -> U
                 Text(
                     text = "Your account will be scheduled for deletion and permanently removed in 15 days. You can cancel any time before then. Type your email to confirm.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Muted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
@@ -335,14 +410,17 @@ private fun DeleteAccountDialog(email: String, busy: Boolean, onDismiss: () -> U
                     onValueChange = { typed = it },
                     label = { Text("Your email") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth().focusRequester(emailFocus),
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm, enabled = matches && !busy) { Text("Schedule deletion", color = Red) }
+            TextButton(onClick = onConfirm, enabled = matches && !busy) {
+                Text("Schedule deletion", color = MaterialTheme.colorScheme.error)
+            }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text("Cancel") } },
     )
 }
 

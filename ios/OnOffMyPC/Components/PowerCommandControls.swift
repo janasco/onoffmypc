@@ -11,23 +11,29 @@ struct PowerCommandControls: View {
     @State private var confirmation: CommandType?
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                commandButton(.powerOn, tint: .green)
-                commandButton(.powerOff, tint: .red)
-            }
-            HStack(spacing: 8) {
-                if includeForceOff { commandButton(.powerOffForce, tint: .red) }
-                commandButton(.reset, tint: .orange)
+        VStack(spacing: AppSpacing.medium) {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 124), spacing: AppSpacing.small)],
+                spacing: AppSpacing.small
+            ) {
+                commandButton(.powerOn, role: .informational)
+                commandButton(.powerOff, role: .danger)
+                if includeForceOff { commandButton(.powerOffForce, role: .danger) }
+                commandButton(.reset, role: .warning)
             }
             if commandInFlight {
                 HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(AppColors.action)
                     Text("Submitting command request…")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppColors.textSecondary)
                 }
+                .padding(AppSpacing.small)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AppColors.actionSoft, in: RoundedRectangle(cornerRadius: AppRadius.field, style: .continuous))
+                .accessibilityElement(children: .combine)
             }
         }
         .alert(item: $confirmation) { type in
@@ -40,20 +46,28 @@ struct PowerCommandControls: View {
         }
     }
 
-    private func commandButton(_ type: CommandType, tint: Color) -> some View {
-        Button(type.label) {
+    private func commandButton(_ type: CommandType, role: AppStatusRole) -> some View {
+        Button {
             if type == .powerOn {
                 onCommand(type)
             } else {
                 confirmation = type
             }
+        } label: {
+            Label(type.label, systemImage: icon(for: type))
         }
-        .buttonStyle(.bordered)
-        .tint(tint)
-        .controlSize(.small)
-        .frame(maxWidth: .infinity)
+        .buttonStyle(AppCommandButtonStyle(role: role))
         .disabled(commandInFlight)
         .accessibilityLabel("\(type.label) \(deviceName)")
+    }
+
+    private func icon(for type: CommandType) -> String {
+        switch type {
+        case .powerOn: return "power"
+        case .powerOff: return "power.circle"
+        case .powerOffForce: return "exclamationmark.octagon"
+        case .reset: return "arrow.clockwise"
+        }
     }
 
     private func consequence(of type: CommandType) -> String {
@@ -71,10 +85,10 @@ struct PowerCommandControls: View {
 }
 
 func commandStatusColor(_ status: String?) -> Color {
-    switch status {
-    case "delivered": return .accentColor
-    case "expired": return .red
-    case "pending", "sent": return .orange
-    default: return .secondary
-    }
+    commandStatusRole(status).foreground
+}
+
+func commandStatusRole(_ status: String?) -> AppStatusRole {
+    guard let status, let presentation = onOffCommandStates[status] else { return .neutral }
+    return AppStatusRole(tone: presentation.tone)
 }

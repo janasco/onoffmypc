@@ -10,7 +10,7 @@ receive device notifications. Both use the shared API at `https://api.onoffmypc.
 | Area | Choice |
 |---|---|
 | Language | **Kotlin** 2.0.20 |
-| UI | **Jetpack Compose** (Material 3), Compose BOM 2024.09.03 — dark-first, single-Activity |
+| UI | **Jetpack Compose** (Material 3), Compose BOM 2024.09.03 — adaptive light/dark, single-Activity |
 | Architecture | **MVVM** + `StateFlow` / `collectAsStateWithLifecycle`; manual DI (`Graph`) |
 | Navigation | **Navigation Compose** 2.8.3 |
 | Lifecycle | AndroidX Lifecycle 2.8.6 (`runtime-compose`, `viewmodel-compose`) |
@@ -29,6 +29,20 @@ feature parity should be treated separately.
 
 No third-party DI, image-loading, or networking-abstraction frameworks — the app
 leans on AndroidX + a thin hand-rolled layer to stay small and legible.
+
+## Shared design system
+
+Both native clients consume vendored generated output from `onoffmypc-design`.
+Android adapts `OnOffTokens.kt` and `OnOffStates.kt` through Material 3; iOS
+adapts the matching Swift files through SwiftUI in `AppDesignSystem.swift`.
+Generated files are versioned and must not be edited by hand. Native navigation,
+dialogs, text scaling, accessibility semantics, and interaction behavior remain
+platform-owned.
+
+The shared meaning is stricter than visual parity: blue represents ordinary
+interaction, while green, amber, and red are reserved for operational evidence.
+Connection presence, last contact, last-reported PC state, and command
+acknowledgement stay separate on both platforms.
 
 ## Architecture
 

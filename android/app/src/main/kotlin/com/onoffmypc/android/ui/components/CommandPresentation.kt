@@ -1,11 +1,9 @@
 package com.onoffmypc.android.ui.components
 
-import androidx.compose.ui.graphics.Color
 import com.onoffmypc.android.data.model.CommandType
-import com.onoffmypc.android.ui.theme.Accent
-import com.onoffmypc.android.ui.theme.Muted
-import com.onoffmypc.android.ui.theme.Red
-import com.onoffmypc.android.ui.theme.Yellow
+import com.onoffmypc.android.ui.designsystem.StatusRole
+import com.onoffmypc.android.ui.designsystem.toStatusRole
+import com.onoffmypc.design.generated.OnOffCommandStates
 
 /** Honest feedback for the synchronous command-request response. */
 fun commandRequestFeedback(
@@ -24,18 +22,16 @@ fun commandRequestFeedback(
 }
 
 /** User-facing lifecycle text. Device acknowledgement is not physical-state proof. */
-fun commandStatusLabel(status: String?): String = when (status) {
-    "pending" -> "Queued"
-    "sent" -> "Awaiting device acknowledgement"
-    "delivered" -> "Device acknowledged (PC state not confirmed)"
-    "expired" -> "Expired — not acknowledged"
-    null -> "Unknown"
-    else -> status.replace('_', ' ').replaceFirstChar { it.uppercase() }
+fun commandStatusLabel(status: String?): String {
+    if (status == null) return "Unknown"
+    val generated = OnOffCommandStates[status]
+        ?: return status.replace('_', ' ').replaceFirstChar { it.uppercase() }
+    return when (status) {
+        "delivered" -> "${generated.label} (PC state not confirmed)"
+        "expired" -> "${generated.label} — not acknowledged"
+        else -> generated.label
+    }
 }
 
-fun commandStatusColor(status: String?): Color = when (status) {
-    "delivered" -> Accent
-    "expired" -> Red
-    "pending", "sent" -> Yellow
-    else -> Muted
-}
+fun commandStatusRole(status: String?): StatusRole =
+    OnOffCommandStates[status]?.tone?.toStatusRole() ?: StatusRole.Unknown

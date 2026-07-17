@@ -1,8 +1,6 @@
 package com.onoffmypc.android.ui.components
 
-import com.onoffmypc.android.ui.theme.Green
-import com.onoffmypc.android.ui.theme.Muted
-import com.onoffmypc.android.ui.theme.Red
+import com.onoffmypc.android.ui.designsystem.StatusRole
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -35,23 +33,23 @@ class DeviceStatusPresentationTest {
         val lastSeen = Instant.parse("2026-07-16T11:59:50Z").toString()
         val p = deviceStatusPresentation(lastSeenAt = lastSeen, pcOn = 0, now = now)
         assertEquals(DeviceConnectionState.ONLINE, p.connection)
-        assertEquals(Green, p.connectionColor)
+        assertEquals(StatusRole.Online, p.connectionRole)
         assertEquals("Last reported PC state: off", p.pcStateLabel)
         assertTrue(p.accessibilityLabel.contains("off", ignoreCase = true))
     }
 
     @Test
-    fun deviceStatusPresentation_unknownUsesMuted() {
+    fun deviceStatusPresentation_usesSemanticConnectionRoles() {
         val p = deviceStatusPresentation(lastSeenAt = null, pcOn = null)
         assertEquals(DeviceConnectionState.UNKNOWN, p.connection)
-        assertEquals(Muted, p.connectionColor)
+        assertEquals(StatusRole.Unknown, p.connectionRole)
         assertEquals(
-            Red,
+            StatusRole.Offline,
             deviceStatusPresentation(
                 lastSeenAt = Instant.parse("2020-01-01T00:00:00Z").toString(),
                 pcOn = 1,
                 now = Instant.parse("2026-07-16T12:00:00Z"),
-            ).connectionColor,
+            ).connectionRole,
         )
     }
 }

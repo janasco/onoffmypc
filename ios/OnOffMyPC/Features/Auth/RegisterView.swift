@@ -6,73 +6,97 @@ struct RegisterView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                AppLogo()
-                Text("Create account").font(.largeTitle.bold())
-                Text("Create your account to get started.")
-                    .foregroundStyle(.secondary)
-                    .padding(.bottom, 8)
+            VStack(alignment: .leading, spacing: AppSpacing.large) {
+                AuthHeader(
+                    title: "Create account",
+                    subtitle: "Add your first device and control it securely from anywhere."
+                )
 
-                TextField("Email", text: $vm.email)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .textContentType(.username)
-                    .textFieldStyle(.roundedBorder)
+                AppSurface {
+                    VStack(alignment: .leading, spacing: AppSpacing.standard) {
+                        VStack(alignment: .leading, spacing: AppSpacing.small) {
+                            AppFieldLabel("Email")
+                            TextField("you@example.com", text: $vm.email)
+                                .keyboardType(.emailAddress)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .textContentType(.username)
+                                .textFieldStyle(AppTextFieldStyle())
+                                .accessibilityLabel("Email")
+                                .disabled(vm.loading)
+                        }
 
-                PasswordField(title: "Password", text: $vm.password)
-                PasswordField(title: "Confirm password", text: $vm.confirm)
+                        VStack(alignment: .leading, spacing: AppSpacing.small) {
+                            AppFieldLabel("Password")
+                            PasswordField(title: "Password", text: $vm.password, contentType: .newPassword)
+                                .disabled(vm.loading)
+                        }
 
-                if let error = vm.error {
-                    Text(error).foregroundStyle(.red).font(.footnote)
-                }
+                        VStack(alignment: .leading, spacing: AppSpacing.small) {
+                            AppFieldLabel("Confirm password")
+                            PasswordField(title: "Confirm password", text: $vm.confirm, contentType: .newPassword)
+                                .disabled(vm.loading)
+                        }
 
-                Button {
-                    Task { await vm.register(appState) }
-                } label: {
-                    if vm.loading {
-                        ProgressView().frame(maxWidth: .infinity)
-                    } else {
-                        Text("Create account").frame(maxWidth: .infinity)
+                        if let error = vm.error {
+                            AppMessageBanner(message: error, role: .danger, announces: true)
+                        }
+
+                        Button {
+                            Task { await vm.register(appState) }
+                        } label: {
+                            if vm.loading {
+                                ProgressView()
+                                    .tint(AppColors.actionOnColor)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                Text("Create account")
+                            }
+                        }
+                        .buttonStyle(AppPrimaryButtonStyle())
+                        .disabled(vm.loading)
+                        .accessibilityLabel(vm.loading ? "Creating account…" : "Create account")
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(vm.loading)
 
-                if vm.googleEnabled {
-                    Button {
-                        Task { await vm.googleSignIn(appState) }
-                    } label: {
-                        Text("Continue with Google").frame(maxWidth: .infinity)
+                if vm.googleEnabled || vm.appleEnabled || vm.microsoftEnabled {
+                    AppSurface {
+                        VStack(alignment: .leading, spacing: AppSpacing.medium) {
+                            Text("Or continue with")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AppColors.textSecondary)
+                            if vm.googleEnabled {
+                                Button("Continue with Google") {
+                                    Task { await vm.googleSignIn(appState) }
+                                }
+                                .buttonStyle(AppSecondaryButtonStyle())
+                                .disabled(vm.loading)
+                            }
+                            if vm.appleEnabled {
+                                Button("Continue with Apple") {
+                                    Task { await vm.appleSignIn(appState) }
+                                }
+                                .buttonStyle(AppSecondaryButtonStyle())
+                                .disabled(vm.loading)
+                            }
+                            if vm.microsoftEnabled {
+                                Button("Continue with Microsoft") {
+                                    Task { await vm.microsoftSignIn(appState) }
+                                }
+                                .buttonStyle(AppSecondaryButtonStyle())
+                                .disabled(vm.loading)
+                            }
+                        }
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .disabled(vm.loading)
-                }
-                if vm.appleEnabled {
-                    Button {
-                        Task { await vm.appleSignIn(appState) }
-                    } label: {
-                        Text("Continue with Apple").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .disabled(vm.loading)
-                }
-                if vm.microsoftEnabled {
-                    Button {
-                        Task { await vm.microsoftSignIn(appState) }
-                    } label: {
-                        Text("Continue with Microsoft").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .disabled(vm.loading)
                 }
             }
-            .padding(24)
+            .frame(maxWidth: 560)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, AppSpacing.page)
+            .padding(.top, AppSpacing.large)
+            .padding(.bottom, 48)
         }
+        .appScreenBackground()
         .navigationTitle("Register")
         .navigationBarTitleDisplayMode(.inline)
     }
