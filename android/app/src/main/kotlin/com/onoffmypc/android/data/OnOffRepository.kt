@@ -19,6 +19,7 @@ import com.onoffmypc.android.data.model.HistoryPoint
 import com.onoffmypc.android.data.model.LoginRequest
 import com.onoffmypc.android.data.model.MeResponse
 import com.onoffmypc.android.data.model.NewDevice
+import com.onoffmypc.android.data.model.PairCodeResponse
 import com.onoffmypc.android.data.model.PortalResponse
 import com.onoffmypc.android.data.model.PushRegisterRequest
 import com.onoffmypc.android.data.model.RegisterRequest
@@ -98,6 +99,8 @@ class OnOffRepository(
 
     suspend fun rotateToken(id: String): Result<NewDevice> = call { api.rotateToken(id) }
 
+    suspend fun generatePairCode(id: String): Result<PairCodeResponse> = call { api.generatePairCode(id) }
+
     suspend fun device(id: String): Result<Device> = call { api.device(id) }
 
     suspend fun deviceStatus(id: String): Result<DeviceStatus> = call { api.deviceStatus(id) }
@@ -130,6 +133,12 @@ class OnOffRepository(
                 Result.failure(mapHttpFailure(res.code(), err))
             }
         }
+    } catch (e: java.net.UnknownHostException) {
+        Result.failure(NetworkException("Network error", e))
+    } catch (e: java.net.ConnectException) {
+        Result.failure(NetworkException("Network error", e))
+    } catch (e: java.net.SocketTimeoutException) {
+        Result.failure(NetworkException("Network error", e))
     } catch (_: Exception) {
         Result.failure(Exception("Network error"))
     }

@@ -18,3 +18,9 @@ fun isTrialLockError(error: Throwable): Boolean =
             error.serverCode == "trial_expired" ||
             error.serverCode == "device_locked"
         )
+
+/** Thrown when an API call fails due to a connectivity issue (no server response). */
+class NetworkException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
+/** True when the error was caused by a network connectivity failure. */
+fun isNetworkError(error: Throwable): Boolean = error is NetworkException

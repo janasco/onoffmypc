@@ -66,6 +66,7 @@ import com.onoffmypc.android.ui.designsystem.StatusRole
 import com.onoffmypc.android.ui.designsystem.statusPalette
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.Button
@@ -76,6 +77,12 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedButton
 import com.onoffmypc.android.ui.components.confirmActionLabel
 import com.onoffmypc.android.ui.theme.OnOffTheme
+import androidx.compose.material3.LinearProgressIndicator
+import android.net.Uri
+import android.content.Intent
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,6 +104,17 @@ fun DevicesScreen(
     var confirmLogout by remember { mutableStateOf(false) }
     var hasResumedOnce by remember { mutableStateOf(false) }
     var bulkConfirmCommand by remember { mutableStateOf<CommandType?>(null) }
+
+    val context = LocalContext.current
+    val openSetupGuide = {
+        try {
+            val intent = CustomTabsIntent.Builder().build()
+            intent.launchUrl(context, Uri.parse("https://onoffmypc.com/setup.html"))
+        } catch (_: Exception) {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://onoffmypc.com/setup.html"))
+            context.startActivity(intent)
+        }
+    }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -140,6 +158,10 @@ fun DevicesScreen(
                         }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                             DropdownMenuItem(
+                                text = { Text("Setup Guide") },
+                                onClick = { menuOpen = false; openSetupGuide() },
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Account") },
                                 onClick = { menuOpen = false; onAccount() },
                             )
@@ -179,6 +201,9 @@ fun DevicesScreen(
 
                 else -> {
                     Column(modifier = Modifier.fillMaxSize()) {
+                        if (state.offline) {
+                            OfflineBanner()
+                        }
                         if (state.selectMode) {
                             BulkActionBar(
                                 selectedCount = state.selectedDeviceIds.size,
@@ -212,7 +237,21 @@ fun DevicesScreen(
                                 if (user?.deletion_at != null) {
                                     item { DeletionBanner(onManage = onAccount) }
                                 }
-                                if (user != null && !user.email_verified) {
+                                if (user != null && !state.onboardingDismissed && (state.devices.isEmpty() || !user.email_verified)) {
+                                    item {
+                                        OnboardingCard(
+                                            userVerified = user.email_verified,
+                                            hasDevices = state.devices.isNotEmpty(),
+                                            hasPaired = state.devices.any { it.last_seen_at != null },
+                                            hasSentCommand = state.hasSentCommand,
+                                            onDismiss = { vm.dismissOnboarding() },
+                                            onResendEmail = vm::resendVerification,
+                                            onAddDevice = { showAdd = true },
+                                            onOpenSetupGuide = openSetupGuide
+                                        )
+                                    }
+                                }
+                                if (user != null && !user.email_verified && state.onboardingDismissed) {
                                     item { VerifyEmailBanner(onResend = vm::resendVerification) }
                                 }
                                 state.billing?.let { b ->
@@ -251,6 +290,7 @@ fun DevicesScreen(
                                             onRename = { renaming = device },
                                             onDelete = { deleting = device },
                                             onReplace = { replacing = device },
+                                            onGetPairCode = { vm.generatePairCode(device) },
                                         )
                                     }
                                 }
@@ -303,7 +343,18 @@ fun DevicesScreen(
         )
     }
     state.createdDevice?.let { created ->
-        TokenRevealDialog(device = created, onDismiss = { vm.dismissCreatedDevice() })
+        TokenRevealDialog(
+            device = created,
+            pairCode = state.pairCode,
+            pairCodeLoading = state.pairCodeLoading,
+            onDismiss = { vm.dismissCreatedDevice() }
+        )
+    }
+    if (state.createdDevice == null && state.pairCode != null) {
+        PairCodeOnlyDialog(
+            pairCode = state.pairCode!!,
+            onDismiss = { vm.dismissPairCode() }
+        )
     }
     if (confirmLogout) {
         LogoutConfirmDialog(
@@ -382,6 +433,7 @@ private fun DeviceCard(
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onReplace: () -> Unit,
+    onGetPairCode: () -> Unit,
 ) {
     val status = deviceStatusPresentation(
         lastSeenAt = device.last_seen_at,
@@ -435,6 +487,10 @@ private fun DeviceCard(
                                 },
                         ) { Text("⋮") }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Get pairing code") },
+                                onClick = { menuOpen = false; onGetPairCode() },
+                            )
                             DropdownMenuItem(
                                 text = { Text("Rename") },
                                 onClick = { menuOpen = false; onRename() },
@@ -769,5 +825,192 @@ private fun StatBar(label: String, value: String, fraction: Float, color: Color,
         }
         Spacer(Modifier.height(Spacing.xs))
         Text(value, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun OfflineBanner() {
+    val palette = statusPalette(StatusRole.Pending)
+    Surface(
+        color = palette.container,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                color = palette.content,
+                strokeWidth = 2.dp
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = "Connection lost — retrying…",
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.content,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+@Composable
+fun OnboardingCard(
+    userVerified: Boolean,
+    hasDevices: Boolean,
+    hasPaired: Boolean,
+    hasSentCommand: Boolean,
+    onDismiss: () -> Unit,
+    onResendEmail: () -> Unit,
+    onAddDevice: () -> Unit,
+    onOpenSetupGuide: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val step1 = userVerified
+    val step2 = hasDevices
+    val step3 = hasPaired
+    val step4 = hasSentCommand
+
+    val completedSteps = listOf(step1, step2, step3, step4).count { it }
+    val progress = completedSteps.toFloat() / 4f
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Onboarding Checklist",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                TextButton(onClick = onDismiss) {
+                    Text("Hide")
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "$completedSteps of 4 done",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            OnboardingStepRow(
+                number = 1,
+                title = "Verify your email",
+                completed = step1,
+                action = {
+                    if (!step1) {
+                        TextButton(onClick = onResendEmail, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
+                            Text("Resend verification", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            OnboardingStepRow(
+                number = 2,
+                title = "Add your first device",
+                completed = step2,
+                action = {
+                    if (!step2) {
+                        TextButton(onClick = onAddDevice, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
+                            Text("Add device", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            OnboardingStepRow(
+                number = 3,
+                title = "Flash & pair the ESP32",
+                completed = step3,
+                action = {
+                    TextButton(onClick = onOpenSetupGuide, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
+                        Text("Open setup guide", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            OnboardingStepRow(
+                number = 4,
+                title = "Try a power command",
+                completed = step4,
+                action = null
+            )
+        }
+    }
+}
+
+@Composable
+private fun OnboardingStepRow(
+    number: Int,
+    title: String,
+    completed: Boolean,
+    action: (@Composable () -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val checkColor = if (completed) OnOffTheme.status.positive else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+        val checkText = if (completed) "✓" else "$number"
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(RoundedCornerShape(50))
+                .background(checkColor.copy(alpha = 0.15f))
+                .border(1.dp, checkColor, RoundedCornerShape(50)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = checkText,
+                style = MaterialTheme.typography.labelSmall,
+                color = checkColor,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (completed) FontWeight.Normal else FontWeight.Medium,
+                color = if (completed) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        if (action != null) {
+            Spacer(Modifier.width(8.dp))
+            action()
+        }
     }
 }

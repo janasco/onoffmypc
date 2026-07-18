@@ -205,6 +205,13 @@ data class CommandResponse(
     val reason: String? = null,
 )
 
+/** Response from POST /devices/:id/pair-code. */
+@Serializable
+data class PairCodeResponse(
+    val code: String,
+    val expires_at: String,
+)
+
 @Serializable
 data class ApiError(val error: String? = null, val code: String? = null)
 

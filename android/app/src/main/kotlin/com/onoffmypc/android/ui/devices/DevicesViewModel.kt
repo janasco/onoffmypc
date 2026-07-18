@@ -3,12 +3,15 @@ package com.onoffmypc.android.ui.devices
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onoffmypc.android.Graph
+import com.onoffmypc.android.data.NetworkException
+import com.onoffmypc.android.data.isNetworkError
 import com.onoffmypc.android.data.isTrialLockError
 import com.onoffmypc.android.data.model.BillingStatus
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.MeResponse
 import com.onoffmypc.android.data.model.NewDevice
+import com.onoffmypc.android.data.model.PairCodeResponse
 import com.onoffmypc.android.ui.components.commandRequestFeedback
 import com.onoffmypc.shared.model.ApiException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,17 +29,26 @@ data class DevicesUiState(
     val error: String? = null,
     val message: String? = null,
     val createdDevice: NewDevice? = null,
+    val pairCode: PairCodeResponse? = null,
+    val pairCodeLoading: Boolean = false,
     val upgradeDeviceId: String? = null,
     val commandInFlightDeviceIds: Set<String> = emptySet(),
     val bulkCommandInFlight: Boolean = false,
     val selectMode: Boolean = false,
     val selectedDeviceIds: Set<String> = emptySet(),
+    val offline: Boolean = false,
+    val onboardingDismissed: Boolean = false,
+    val hasSentCommand: Boolean = false,
 )
 
 class DevicesViewModel : ViewModel() {
     private val repo = Graph.repository
+    private val prefs = Graph.context.getSharedPreferences("onoffmypc_onboarding", 0)
 
-    private val _state = MutableStateFlow(DevicesUiState())
+    private val _state = MutableStateFlow(DevicesUiState(
+        onboardingDismissed = prefs.getBoolean(KEY_ONBOARDING_DISMISSED, false),
+        hasSentCommand = prefs.getBoolean(KEY_HAS_SENT_COMMAND, false),
+    ))
     val state: StateFlow<DevicesUiState> = _state.asStateFlow()
 
     init {
@@ -49,8 +61,18 @@ class DevicesViewModel : ViewModel() {
             val me = repo.me().getOrNull()
             val billing = repo.billingStatus().getOrNull()
             repo.devices().fold(
-                onSuccess = { list -> _state.update { it.copy(loading = false, devices = list, user = me ?: it.user, billing = billing ?: it.billing, error = null) } },
-                onFailure = { e -> _state.update { it.copy(loading = false, user = me ?: it.user, billing = billing ?: it.billing, error = e.message ?: "Failed to load devices") } },
+                onSuccess = { list -> _state.update { it.copy(loading = false, devices = list, user = me ?: it.user, billing = billing ?: it.billing, error = null, offline = false) } },
+                onFailure = { e ->
+                    _state.update {
+                        it.copy(
+                            loading = false,
+                            user = me ?: it.user,
+                            billing = billing ?: it.billing,
+                            error = e.message ?: "Failed to load devices",
+                            offline = isNetworkError(e),
+                        )
+                    }
+                },
             )
         }
     }
@@ -63,8 +85,8 @@ class DevicesViewModel : ViewModel() {
             val me = repo.me().getOrNull()
             val billing = repo.billingStatus().getOrNull()
             repo.devices().fold(
-                onSuccess = { list -> _state.update { it.copy(refreshing = false, devices = list, user = me ?: it.user, billing = billing ?: it.billing, error = null) } },
-                onFailure = { e -> _state.update { it.copy(refreshing = false, message = e.message ?: "Refresh failed") } },
+                onSuccess = { list -> _state.update { it.copy(refreshing = false, devices = list, user = me ?: it.user, billing = billing ?: it.billing, error = null, offline = false) } },
+                onFailure = { e -> _state.update { it.copy(refreshing = false, message = e.message ?: "Refresh failed", offline = isNetworkError(e)) } },
             )
         }
     }
@@ -92,16 +114,20 @@ class DevicesViewModel : ViewModel() {
         _state.update { it.copy(commandInFlightDeviceIds = it.commandInFlightDeviceIds + device.id) }
         viewModelScope.launch {
             try {
-                repo.sendCommand(device.id, type).fold(
-                    onSuccess = { response ->
-                        _state.update {
-                            it.copy(
-                                message = commandRequestFeedback(
-                                    type, device.name, response.delivered, response.reason,
-                                ),
-                            )
-                        }
-                    },
+                    repo.sendCommand(device.id, type).fold(
+                        onSuccess = { response ->
+                            if (!prefs.getBoolean(KEY_HAS_SENT_COMMAND, false)) {
+                                prefs.edit().putBoolean(KEY_HAS_SENT_COMMAND, true).commit()
+                                _state.update { it.copy(hasSentCommand = true) }
+                            }
+                            _state.update {
+                                it.copy(
+                                    message = commandRequestFeedback(
+                                        type, device.name, response.delivered, response.reason,
+                                    ),
+                                )
+                            }
+                        },
                     onFailure = { error ->
                         if (isTrialExpired(error)) {
                             _state.update { it.copy(upgradeDeviceId = device.id) }
@@ -230,7 +256,14 @@ class DevicesViewModel : ViewModel() {
         viewModelScope.launch {
             repo.addDevice(name).fold(
                 onSuccess = { created ->
-                    _state.update { it.copy(createdDevice = created) }
+                    _state.update { it.copy(createdDevice = created, pairCode = null, pairCodeLoading = true) }
+                    // Auto-generate a pairing code for the new device.
+                    created.id?.let { id ->
+                        repo.generatePairCode(id).fold(
+                            onSuccess = { pc -> _state.update { it.copy(pairCode = pc, pairCodeLoading = false) } },
+                            onFailure = { _state.update { it.copy(pairCodeLoading = false) } },
+                        )
+                    } ?: _state.update { it.copy(pairCodeLoading = false) }
                     refresh()
                 },
                 onFailure = { e -> _state.update { it.copy(message = e.message ?: "Couldn't add device") } },
@@ -273,7 +306,35 @@ class DevicesViewModel : ViewModel() {
         }
     }
 
-    fun dismissCreatedDevice() = _state.update { it.copy(createdDevice = null) }
+    fun dismissCreatedDevice() = _state.update { it.copy(createdDevice = null, pairCode = null) }
+
+    /** Generate a pairing code for an existing device (from its dropdown menu). */
+    fun generatePairCode(device: Device) {
+        viewModelScope.launch {
+            _state.update { it.copy(pairCode = null, pairCodeLoading = true) }
+            repo.generatePairCode(device.id).fold(
+                onSuccess = { pc ->
+                    // Show the pair code in a stand-alone dialog (createdDevice = null).
+                    _state.update { it.copy(pairCode = pc, pairCodeLoading = false) }
+                },
+                onFailure = { e ->
+                    _state.update {
+                        it.copy(
+                            pairCodeLoading = false,
+                            message = e.message ?: "Couldn't generate pairing code",
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    fun dismissPairCode() = _state.update { it.copy(pairCode = null) }
+
+    fun dismissOnboarding() {
+        prefs.edit().putBoolean(KEY_ONBOARDING_DISMISSED, true).commit()
+        _state.update { it.copy(onboardingDismissed = true) }
+    }
 
     fun consumeMessage() = _state.update { it.copy(message = null) }
 
@@ -282,5 +343,10 @@ class DevicesViewModel : ViewModel() {
             repo.logout()
             onDone()
         }
+    }
+
+    private companion object {
+        const val KEY_ONBOARDING_DISMISSED = "dismissed"
+        const val KEY_HAS_SENT_COMMAND = "has_sent_command"
     }
 }

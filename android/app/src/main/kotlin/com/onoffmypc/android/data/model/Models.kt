@@ -35,3 +35,4 @@ typealias CommandResponse = com.onoffmypc.shared.model.CommandResponse
 typealias ApiError = com.onoffmypc.shared.model.ApiError
 typealias ApiException = com.onoffmypc.shared.model.ApiException
 typealias CommandType = com.onoffmypc.shared.model.CommandType
+typealias PairCodeResponse = com.onoffmypc.shared.model.PairCodeResponse

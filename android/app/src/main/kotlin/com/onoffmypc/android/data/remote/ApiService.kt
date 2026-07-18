@@ -11,6 +11,7 @@ import com.onoffmypc.android.data.model.DeletedResponse
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.DeviceNameRequest
 import com.onoffmypc.android.data.model.DeviceStatus
+import com.onoffmypc.android.data.model.PairCodeResponse
 import com.onoffmypc.android.data.model.BillingStatus
 import com.onoffmypc.android.data.model.ForgotPasswordRequest
 import com.onoffmypc.android.data.model.GoogleAuthRequest
@@ -107,6 +108,9 @@ interface ApiService {
 
     @POST("devices/{id}/rotate-token")
     suspend fun rotateToken(@Path("id") id: String): Response<NewDevice>
+
+    @POST("devices/{id}/pair-code")
+    suspend fun generatePairCode(@Path("id") id: String): Response<PairCodeResponse>
 
     @GET("devices/{id}")
     suspend fun device(@Path("id") id: String): Response<Device>

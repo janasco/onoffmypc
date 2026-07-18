@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -38,6 +41,17 @@ import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.NewDevice
 import com.onoffmypc.android.ui.theme.OnOffTheme
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import com.onoffmypc.android.data.model.PairCodeResponse
 
 @Composable
 fun AddDeviceDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
@@ -111,9 +125,15 @@ fun DeleteDeviceDialog(device: Device, onDismiss: () -> Unit, onConfirm: () -> U
 }
 
 @Composable
-fun TokenRevealDialog(device: NewDevice, onDismiss: () -> Unit) {
+fun TokenRevealDialog(
+    device: NewDevice,
+    pairCode: PairCodeResponse?,
+    pairCodeLoading: Boolean,
+    onDismiss: () -> Unit
+) {
     val clipboard = LocalClipboardManager.current
     var copiedLabel by remember { mutableStateOf<String?>(null) }
+    var advancedExpanded by remember { mutableStateOf(false) }
     LaunchedEffect(copiedLabel) {
         if (copiedLabel != null) {
             delay(2_000)
@@ -122,18 +142,103 @@ fun TokenRevealDialog(device: NewDevice, onDismiss: () -> Unit) {
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Device credentials") },
+        title = { Text("Device paired successfully") },
         text = {
             Column {
-                Text(
-                    text = "Save your Device ID and Token — you'll enter both into the ESP32 setup. The token won't be shown again.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (pairCodeLoading) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                        Spacer(Modifier.height(8.dp))
+                        Text("Generating pairing code...", style = MaterialTheme.typography.bodySmall)
+                    }
+                } else if (pairCode != null) {
+                    Text(
+                        text = "Enter this pairing code on your ESP32 setup screen:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = pairCode.code,
+                                style = MaterialTheme.typography.headlineLarge.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            TextButton(
+                                onClick = {
+                                    clipboard.setText(AnnotatedString(pairCode.code))
+                                    copiedLabel = "Pairing code"
+                                }
+                            ) {
+                                Text("Copy")
+                            }
+                        }
+                    }
+                    
+                    Spacer(Modifier.height(8.dp))
+                    val expiresMinutes = try {
+                        val expiry = java.time.Instant.parse(pairCode.expires_at).toEpochMilli()
+                        val diffMs = expiry - System.currentTimeMillis()
+                        (diffMs / 60_000L).coerceAtLeast(0L).toInt()
+                    } catch (_: Exception) {
+                        10
+                    }
+                    Text(
+                        text = "Expires in about $expiresMinutes minutes",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
                 Spacer(Modifier.height(16.dp))
-                CredentialRow("Device ID", device.id.orEmpty(), clipboard) { copiedLabel = it }
-                Spacer(Modifier.height(12.dp))
-                CredentialRow("Device Token", device.token.orEmpty(), clipboard) { copiedLabel = it }
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { advancedExpanded = !advancedExpanded }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Advanced credentials",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(if (advancedExpanded) "▲" else "▼")
+                }
+                
+                if (advancedExpanded) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Use these only for manual configuration if needed. The token won't be shown again.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    CredentialRow("Device ID", device.id.orEmpty(), clipboard) { copiedLabel = it }
+                    Spacer(Modifier.height(12.dp))
+                    CredentialRow("Device Token", device.token.orEmpty(), clipboard) { copiedLabel = it }
+                }
+
                 copiedLabel?.let { label ->
                     Spacer(Modifier.height(8.dp))
                     Text(
@@ -146,6 +251,91 @@ fun TokenRevealDialog(device: NewDevice, onDismiss: () -> Unit) {
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } },
+    )
+}
+
+@Composable
+fun PairCodeOnlyDialog(
+    pairCode: PairCodeResponse,
+    onDismiss: () -> Unit
+) {
+    val clipboard = LocalClipboardManager.current
+    var copiedLabel by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(copiedLabel) {
+        if (copiedLabel != null) {
+            delay(2_000)
+            copiedLabel = null
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Pairing code") },
+        text = {
+            Column {
+                Text(
+                    text = "Enter this pairing code on your ESP32 setup screen:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(12.dp))
+                
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = pairCode.code,
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(
+                            onClick = {
+                                clipboard.setText(AnnotatedString(pairCode.code))
+                                copiedLabel = "Pairing code"
+                            }
+                        ) {
+                            Text("Copy")
+                        }
+                    }
+                }
+                
+                Spacer(Modifier.height(8.dp))
+                val expiresMinutes = try {
+                    val expiry = java.time.Instant.parse(pairCode.expires_at).toEpochMilli()
+                    val diffMs = expiry - System.currentTimeMillis()
+                    (diffMs / 60_000L).coerceAtLeast(0L).toInt()
+                } catch (_: Exception) {
+                    10
+                }
+                Text(
+                    text = "Expires in about $expiresMinutes minutes",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                copiedLabel?.let { label ->
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "$label copied",
+                        color = OnOffTheme.status.positive,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
     )
 }
 
