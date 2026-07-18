@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "OnOffMyPC desktop companion agent (Linux/Windows) — reports hardware telemetry and handles software-side shutdown/restart/reset commands over the same device pairing protocol as the ESP32/ESP8266 firmware.",
   "private": true,
+  "author": {
+    "name": "OnOffMyPC",
+    "email": "support@onoffmypc.com"
+  },
   "license": "MIT",
   "main": "src/main/index.js",
   "scripts": {
