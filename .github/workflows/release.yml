@@ -31,9 +31,9 @@ jobs:
       - name: Build packages
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            npm run dist:windows
+            npm run dist:windows -- --publish never
           else
-            npm run dist:linux
+            npm run dist:linux -- --publish never
           fi
         shell: bash
 
