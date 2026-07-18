@@ -26,9 +26,7 @@ let telemetryTimer = null
 let connected = false
 
 function trayIcon() {
-  // 16x16 transparent PNG fallback so the app runs even before a real icon
-  // asset is added under build/. Replace build/icon.png for production.
-  const iconPath = path.join(__dirname, '..', '..', 'build', 'icon.png')
+  const iconPath = path.join(__dirname, 'assets', 'icon.png')
   const image = nativeImage.createFromPath(iconPath)
   return image.isEmpty() ? nativeImage.createEmpty() : image.resize({ width: 16, height: 16 })
 }
@@ -64,6 +62,55 @@ function updateTrayMenu() {
           sendTelemetryNow()
         }
       },
+    },
+    {
+      label: 'Telemetry Settings',
+      submenu: [
+        {
+          label: 'Report CPU load',
+          type: 'checkbox',
+          checked: settings.reportCpu,
+          click: (item) => {
+            const current = settingsStore.load()
+            current.reportCpu = item.checked
+            settingsStore.save(current)
+            sendTelemetryNow()
+          }
+        },
+        {
+          label: 'Report RAM usage',
+          type: 'checkbox',
+          checked: settings.reportRam,
+          click: (item) => {
+            const current = settingsStore.load()
+            current.reportRam = item.checked
+            settingsStore.save(current)
+            sendTelemetryNow()
+          }
+        },
+        {
+          label: 'Report GPU temperature',
+          type: 'checkbox',
+          checked: settings.reportGpu,
+          click: (item) => {
+            const current = settingsStore.load()
+            current.reportGpu = item.checked
+            settingsStore.save(current)
+            sendTelemetryNow()
+          }
+        },
+        {
+          label: 'Report Wi-Fi signal',
+          type: 'checkbox',
+          checked: settings.reportWifi,
+          click: (item) => {
+            const current = settingsStore.load()
+            current.reportWifi = item.checked
+            settingsStore.save(current)
+            sendTelemetryNow()
+          }
+        }
+      ]
     },
     {
       label: 'Start at login',
@@ -169,7 +216,7 @@ async function sendTelemetryNow() {
   if (!relay) return
   const settings = require('./settings').load()
   if (!settings.telemetryEnabled) return
-  const reading = await collectTelemetry().catch(() => null)
+  const reading = await collectTelemetry(settings).catch(() => null)
   if (reading) relay.sendTelemetry(reading)
 }
 

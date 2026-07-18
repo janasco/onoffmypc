@@ -10,14 +10,25 @@ function settingsPath() {
 
 function load() {
   const path = settingsPath()
-  if (!existsSync(path)) return { telemetryEnabled: true }
+  const defaults = {
+    telemetryEnabled: true,
+    reportCpu: true,
+    reportRam: true,
+    reportGpu: true,
+    reportWifi: true
+  }
+  if (!existsSync(path)) return defaults
   try {
     const raw = JSON.parse(readFileSync(path, 'utf8'))
     return {
-      telemetryEnabled: typeof raw.telemetryEnabled === 'boolean' ? raw.telemetryEnabled : true
+      telemetryEnabled: typeof raw.telemetryEnabled === 'boolean' ? raw.telemetryEnabled : true,
+      reportCpu: typeof raw.reportCpu === 'boolean' ? raw.reportCpu : true,
+      reportRam: typeof raw.reportRam === 'boolean' ? raw.reportRam : true,
+      reportGpu: typeof raw.reportGpu === 'boolean' ? raw.reportGpu : true,
+      reportWifi: typeof raw.reportWifi === 'boolean' ? raw.reportWifi : true
     }
   } catch {
-    return { telemetryEnabled: true }
+    return defaults
   }
 }
 

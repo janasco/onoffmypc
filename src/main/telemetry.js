@@ -36,12 +36,12 @@ async function readWifiSignal() {
 // Reading shape matches TelemetryMsg on the server (device_id comes from the
 // WS path, not the payload). pc_on is always true — if this process is
 // running and reporting, the PC it's running on is, by definition, on.
-async function collectTelemetry() {
+async function collectTelemetry(settings = {}) {
   const [load, mem, gpuTemp, rssi] = await Promise.all([
-    si.currentLoad().catch(() => null),
-    si.mem().catch(() => null),
-    readGpuTemp(),
-    readWifiSignal(),
+    settings.reportCpu !== false ? si.currentLoad().catch(() => null) : null,
+    settings.reportRam !== false ? si.mem().catch(() => null) : null,
+    settings.reportGpu !== false ? readGpuTemp() : null,
+    settings.reportWifi !== false ? readWifiSignal() : null,
   ])
 
   return {
