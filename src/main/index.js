@@ -9,6 +9,7 @@ const { DeviceRelayClient } = require('./relay')
 const { collectTelemetry } = require('./telemetry')
 const { handleCommand } = require('./commands')
 const autostart = require('./autostart')
+const { checkForUpdates } = require('./updateCheck')
 const { API_BASE_URL, WS_BASE_URL, TELEMETRY_INTERVAL_MS } = require('./config')
 
 // Single instance: two copies of this agent racing to hold the same device's
@@ -186,6 +187,8 @@ app.whenReady().then(() => {
   const creds = tokenStore.load()
   if (creds) startRelay()
   else openPairingWindow()
+
+  checkForUpdates()
 })
 
 app.on('window-all-closed', () => {
