@@ -84,7 +84,6 @@ fun DevicesScreen(
     onAccount: () -> Unit,
     onBilling: (String?) -> Unit,
     onLoggedOut: () -> Unit,
-    onDashboardMockup: () -> Unit = {},
     vm: DevicesViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -134,8 +133,8 @@ fun DevicesScreen(
                         TextButton(
                             onClick = { menuOpen = true },
                             modifier = Modifier
-                                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-                                .semantics { contentDescription = "Open menu" },
+                                    .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                    .semantics { contentDescription = "Open menu" },
                         ) {
                             Text("☰", style = MaterialTheme.typography.headlineSmall)
                         }
@@ -143,10 +142,6 @@ fun DevicesScreen(
                             DropdownMenuItem(
                                 text = { Text("Account") },
                                 onClick = { menuOpen = false; onAccount() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Dashboard concept") },
-                                onClick = { menuOpen = false; onDashboardMockup() },
                             )
                             DropdownMenuItem(
                                 text = { Text("Logout") },

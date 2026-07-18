@@ -15,7 +15,6 @@ import com.onoffmypc.android.ui.billing.BillingScreen
 import com.onoffmypc.android.ui.auth.ForgotPasswordScreen
 import com.onoffmypc.android.ui.auth.LoginScreen
 import com.onoffmypc.android.ui.auth.RegisterScreen
-import com.onoffmypc.android.ui.dashboard.DashboardMockupScreen
 import com.onoffmypc.android.ui.devices.DeviceDetailScreen
 import com.onoffmypc.android.ui.devices.DevicesScreen
 
@@ -26,7 +25,6 @@ private const val ROUTE_DEVICES = "devices"
 private const val ROUTE_ACCOUNT = "account"
 private const val ROUTE_BILLING = "billing"
 private const val ROUTE_BILLING_PATTERN = "billing?deviceId={deviceId}"
-private const val ROUTE_DASHBOARD_MOCKUP = "dashboard-mockup"
 
 private fun billingRoute(deviceId: String? = null): String =
     if (deviceId == null) ROUTE_BILLING else "$ROUTE_BILLING?deviceId=$deviceId"
@@ -82,11 +80,7 @@ fun AppNav() {
                         popUpTo(ROUTE_DEVICES) { inclusive = true }
                     }
                 },
-                onDashboardMockup = { navController.navigate(ROUTE_DASHBOARD_MOCKUP) },
             )
-        }
-        composable(ROUTE_DASHBOARD_MOCKUP) {
-            DashboardMockupScreen(onBack = { navController.popBackStack() })
         }
         composable(ROUTE_ACCOUNT) {
             AccountScreen(

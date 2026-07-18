@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.9] - 2026-07-18
+
+### Added
+- **Vector Brand Logo:** Android app logo updated to match website's clean blue power button style using scalable Vector graphics.
+- **Real-time Telemetry Dashboard integration:** Rewrote main dashboard to render live CPU, GPU and RAM telemetry values directly inside the main UI; removed static mockup screen navigation and assets.
+
 ## [0.3.8] - 2026-07-18
 
 ### Added
