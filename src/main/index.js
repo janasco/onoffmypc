@@ -36,6 +36,8 @@ function updateTrayMenu() {
   if (!tray) return
   const creds = tokenStore.load()
   const paired = Boolean(creds)
+  const settingsStore = require('./settings')
+  const settings = settingsStore.load()
 
   tray.setToolTip(
     paired
@@ -49,6 +51,19 @@ function updateTrayMenu() {
     paired
       ? { label: 'Unpair this computer', click: unpair }
       : { label: 'Pair this computer…', click: openPairingWindow },
+    {
+      label: 'Enable telemetry',
+      type: 'checkbox',
+      checked: settings.telemetryEnabled,
+      click: (item) => {
+        const current = settingsStore.load()
+        current.telemetryEnabled = item.checked
+        settingsStore.save(current)
+        if (item.checked) {
+          sendTelemetryNow()
+        }
+      },
+    },
     {
       label: 'Start at login',
       type: 'checkbox',
@@ -151,6 +166,8 @@ function stopRelay() {
 
 async function sendTelemetryNow() {
   if (!relay) return
+  const settings = require('./settings').load()
+  if (!settings.telemetryEnabled) return
   const reading = await collectTelemetry().catch(() => null)
   if (reading) relay.sendTelemetry(reading)
 }
