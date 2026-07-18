@@ -304,6 +304,36 @@ private struct DeviceRow: View {
                     .overlay(AppColors.border)
 
                 DeviceStatusSummary(presentation: status)
+
+                if let cpuLoad = device.cpu_load {
+                    HStack(spacing: AppSpacing.medium) {
+                        statBar(
+                            label: "CPU LOAD",
+                            value: "\(Int(cpuLoad))%",
+                            fraction: CGFloat(cpuLoad / 100.0),
+                            color: AppColors.action
+                        )
+                        if let gpuTemp = device.gpu_temp {
+                            statBar(
+                                label: "GPU TEMP",
+                                value: "\(Int(gpuTemp))°C",
+                                fraction: CGFloat(gpuTemp / 100.0),
+                                color: AppColors.danger
+                            )
+                        }
+                        if let ramUsed = device.ram_used_mb, let ramTotal = device.ram_total_mb, ramTotal > 0 {
+                            let ramUsedGb = ramUsed / 1024.0
+                            let ramTotalGb = ramTotal / 1024.0
+                            statBar(
+                                label: "RAM USAGE",
+                                value: String(format: "%.1fG / %.0fG", ramUsedGb, ramTotalGb),
+                                fraction: CGFloat(ramUsed / ramTotal),
+                                color: AppColors.positive
+                            )
+                        }
+                    }
+                }
+
                 PowerCommandControls(
                     deviceName: device.name,
                     commandInFlight: commandInFlight,
@@ -312,5 +342,24 @@ private struct DeviceRow: View {
                 )
             }
         }
+    }
+
+    private func statBar(label: String, value: String, fraction: CGFloat, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(AppColors.textSecondary)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(AppColors.surfaceMuted)
+                    Capsule().fill(color).frame(width: geo.size.width * min(max(fraction, 0), 1))
+                }
+            }
+            .frame(height: 6)
+            Text(value)
+                .font(.caption)
+                .foregroundStyle(AppColors.textPrimary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

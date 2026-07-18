@@ -116,6 +116,10 @@ struct Device: Decodable, Identifiable, Hashable {
     var pc_on: Int?
     var last_seen_at: String?
     var firmware_version: String?
+    var cpu_load: Double?
+    var ram_used_mb: Double?
+    var ram_total_mb: Double?
+    var gpu_temp: Double?
 }
 
 struct DeviceStatus: Decodable {
@@ -129,6 +133,10 @@ struct Telemetry: Decodable {
     var room_temp: Double?
     var room_humidity: Double?
     var rssi: Int?
+    var cpu_load: Double?
+    var ram_used_mb: Double?
+    var ram_total_mb: Double?
+    var gpu_temp: Double?
 }
 
 struct HistoryPoint: Decodable {
