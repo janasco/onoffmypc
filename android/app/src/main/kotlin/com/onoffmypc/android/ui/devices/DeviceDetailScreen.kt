@@ -16,6 +16,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
@@ -327,6 +328,89 @@ private fun TelemetrySection(
         latest?.recorded_at?.let { timeAgo(it) } ?: "No telemetry received yet",
         Modifier.fillMaxWidth(),
     )
+
+    if (latest != null) {
+        val cpu = latest.cpu_load
+        val gpu = latest.gpu_temp
+        val ramUsed = latest.ram_used_mb
+        val ramTotal = latest.ram_total_mb
+
+        if (cpu != null || gpu != null || ramUsed != null) {
+            Spacer(Modifier.height(Spacing.md))
+            Text(
+                "PC hardware telemetry",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(Spacing.sm))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    if (cpu != null) {
+                        Text(
+                            "CPU Load: ${cpu.toInt()}%",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        LinearProgressIndicator(
+                            progress = { (cpu.toFloat() / 100f).coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth().height(8.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceContainer,
+                            strokeCap = StrokeCap.Round,
+                        )
+                        if (gpu != null || ramUsed != null) {
+                            Spacer(Modifier.height(Spacing.sm))
+                        }
+                    }
+
+                    if (gpu != null) {
+                        Text(
+                            "GPU Temp: ${gpu.toInt()}°C",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        LinearProgressIndicator(
+                            progress = { (gpu.toFloat() / 100f).coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth().height(8.dp),
+                            color = MaterialTheme.colorScheme.error,
+                            trackColor = MaterialTheme.colorScheme.surfaceContainer,
+                            strokeCap = StrokeCap.Round,
+                        )
+                        if (ramUsed != null) {
+                            Spacer(Modifier.height(Spacing.sm))
+                        }
+                    }
+
+                    if (ramUsed != null && ramTotal != null && ramTotal > 0) {
+                        val usedGb = ramUsed / 1024.0
+                        val totalGb = ramTotal / 1024.0
+                        Text(
+                            "RAM Usage: %.1f GB / %.1f GB".format(usedGb, totalGb),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        LinearProgressIndicator(
+                            progress = { (ramUsed.toFloat() / ramTotal.toFloat()).coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth().height(8.dp),
+                            color = MaterialTheme.colorScheme.secondary,
+                            trackColor = MaterialTheme.colorScheme.surfaceContainer,
+                            strokeCap = StrokeCap.Round,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     Spacer(Modifier.height(Spacing.md))
     Text(
         "Temperature — last 7 days",
