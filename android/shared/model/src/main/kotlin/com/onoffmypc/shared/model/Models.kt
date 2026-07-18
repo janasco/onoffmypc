@@ -136,6 +136,10 @@ data class Device(
     val pc_on: Int? = null,
     val last_seen_at: String? = null,
     val firmware_version: String? = null,
+    val cpu_load: Double? = null,
+    val ram_used_mb: Double? = null,
+    val ram_total_mb: Double? = null,
+    val gpu_temp: Double? = null,
 )
 
 @Serializable
@@ -151,6 +155,10 @@ data class Telemetry(
     val room_temp: Double? = null,
     val room_humidity: Double? = null,
     val rssi: Int? = null,
+    val cpu_load: Double? = null,
+    val ram_used_mb: Double? = null,
+    val ram_total_mb: Double? = null,
+    val gpu_temp: Double? = null,
 )
 
 @Serializable

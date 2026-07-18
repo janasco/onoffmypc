@@ -9,10 +9,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -463,6 +468,50 @@ private fun DeviceCard(
                     modifier = Modifier.padding(Spacing.smMd),
                 )
             }
+            val cpuLoad = device.cpu_load
+            if (cpuLoad != null) {
+                Spacer(Modifier.height(Spacing.md))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    val cpuFraction = (cpuLoad.toFloat() / 100f).coerceIn(0f, 1f)
+                    StatBar(
+                        label = "CPU LOAD",
+                        value = "${cpuLoad.toInt()}%",
+                        fraction = cpuFraction,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    val gpuTemp = device.gpu_temp
+                    if (gpuTemp != null) {
+                        val gpuFraction = (gpuTemp.toFloat() / 100f).coerceIn(0f, 1f)
+                        StatBar(
+                            label = "GPU TEMP",
+                            value = "${gpuTemp.toInt()}°C",
+                            fraction = gpuFraction,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    val ramUsed = device.ram_used_mb
+                    val ramTotal = device.ram_total_mb
+                    if (ramUsed != null && ramTotal != null && ramTotal > 0) {
+                        val ramUsedGb = ramUsed / 1024.0
+                        val ramTotalGb = ramTotal / 1024.0
+                        val ramFraction = (ramUsed.toFloat() / ramTotal.toFloat()).coerceIn(0f, 1f)
+                        StatBar(
+                            label = "RAM USAGE",
+                            value = "${(ramUsedGb * 10).toInt() / 10.0}G / ${ramTotalGb.toInt()}G",
+                            fraction = ramFraction,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
             if (!selectMode) {
                 Spacer(Modifier.height(12.dp))
                 PowerControls(
@@ -702,3 +751,28 @@ private fun trialHasEnded(iso: String?): Boolean {
 
 private fun deviceTrialExpired(device: com.onoffmypc.android.data.model.BillingDevice): Boolean =
     device.trial_expired ?: trialHasEnded(device.trial_ends_at)
+
+@Composable
+private fun StatBar(label: String, value: String, fraction: Float, color: Color, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(Spacing.xs))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+        ) {
+            Box(
+                Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(fraction)
+                    .clip(RoundedCornerShape(50))
+                    .background(color),
+            )
+        }
+        Spacer(Modifier.height(Spacing.xs))
+        Text(value, style = MaterialTheme.typography.bodySmall)
+    }
+}
