@@ -1,6 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.8] - 2026-07-18
+
+### Added
+- **Live Hardware Telemetry:** Displays CPU load, GPU temperature, and RAM usage on device cards (both Web and Mobile Clients) whenever telemetry data is present.
 
 ### Changed
 - Rebuilt Android and iOS around generated `@onoffmypc/design` 0.1 foundations
