@@ -79,7 +79,7 @@ export default function LoginPage() {
               <div className="flex flex-col gap-1.5">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-semibold text-zinc-400" htmlFor="password">Password</label>
-                  <Link href="/forgot-password.html" className="text-xs text-emerald-500 hover:text-emerald-400 transition-colors">
+                  <Link href="/forgot-password" className="text-xs text-emerald-500 hover:text-emerald-400 transition-colors">
                     Forgot password?
                   </Link>
                 </div>
@@ -130,7 +130,7 @@ export default function LoginPage() {
           <CardFooter className="justify-center border-t border-zinc-800/60 pt-6">
             <p className="text-sm text-zinc-400">
               Don't have an account?{" "}
-              <Link href="/register.html" className="text-emerald-500 hover:text-emerald-400 font-semibold transition-colors">
+              <Link href="/register" className="text-emerald-500 hover:text-emerald-400 font-semibold transition-colors">
                 Sign up
               </Link>
             </p>

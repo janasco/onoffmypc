@@ -1,4 +1,6 @@
-const API_BASE = 'https://api.onoffmypc.com';
+const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  ? 'http://localhost:8787'
+  : 'https://api.onoffmypc.com';
 
 export interface ApiResponse<T = any> {
   data?: T;
@@ -88,6 +90,15 @@ export const api = {
     apiReq('POST', '/devices', { name }),
   renameDevice: (id: string, name: string) =>
     apiReq('PATCH', `/devices/${id}`, { name }),
+  updateTelemetrySettings: (
+    id: string,
+    settings: {
+      telemetry_cpu?: boolean;
+      telemetry_ram?: boolean;
+      telemetry_gpu?: boolean;
+      telemetry_wifi?: boolean;
+    }
+  ) => apiReq('PATCH', `/devices/${id}/telemetry-settings`, settings),
   deleteDevice: (id: string) =>
     apiReq('DELETE', `/devices/${id}`),
   rotateToken: (id: string) =>

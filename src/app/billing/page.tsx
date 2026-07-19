@@ -40,7 +40,7 @@ export default function BillingPage() {
     ]);
 
     if (statusRes.status === 401) {
-      router.push("/login.html");
+      router.push("/login");
       return;
     }
 

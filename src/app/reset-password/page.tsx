@@ -44,7 +44,7 @@ function ResetPasswordInner() {
     } else {
       setSuccess(true);
       setTimeout(() => {
-        router.push("/login.html");
+        router.push("/login");
       }, 3000);
     }
   };
@@ -109,7 +109,7 @@ function ResetPasswordInner() {
         )}
       </CardContent>
       <CardFooter className="justify-center border-t border-zinc-800/60 pt-6">
-        <Link href="/login.html" className="text-sm text-emerald-500 hover:text-emerald-400 font-semibold transition-colors">
+        <Link href="/login" className="text-sm text-emerald-500 hover:text-emerald-400 font-semibold transition-colors">
           Return to login
         </Link>
       </CardFooter>

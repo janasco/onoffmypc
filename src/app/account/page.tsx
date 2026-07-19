@@ -48,7 +48,7 @@ export default function AccountPage() {
     setLoading(true);
     const { data, status } = await api.me();
     if (status === 401) {
-      router.push("/login.html");
+      router.push("/login");
       return;
     }
     if (data) setProfile(data);

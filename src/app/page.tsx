@@ -19,9 +19,9 @@ export default function Home() {
           </Link>
           <div className="flex items-center gap-6 text-sm font-medium">
             <Link href="#how" className="text-zinc-400 hover:text-zinc-100 transition-colors">How it works</Link>
-            <Link href="/setup.html" className="text-zinc-400 hover:text-zinc-100 transition-colors">Setup</Link>
-            <Link href="/login.html" className="text-zinc-400 hover:text-zinc-100 transition-colors">Log in</Link>
-            <Link href="/register.html">
+            <Link href="/setup" className="text-zinc-400 hover:text-zinc-100 transition-colors">Setup</Link>
+            <Link href="/login" className="text-zinc-400 hover:text-zinc-100 transition-colors">Log in</Link>
+            <Link href="/register">
               <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
                 Get Started
               </Button>
@@ -40,12 +40,12 @@ export default function Home() {
             A small ESP32 beside your desktop turns phone taps into real power actions — no port forwarding, no VPN, no monthly fee.
           </p>
           <div className="flex gap-4 mt-4">
-            <Link href="/register.html">
+            <Link href="/register">
               <Button size="lg" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-12 px-6">
                 Get Started Free
               </Button>
             </Link>
-            <Link href="/setup.html">
+            <Link href="/setup">
               <Button size="lg" variant="outline" className="border-zinc-800 text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100 h-12 px-6">
                 View setup guide
               </Button>
@@ -112,7 +112,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
-              <Link href="/setup.html">
+              <Link href="/setup">
                 <Button variant="ghost" className="w-full text-emerald-500 hover:text-emerald-400 hover:bg-zinc-900 justify-start px-0">
                   Firmware Setup →
                 </Button>
@@ -198,7 +198,7 @@ export default function Home() {
                   <span className="text-emerald-500">✓</span> No card required
                 </li>
               </ul>
-              <Link href="/register.html" className="w-full">
+              <Link href="/register" className="w-full">
                 <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-11">
                   Get Started Free
                 </Button>
@@ -228,17 +228,17 @@ export default function Home() {
           <div className="flex flex-col gap-2">
             <h4 className="font-semibold text-zinc-300">Product</h4>
             <Link href="#how" className="text-zinc-500 hover:text-zinc-300 transition-colors">How it works</Link>
-            <Link href="/setup.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">Setup guide</Link>
+            <Link href="/setup" className="text-zinc-500 hover:text-zinc-300 transition-colors">Setup guide</Link>
           </div>
           <div className="flex flex-col gap-2">
             <h4 className="font-semibold text-zinc-300">Company</h4>
-            <Link href="/login.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">Log in</Link>
-            <Link href="/register.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">Create account</Link>
+            <Link href="/login" className="text-zinc-500 hover:text-zinc-300 transition-colors">Log in</Link>
+            <Link href="/register" className="text-zinc-500 hover:text-zinc-300 transition-colors">Create account</Link>
           </div>
           <div className="flex flex-col gap-2">
             <h4 className="font-semibold text-zinc-300">Legal</h4>
-            <Link href="/privacy-policy.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">Privacy Policy</Link>
-            <Link href="/terms.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">Terms of Service</Link>
+            <Link href="/privacy-policy" className="text-zinc-500 hover:text-zinc-300 transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="text-zinc-500 hover:text-zinc-300 transition-colors">Terms of Service</Link>
           </div>
         </div>
         <div className="max-w-6xl mx-auto px-4 text-xs text-zinc-600 text-center border-t border-zinc-900/60 pt-8">

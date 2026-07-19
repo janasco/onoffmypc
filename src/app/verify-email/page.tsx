@@ -60,7 +60,7 @@ function VerifyEmailInner() {
             <span className="text-red-500 text-5xl">✕</span>
             <p className="text-red-400 text-sm font-semibold">{error || "Verification failed"}</p>
             <p className="text-zinc-400 text-xs">The link may have expired or is invalid. Request a new verification link from your account page.</p>
-            <Link href="/login.html" className="w-full mt-2">
+            <Link href="/login" className="w-full mt-2">
               <Button variant="outline" className="w-full border-zinc-850 text-zinc-300 hover:bg-zinc-950">
                 Return to Login
               </Button>
