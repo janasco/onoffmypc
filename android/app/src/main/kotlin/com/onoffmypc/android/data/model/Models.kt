@@ -27,6 +27,7 @@ typealias DeviceStatus = com.onoffmypc.shared.model.DeviceStatus
 typealias Telemetry = com.onoffmypc.shared.model.Telemetry
 typealias HistoryPoint = com.onoffmypc.shared.model.HistoryPoint
 typealias DeviceNameRequest = com.onoffmypc.shared.model.DeviceNameRequest
+typealias TelemetrySettingsRequest = com.onoffmypc.shared.model.TelemetrySettingsRequest
 typealias NewDevice = com.onoffmypc.shared.model.NewDevice
 typealias DeletedResponse = com.onoffmypc.shared.model.DeletedResponse
 typealias Command = com.onoffmypc.shared.model.Command

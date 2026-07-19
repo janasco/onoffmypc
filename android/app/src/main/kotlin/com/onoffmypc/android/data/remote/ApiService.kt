@@ -10,6 +10,7 @@ import com.onoffmypc.android.data.model.CommandResponse
 import com.onoffmypc.android.data.model.DeletedResponse
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.DeviceNameRequest
+import com.onoffmypc.android.data.model.TelemetrySettingsRequest
 import com.onoffmypc.android.data.model.DeviceStatus
 import com.onoffmypc.android.data.model.PairCodeResponse
 import com.onoffmypc.android.data.model.BillingStatus
@@ -102,6 +103,9 @@ interface ApiService {
 
     @PATCH("devices/{id}")
     suspend fun renameDevice(@Path("id") id: String, @Body body: DeviceNameRequest): Response<Device>
+
+    @PATCH("devices/{id}/telemetry-settings")
+    suspend fun updateTelemetrySettings(@Path("id") id: String, @Body body: TelemetrySettingsRequest): Response<Device>
 
     @DELETE("devices/{id}")
     suspend fun deleteDevice(@Path("id") id: String): Response<DeletedResponse>

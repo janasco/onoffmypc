@@ -11,6 +11,7 @@ import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.DeviceNameRequest
+import com.onoffmypc.android.data.model.TelemetrySettingsRequest
 import com.onoffmypc.android.data.model.DeviceStatus
 import com.onoffmypc.android.data.model.ForgotPasswordRequest
 import com.onoffmypc.android.data.model.GoogleAuthRequest
@@ -94,6 +95,9 @@ class OnOffRepository(
 
     suspend fun renameDevice(id: String, name: String): Result<Device> =
         call { api.renameDevice(id, DeviceNameRequest(name.trim())) }
+
+    suspend fun updateTelemetrySettings(id: String, cpu: Boolean?, ram: Boolean?, gpu: Boolean?, wifi: Boolean?): Result<Device> =
+        call { api.updateTelemetrySettings(id, TelemetrySettingsRequest(cpu, ram, gpu, wifi)) }
 
     suspend fun deleteDevice(id: String): Result<Unit> = call { api.deleteDevice(id) }.map { }
 

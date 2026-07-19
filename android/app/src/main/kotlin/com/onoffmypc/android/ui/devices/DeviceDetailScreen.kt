@@ -46,6 +46,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.ui.components.PowerControls
 import com.onoffmypc.android.ui.components.commandStatusLabel
@@ -123,6 +128,9 @@ fun DeviceDetailScreen(
                     state = state,
                     onRetry = vm::onPullRefresh,
                     onCommand = vm::sendCommand,
+                    onUpdateTelemetrySettings = { cpu, ram, gpu, wifi ->
+                        vm.updateTelemetrySettings(cpu, ram, gpu, wifi)
+                    }
                 )
             }
         }
@@ -146,6 +154,7 @@ private fun DetailContent(
     state: DeviceDetailUiState,
     onRetry: () -> Unit,
     onCommand: (com.onoffmypc.android.data.model.CommandType) -> Unit,
+    onUpdateTelemetrySettings: (Boolean?, Boolean?, Boolean?, Boolean?) -> Unit,
 ) {
     val sections = DetailSection.entries
     var selectedIndex by remember { mutableIntStateOf(0) }
@@ -212,12 +221,11 @@ private fun DetailContent(
                     pcOn = latest?.pc_on ?: device.pc_on,
                     historyTemps = state.history.mapNotNull { it.temp_avg },
                 )
-                DetailSection.Settings -> SettingsSection(
-                    deviceId = device.id,
-                    deviceName = device.name,
-                    firmware = device.firmware_version,
-                    lastSeenAt = state.lastSeenAt ?: device.last_seen_at,
-                )
+                  DetailSection.Settings -> SettingsSection(
+                      device = device,
+                      lastSeenAt = state.lastSeenAt ?: device.last_seen_at,
+                      onUpdateTelemetrySettings = onUpdateTelemetrySettings
+                  )
             }
             Spacer(Modifier.height(Spacing.lg))
         }
@@ -423,10 +431,9 @@ private fun TelemetrySection(
 
 @Composable
 private fun SettingsSection(
-    deviceId: String,
-    deviceName: String,
-    firmware: String?,
+    device: Device,
     lastSeenAt: String?,
+    onUpdateTelemetrySettings: (Boolean?, Boolean?, Boolean?, Boolean?) -> Unit,
 ) {
     Text(
         "Device settings",
@@ -436,15 +443,53 @@ private fun SettingsSection(
     Spacer(Modifier.height(Spacing.sm))
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(Spacing.md)) {
-            SettingsRow("Name", deviceName)
+            SettingsRow("Name", device.name)
             Spacer(Modifier.height(Spacing.sm))
-            SettingsRow("Device ID", deviceId)
+            SettingsRow("Device ID", device.id)
             Spacer(Modifier.height(Spacing.sm))
-            SettingsRow("Firmware", firmware ?: "Not reported")
+            SettingsRow("Firmware", device.firmware_version ?: "Not reported")
             Spacer(Modifier.height(Spacing.sm))
             SettingsRow(
                 "Last contact",
                 lastSeenAt?.let { timeAgo(it) } ?: "No device contact yet",
+            )
+        }
+    }
+    Spacer(Modifier.height(Spacing.md))
+    Text(
+        "Telemetry settings",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(Spacing.sm))
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(Spacing.md)) {
+            TelemetrySettingRow(
+                label = "CPU Load",
+                description = "Report active processor utilization",
+                checked = device.telemetry_cpu != 0,
+                onCheckedChange = { onUpdateTelemetrySettings(it, null, null, null) }
+            )
+            Spacer(Modifier.height(Spacing.md))
+            TelemetrySettingRow(
+                label = "RAM Usage",
+                description = "Report physical memory consumption",
+                checked = device.telemetry_ram != 0,
+                onCheckedChange = { onUpdateTelemetrySettings(null, it, null, null) }
+            )
+            Spacer(Modifier.height(Spacing.md))
+            TelemetrySettingRow(
+                label = "GPU Temperature",
+                description = "Report graphics processor temperature",
+                checked = device.telemetry_gpu != 0,
+                onCheckedChange = { onUpdateTelemetrySettings(null, null, it, null) }
+            )
+            Spacer(Modifier.height(Spacing.md))
+            TelemetrySettingRow(
+                label = "Wi-Fi Signal Strength",
+                description = "Report wireless connection RSSI",
+                checked = device.telemetry_wifi != 0,
+                onCheckedChange = { onUpdateTelemetrySettings(null, null, null, it) }
             )
         }
     }
@@ -454,6 +499,39 @@ private fun SettingsSection(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         style = MaterialTheme.typography.bodySmall,
     )
+}
+
+@Composable
+private fun TelemetrySettingRow(
+    label: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                description,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        androidx.compose.material3.Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = androidx.compose.material3.CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.primary,
+            )
+        )
+    }
 }
 
 @Composable

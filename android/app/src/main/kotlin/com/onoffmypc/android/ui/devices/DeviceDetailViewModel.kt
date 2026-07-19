@@ -148,6 +148,20 @@ class DeviceDetailViewModel : ViewModel() {
         }
     }
 
+    fun updateTelemetrySettings(cpu: Boolean?, ram: Boolean?, gpu: Boolean?, wifi: Boolean?) {
+        val id = deviceId ?: return
+        viewModelScope.launch {
+            repo.updateTelemetrySettings(id, cpu, ram, gpu, wifi).fold(
+                onSuccess = { updatedDevice ->
+                    _state.update { it.copy(device = updatedDevice, message = "Telemetry settings updated.") }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(message = error.message ?: "Failed to update telemetry settings.") }
+                }
+            )
+        }
+    }
+
     fun consumeMessage() = _state.update { it.copy(message = null) }
     fun consumeUpgradePrompt() = _state.update { it.copy(upgradePrompt = false) }
 }

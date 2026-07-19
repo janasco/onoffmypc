@@ -140,6 +140,10 @@ data class Device(
     val ram_used_mb: Double? = null,
     val ram_total_mb: Double? = null,
     val gpu_temp: Double? = null,
+    val telemetry_cpu: Int? = null,
+    val telemetry_ram: Int? = null,
+    val telemetry_gpu: Int? = null,
+    val telemetry_wifi: Int? = null,
 )
 
 @Serializable
@@ -173,6 +177,14 @@ data class HistoryPoint(
 
 @Serializable
 data class DeviceNameRequest(val name: String)
+
+@Serializable
+data class TelemetrySettingsRequest(
+    val telemetry_cpu: Boolean? = null,
+    val telemetry_ram: Boolean? = null,
+    val telemetry_gpu: Boolean? = null,
+    val telemetry_wifi: Boolean? = null,
+)
 
 /** Response of POST /devices — includes the raw token, shown to the user once. */
 @Serializable
