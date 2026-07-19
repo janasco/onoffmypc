@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.3] - 2026-07-19
+
+### Added
+- **Dynamic Telemetry Settings Updates:** Support in-app configuration updates for toggling CPU, RAM, GPU, and Wi-Fi telemetry reporting per device.
+
+## [0.4.2] - 2026-07-18
+
+### Changed
+- **Brand Logo Launcher:** Launcher foreground icon updated to use the modern brand blue power button logo to match the web app.
+
+## [0.4.1] - 2026-07-18
+
+### Added
+- **PC Hardware Telemetry View:** Displays live system hardware metrics (CPU, RAM, GPU) in the Device Detail Telemetry tabs.
+
+## [0.4.0] - 2026-07-18
+
+### Added
+- **User Onboarding & Setup Support:** Integrated onboarding checklist cards, pairing codes flow (replacing raw credentials reveal), setup guide link redirects, and API offline network failure banners.
+
 ## [0.3.9] - 2026-07-18
 
 ### Added
