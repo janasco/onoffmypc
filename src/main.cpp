@@ -15,7 +15,7 @@
 
 using namespace websockets;
 
-#define FIRMWARE_VERSION "1.3.6"
+#define FIRMWARE_VERSION "1.3.7"
 
 // ── Pin definitions ───────────────────────────────────────────────────────────
 #define PIN_POWER_SENSE 34
@@ -535,7 +535,11 @@ void sendTelemetry() {
   JsonDocument doc;
   doc["type"]             = "telemetry";
   doc["device_id"]        = cfgDeviceId;
-  doc["firmware_version"] = FIRMWARE_VERSION;
+#if defined(ESP8266)
+  doc["firmware_version"] = String(FIRMWARE_VERSION) + "-esp8266";
+#else
+  doc["firmware_version"] = String(FIRMWARE_VERSION) + "-esp32";
+#endif
   doc["pc_on"]            = pcOn;
   doc["rssi"]             = rssi;
   if (!isnan(temp))     doc["room_temp"]     = serialized(String(temp, 1));

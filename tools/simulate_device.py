@@ -12,6 +12,7 @@ import asyncio
 import json
 import math
 import random
+import os
 import sys
 import time
 
@@ -21,7 +22,7 @@ except ImportError:
     print("Missing: apt install python3-websockets")
     sys.exit(1)
 
-API_HOST = "api.onoffmypc.com"
+API_HOST = os.environ.get("API_HOST", "api.onoffmypc.com")
 TELEMETRY_INTERVAL = 5  # seconds
 
 
@@ -41,7 +42,8 @@ def make_telemetry(device_id: str, pc_on: bool, t: float) -> dict:
 
 
 async def run(device_id: str, token: str) -> None:
-    url = f"wss://{API_HOST}/ws/{device_id}"
+    protocol = "ws" if "localhost" in API_HOST or "127.0.0.1" in API_HOST else "wss"
+    url = f"{protocol}://{API_HOST}/ws/{device_id}"
     print(f"[sim] connecting to {url}")
 
     pc_on = False  # simulated PC state
