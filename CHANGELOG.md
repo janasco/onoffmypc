@@ -1,8 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [1.3.7] - 2026-07-19
 
 ### Added
+- **Chip Architecture Telemetry Suffix:** Appended dynamic `-esp32` or `-esp8266` suffix to the reported firmware version string to enable precise client-side platform labeling.
 - Added a dependency-free captive-portal contract check and pull-request CI for
   labeled inputs, touch targets, announced scan state, offline-safe assets,
   generated design tokens, native unit tests, and ESP32 compilation.
