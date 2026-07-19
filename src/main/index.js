@@ -26,9 +26,7 @@ let telemetryTimer = null
 let connected = false
 
 function trayIcon() {
-  const iconPath = path.join(__dirname, 'assets', 'icon.png')
-  const image = nativeImage.createFromPath(iconPath)
-  return image.isEmpty() ? nativeImage.createEmpty() : image.resize({ width: 16, height: 16 })
+  return path.join(__dirname, 'assets', 'icon-16.png')
 }
 
 function updateTrayMenu() {
@@ -189,6 +187,17 @@ function startRelay() {
     updateTrayMenu()
   })
   relay.on('error', () => { /* surfaced via tray tooltip state, not a dialog */ })
+
+  relay.on('settings', (settings) => {
+    const settingsStore = require('./settings')
+    const current = settingsStore.load()
+    current.reportCpu = settings.reportCpu
+    current.reportRam = settings.reportRam
+    current.reportGpu = settings.reportGpu
+    current.reportWifi = settings.reportWifi
+    settingsStore.save(current)
+    updateTrayMenu()
+  })
 
   relay.on('command', async ({ command_id: commandId, type }) => {
     const handled = await handleCommand(type).catch(() => false)

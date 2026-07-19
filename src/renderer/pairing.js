@@ -5,6 +5,14 @@ const codeInput = document.getElementById('code')
 const submitButton = document.getElementById('submit')
 const status = document.getElementById('status')
 
+codeInput.addEventListener('input', (e) => {
+  let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  if (val.length > 4) {
+    val = val.slice(0, 4) + '-' + val.slice(4, 8)
+  }
+  e.target.value = val
+})
+
 function setStatus(message, kind) {
   status.textContent = message
   status.className = kind || ''

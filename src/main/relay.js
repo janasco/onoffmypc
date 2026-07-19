@@ -48,7 +48,11 @@ class DeviceRelayClient extends EventEmitter {
       } catch {
         return
       }
-      if (msg.command_id && msg.type) this.emit('command', msg)
+      if (msg.type === 'settings') {
+        this.emit('settings', msg)
+      } else if (msg.command_id && msg.type) {
+        this.emit('command', msg)
+      }
     })
 
     this.ws.on('close', () => {
