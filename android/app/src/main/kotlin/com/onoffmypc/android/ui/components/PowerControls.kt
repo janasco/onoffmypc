@@ -209,6 +209,8 @@ fun confirmActionLabel(type: CommandType, deviceName: String): String = when (ty
     CommandType.POWER_OFF_FORCE -> "Force Off “$deviceName”"
     CommandType.RESET -> "Restart “$deviceName”"
     CommandType.SLEEP -> "Sleep “$deviceName”"
+    CommandType.LOCK -> "Lock “$deviceName”"
+    CommandType.LOGOUT -> "Log Out “$deviceName”"
 }
 
 @Composable
@@ -282,4 +284,6 @@ private fun commandConsequence(type: CommandType, deviceName: String): String = 
         "This asks “$deviceName” to hold the PC power button for 6 seconds. Power may be cut immediately and unsaved work could be lost. Use only when normal Power Off does not work."
     CommandType.POWER_ON -> "This asks “$deviceName” to turn the PC on."
     CommandType.SLEEP -> "This asks “$deviceName” to sleep. Open apps stay in memory; nothing is closed."
+    CommandType.LOCK -> "This will lock the current user session on “$deviceName”."
+    CommandType.LOGOUT -> "This will log out the current user session on “$deviceName”. Unsaved work could be lost."
 }

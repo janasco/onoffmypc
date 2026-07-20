@@ -397,6 +397,10 @@ fun DevicesScreen(
                 "This asks the targets to press the PC reset switch. The computers will restart immediately and unsaved work could be lost."
             CommandType.POWER_OFF_FORCE ->
                 "This asks the targets to hold the PC power button for 6 seconds. Power may be cut immediately and unsaved work could be lost. Use only when normal Power Off does not work."
+            CommandType.LOCK ->
+                "This will lock the current user session on the target devices."
+            CommandType.LOGOUT ->
+                "This will log out the current user session on the target devices. Unsaved work could be lost."
             else -> ""
         }
         AlertDialog(
