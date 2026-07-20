@@ -37,7 +37,7 @@ export default function Home() {
             Your PC, on or off <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">from anywhere</span>
           </h1>
           <p className="max-w-xl text-lg text-zinc-400 leading-relaxed">
-            A small ESP32 beside your desktop turns phone taps into real power actions — no port forwarding, no VPN, no monthly fee.
+            Control your desktop remotely with our lightweight software agents for Windows and Linux, or plug in an ESP32 for hardware-level control when the operating system is unresponsive.
           </p>
           <div className="flex gap-4 mt-4">
             <Link href="/register">
@@ -52,7 +52,7 @@ export default function Home() {
             </Link>
           </div>
           <p className="text-xs text-zinc-500 mt-2">
-            Free to get started · full access during public launch · no subscription
+            Software agent & hardware integration options · no subscription required
           </p>
         </div>
       </header>
@@ -171,42 +171,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section className="py-24 max-w-6xl mx-auto px-4 w-full border-b border-zinc-900">
-        <div className="text-center mb-16">
-          <span className="text-emerald-500 text-sm font-semibold tracking-wider uppercase">Pricing</span>
-          <h2 className="text-3xl md:text-4xl font-bold mt-2">Free to get started</h2>
-          <p className="text-zinc-400 mt-3 max-w-md mx-auto">Create an account and use remote power control with full access during the public launch.</p>
-        </div>
-        <div className="max-w-sm mx-auto">
-          <Card className="bg-zinc-900/60 border-zinc-800 border-2 shadow-xl shadow-emerald-950/20">
-            <CardHeader className="text-center">
-              <span className="inline-block bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider mx-auto">Public launch</span>
-              <CardTitle className="text-2xl mt-4 text-zinc-100 font-bold">Full Access</CardTitle>
-              <div className="text-4xl font-black text-white mt-4">$0</div>
-              <p className="text-zinc-500 text-sm mt-1">to get started</p>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-6">
-              <ul className="text-sm text-zinc-300 flex flex-col gap-3">
-                <li className="flex items-center gap-2">
-                  <span className="text-emerald-500">✓</span> Full remote power control
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-emerald-500">✓</span> No trial lock during public launch
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-emerald-500">✓</span> No card required
-                </li>
-              </ul>
-              <Link href="/register" className="w-full">
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-11">
-                  Get Started Free
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+      {/* Pricing section removed */}
 
       {/* Footer */}
       <footer className="py-16 bg-zinc-950 border-t border-zinc-900 mt-auto">
@@ -222,7 +187,7 @@ export default function Home() {
               OnOffMyPC
             </Link>
             <p className="text-zinc-500 leading-relaxed text-xs">
-              Remote PC power control for your desktop — ESP32, app, and a live status link.
+              Remote power control and out-of-band management for your desktop PC.
             </p>
           </div>
           <div className="flex flex-col gap-2">
