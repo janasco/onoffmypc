@@ -15,6 +15,8 @@ const OS_ACTIONS = {
     power_off_force: ['systemctl', ['poweroff', '-i']],
     reset: ['systemctl', ['reboot']],
     sleep: ['systemctl', ['suspend']],
+    lock: ['loginctl', ['lock-session']],
+    logout: ['loginctl', ['terminate-session', '']],
   },
   win32: {
     power_off: ['shutdown', ['/s', '/t', '0']],
@@ -23,6 +25,8 @@ const OS_ACTIONS = {
     // No dedicated shutdown.exe flag for sleep — this is the standard
     // Hibernate=0, Force=1, DisableWakeEvent=0 incantation via powrprof.dll.
     sleep: ['rundll32.exe', ['powrprof.dll,SetSuspendState', '0,1,0']],
+    lock: ['rundll32.exe', ['user32.dll,LockWorkStation']],
+    logout: ['shutdown', ['/l']],
   },
 }
 

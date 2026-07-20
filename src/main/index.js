@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, Tray, Menu, BrowserWindow, ipcMain, nativeImage } = require('electron')
+const { app, Tray, Menu, BrowserWindow, ipcMain, nativeImage, dialog } = require('electron')
 const path = require('node:path')
 
 const tokenStore = require('./tokenStore')
@@ -27,6 +27,37 @@ let connected = false
 
 function trayIcon() {
   return path.join(__dirname, 'assets', 'icon-16.png')
+}
+
+async function showDiagnostics() {
+  const creds = tokenStore.load()
+  const paired = Boolean(creds)
+  const settingsStore = require('./settings')
+  const settings = settingsStore.load()
+  const autostartEnabled = await autostart.isEnabled()
+  
+  let info = `Application Version: ${app.getVersion()}\n`
+  info += `OS Platform: ${process.platform} (${process.arch})\n`
+  info += `Pairing Status: ${paired ? 'Paired' : 'Not paired'}\n`
+  if (paired && creds) {
+    info += `Device ID: ${creds.id}\n`
+    info += `Relay Connection: ${connected ? 'Connected' : 'Disconnected / Reconnecting'}\n`
+    info += `WebSocket Endpoint: ${WS_BASE_URL}/ws/${creds.id}\n`
+  }
+  info += `Telemetry Enabled: ${settings.telemetryEnabled ? 'Yes' : 'No'}\n`
+  info += `Report CPU: ${settings.reportCpu ? 'Yes' : 'No'}\n`
+  info += `Report RAM: ${settings.reportRam ? 'Yes' : 'No'}\n`
+  info += `Report GPU: ${settings.reportGpu ? 'Yes' : 'No'}\n`
+  info += `Report Wi-Fi: ${settings.reportWifi ? 'Yes' : 'No'}\n`
+  info += `Autostart (Start at login): ${autostartEnabled ? 'Yes' : 'No'}\n`
+
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'OnOffMyPC Diagnostics',
+    message: 'OnOffMyPC Agent Diagnostics',
+    detail: info,
+    buttons: ['OK']
+  })
 }
 
 function updateTrayMenu() {
@@ -117,6 +148,7 @@ function updateTrayMenu() {
       click: async (item) => { await autostart.setEnabled(item.checked) },
     },
     { type: 'separator' },
+    { label: 'Run diagnostics…', click: showDiagnostics },
     { label: 'Quit', click: () => app.quit() },
   ]))
 
