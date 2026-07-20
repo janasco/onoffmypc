@@ -252,7 +252,9 @@ export default function DashboardPage() {
                             type === "power_off" ? "Power Off" :
                             type === "power_off_force" ? "Force Off" :
                             type === "reset" ? "Reset" :
-                            type === "sleep" ? "Sleep" : type;
+                            type === "sleep" ? "Sleep" :
+                            type === "lock" ? "Lock" :
+                            type === "logout" ? "Log Out" : type;
                             
         if (data?.delivered) {
           showToast(`${actionLabel} request delivered to ${name} successfully!`, 'success');
@@ -551,12 +553,12 @@ export default function DashboardPage() {
                 {/* Power Action Buttons */}
                 <CardContent className="pt-0">
                   {!bulkMode && (
-                    <div className="flex flex-wrap gap-2.5 pt-2 border-t border-zinc-800/50">
+                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-zinc-800">
                       <Button 
                         size="sm" 
                         disabled={commandInFlight[d.id]} 
                         onClick={() => handleSendCommand(d.id, "power_on")} 
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
                       >
                         {commandInFlight[d.id] ? "⏳" : "On"}
                       </Button>
@@ -569,6 +571,28 @@ export default function DashboardPage() {
                       >
                         Sleep
                       </Button>
+                      {d.firmware_version?.toLowerCase().includes("desktop-agent") && (
+                        <>
+                          <Button 
+                            size="sm" 
+                            variant="secondary" 
+                            disabled={commandInFlight[d.id]} 
+                            onClick={() => handleSendCommand(d.id, "lock")} 
+                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
+                          >
+                            Lock
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="secondary" 
+                            disabled={commandInFlight[d.id]} 
+                            onClick={() => handleSendCommand(d.id, "logout")} 
+                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
+                          >
+                            Log Out
+                          </Button>
+                        </>
+                      )}
                       <Button 
                         size="sm" 
                         variant="secondary" 
@@ -886,11 +910,13 @@ export default function DashboardPage() {
                           {detailCommands.map((cmd) => (
                             <tr key={cmd.id} className="border-b border-zinc-800/60 hover:bg-zinc-800/10">
                               <td className="p-2.5 font-semibold text-zinc-200">
-                                {cmd.type === "power_on" ? "Power On" :
-                                 cmd.type === "power_off" ? "Power Off" :
-                                 cmd.type === "power_off_force" ? "Force Off" :
-                                 cmd.type === "reset" ? "Reset" :
-                                 cmd.type === "sleep" ? "Sleep" : cmd.type}
+                                 {cmd.type === "power_on" ? "Power On" :
+                                  cmd.type === "power_off" ? "Power Off" :
+                                  cmd.type === "power_off_force" ? "Force Off" :
+                                  cmd.type === "reset" ? "Reset" :
+                                  cmd.type === "sleep" ? "Sleep" :
+                                  cmd.type === "lock" ? "Lock" :
+                                  cmd.type === "logout" ? "Log Out" : cmd.type}
                               </td>
                               <td className="p-2.5 text-zinc-400">
                                 {new Date(cmd.created_at).toLocaleString()}
