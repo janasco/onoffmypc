@@ -3,36 +3,12 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string>
 #include "generated/onoff_design_tokens.h"
+#include <onoffprotocol.h>
 
-// ── WoL packet builder (extracted from main.cpp) ──────────────────────────────
-
-static void buildWoLPacket(const char* mac, uint8_t* packet) {
-  uint8_t macBytes[6];
-  sscanf(mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
-    &macBytes[0], &macBytes[1], &macBytes[2],
-    &macBytes[3], &macBytes[4], &macBytes[5]);
-  memset(packet, 0xFF, 6);
-  for (int i = 0; i < 16; i++) memcpy(&packet[6 + i * 6], macBytes, 6);
-}
-
-static bool validMac(const std::string& mac) {
-  if (mac.size() != 17) return false;
-  bool anySet = false;
-  for (size_t i = 0; i < 17; i++) {
-    char c = mac[i];
-    if (i % 3 == 2) {
-      if (c != ':') return false;
-    } else {
-      bool hex = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
-      if (!hex) return false;
-      if (c != '0') anySet = true;
-    }
-  }
-  return anySet;
-}
-
-// ── Command parser (extracted from main.cpp) ──────────────────────────────────
+// ── Command parser (thin wrapper over the shared lib — struct return makes the
+//    tests below clearer; the parsing logic itself is shared with the device) ─
 
 struct Command {
   char commandId[64];
@@ -42,31 +18,9 @@ struct Command {
 
 static Command parseCommand(const char* json) {
   Command cmd = {};
-  JsonDocument doc;
-  if (deserializeJson(doc, json) != DeserializationError::Ok) return cmd;
-  const char* id   = doc["command_id"];
-  const char* type = doc["type"];
-  if (!id || !type) return cmd;
-  strncpy(cmd.commandId, id,   sizeof(cmd.commandId) - 1);
-  strncpy(cmd.type,      type, sizeof(cmd.type) - 1);
-  cmd.valid = true;
+  cmd.valid = parseCommandPayload(json, cmd.commandId, sizeof(cmd.commandId),
+                                  cmd.type, sizeof(cmd.type));
   return cmd;
-}
-
-// ── Telemetry builder (extracted from main.cpp) ───────────────────────────────
-
-static std::string buildTelemetry(const char* deviceId, bool pcOn,
-                                   float temp, float humidity, int rssi) {
-  JsonDocument doc;
-  doc["type"]      = "telemetry";
-  doc["device_id"] = deviceId;
-  doc["pc_on"]     = pcOn;
-  doc["rssi"]      = rssi;
-  if (!isnan(temp))     doc["room_temp"]     = temp;
-  if (!isnan(humidity)) doc["room_humidity"] = humidity;
-  std::string out;
-  serializeJson(doc, out);
-  return out;
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -85,13 +39,13 @@ void test_generated_design_tokens() {
 
 void test_wol_packet_length() {
   uint8_t packet[102];
-  buildWoLPacket("AA:BB:CC:DD:EE:FF", packet);
+  TEST_ASSERT_TRUE(buildWoLPacket("AA:BB:CC:DD:EE:FF", packet, sizeof(packet)));
   TEST_ASSERT_EQUAL(102, sizeof(packet));
 }
 
 void test_wol_packet_sync_bytes() {
   uint8_t packet[102];
-  buildWoLPacket("AA:BB:CC:DD:EE:FF", packet);
+  TEST_ASSERT_TRUE(buildWoLPacket("AA:BB:CC:DD:EE:FF", packet, sizeof(packet)));
   for (int i = 0; i < 6; i++) {
     TEST_ASSERT_EQUAL_HEX8(0xFF, packet[i]);
   }
@@ -100,10 +54,16 @@ void test_wol_packet_sync_bytes() {
 void test_wol_packet_mac_repeated_16_times() {
   uint8_t packet[102];
   uint8_t expected[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
-  buildWoLPacket("AA:BB:CC:DD:EE:FF", packet);
+  TEST_ASSERT_TRUE(buildWoLPacket("AA:BB:CC:DD:EE:FF", packet, sizeof(packet)));
   for (int i = 0; i < 16; i++) {
     TEST_ASSERT_EQUAL_MEMORY(expected, &packet[6 + i * 6], 6);
   }
+}
+
+void test_wol_packet_rejects_bad_mac() {
+  uint8_t packet[102];
+  TEST_ASSERT_FALSE(buildWoLPacket("AA:BB:CC:DD:EG:FF", packet, sizeof(packet)));
+  TEST_ASSERT_FALSE(buildWoLPacket("", packet, sizeof(packet)));
 }
 
 void test_command_parse_power_on() {
@@ -167,24 +127,25 @@ void test_valid_mac_rejects_all_zero() {
 }
 
 void test_telemetry_pc_on() {
-  std::string msg = buildTelemetry("device-1", true, 22.5f, 55.0f, -65);
+  std::string msg = buildTelemetryPayload("device-1", true, 22.5f, 55.0f, -65, "1.3.7-esp32");
   JsonDocument doc;
   deserializeJson(doc, msg);
   TEST_ASSERT_EQUAL_STRING("telemetry", doc["type"].as<const char*>());
   TEST_ASSERT_EQUAL_STRING("device-1",  doc["device_id"].as<const char*>());
   TEST_ASSERT_TRUE(doc["pc_on"].as<bool>());
   TEST_ASSERT_EQUAL(-65, doc["rssi"].as<int>());
+  TEST_ASSERT_EQUAL_STRING("1.3.7-esp32", doc["firmware_version"].as<const char*>());
 }
 
 void test_telemetry_pc_off() {
-  std::string msg = buildTelemetry("device-1", false, 21.0f, 60.0f, -70);
+  std::string msg = buildTelemetryPayload("device-1", false, 21.0f, 60.0f, -70, "1.3.7-esp32");
   JsonDocument doc;
   deserializeJson(doc, msg);
   TEST_ASSERT_FALSE(doc["pc_on"].as<bool>());
 }
 
 void test_telemetry_has_temp_humidity() {
-  std::string msg = buildTelemetry("device-1", true, 23.5f, 48.0f, -60);
+  std::string msg = buildTelemetryPayload("device-1", true, 23.5f, 48.0f, -60, "1.3.7-esp32");
   JsonDocument doc;
   deserializeJson(doc, msg);
   TEST_ASSERT_FLOAT_WITHIN(0.1f, 23.5f, doc["room_temp"].as<float>());
@@ -192,7 +153,7 @@ void test_telemetry_has_temp_humidity() {
 }
 
 void test_telemetry_type_field() {
-  std::string msg = buildTelemetry("d", true, NAN, NAN, -50);
+  std::string msg = buildTelemetryPayload("d", true, NAN, NAN, -50, "1.3.7-esp32");
   JsonDocument doc;
   deserializeJson(doc, msg);
   TEST_ASSERT_EQUAL_STRING("telemetry", doc["type"].as<const char*>());
@@ -210,6 +171,7 @@ int main() {
   RUN_TEST(test_wol_packet_length);
   RUN_TEST(test_wol_packet_sync_bytes);
   RUN_TEST(test_wol_packet_mac_repeated_16_times);
+  RUN_TEST(test_wol_packet_rejects_bad_mac);
 
   RUN_TEST(test_command_parse_power_on);
   RUN_TEST(test_command_parse_power_off);

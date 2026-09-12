@@ -15,6 +15,7 @@
 #endif
 #include "certs.h"
 #include "generated/onoff_design_tokens.h"
+#include <onoffprotocol.h>
 
 using namespace websockets;
 
@@ -280,25 +281,6 @@ static String stripWs(const String& in) {
   return out;
 }
 
-// Accepts exactly six colon-separated hex byte pairs ("AA:BB:CC:DD:EE:FF").
-// Rejects empty/garbage so a bad MAC can never build a silently all-zero magic
-// packet or be persisted as config that later fails confusingly.
-bool validMac(const String& mac) {
-  if (mac.length() != 17) return false;
-  bool anySet = false;
-  for (size_t i = 0; i < 17; i++) {
-    char c = mac[i];
-    if (i % 3 == 2) {
-      if (c != ':') return false;
-    } else {
-      bool hex = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
-      if (!hex) return false;
-      if (c != '0') anySet = true;
-    }
-  }
-  return anySet;   // reject the all-zero MAC too (a useless WoL target)
-}
-
 // ── NVS ──────────────────────────────────────────────────────────────────────
 
 bool loadConfig() {
@@ -490,7 +472,7 @@ void startProvisioning() {
       return;
     }
 
-    if (!pcMac.isEmpty() && !validMac(pcMac)) {
+    if (!pcMac.isEmpty() && !validMac(pcMac.c_str())) {
       httpServer.send(400, "text/plain", "PC MAC must be six hex pairs (AA:BB:CC:DD:EE:FF)");
       return;
     }
@@ -531,18 +513,16 @@ void startProvisioning() {
 // ── Wake-on-LAN ──────────────────────────────────────────────────────────────
 
 void sendWoL() {
-  if (cfgPcMac.isEmpty() || !validMac(cfgPcMac)) {
+  if (cfgPcMac.isEmpty() || !validMac(cfgPcMac.c_str())) {
     Serial.println("[wol] no valid MAC configured");
     return;
   }
 
-  uint8_t mac[6];
-  sscanf(cfgPcMac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
-    &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
-
   uint8_t packet[102];
-  memset(packet, 0xFF, 6);
-  for (int i = 0; i < 16; i++) memcpy(&packet[6 + i * 6], mac, 6);
+  if (!buildWoLPacket(cfgPcMac.c_str(), packet, sizeof(packet))) {
+    Serial.println("[wol] packet build failed");
+    return;
+  }
 
   udp.beginPacket(IPAddress(255, 255, 255, 255), 9);
   udp.write(packet, sizeof(packet));
@@ -595,26 +575,19 @@ void handleCommand(const String& commandId, const String& type) {
 // ── Telemetry ─────────────────────────────────────────────────────────────────
 
 void sendTelemetry() {
+  bool  pcOn     = digitalRead(PIN_POWER_SENSE) == HIGH;
   float temp     = dht.readTemperature();
   float humidity = dht.readHumidity();
-  bool  pcOn     = digitalRead(PIN_POWER_SENSE) == HIGH;
   int   rssi     = WiFi.RSSI();
 
-  JsonDocument doc;
-  doc["type"]             = "telemetry";
-  doc["device_id"]        = cfgDeviceId;
 #if defined(ESP8266)
-  doc["firmware_version"] = String(FIRMWARE_VERSION) + "-esp8266";
+  String fw = String(FIRMWARE_VERSION) + "-esp8266";
 #else
-  doc["firmware_version"] = String(FIRMWARE_VERSION) + "-esp32";
+  String fw = String(FIRMWARE_VERSION) + "-esp32";
 #endif
-  doc["pc_on"]            = pcOn;
-  doc["rssi"]             = rssi;
-  if (!isnan(temp))     doc["room_temp"]     = serialized(String(temp, 1));
-  if (!isnan(humidity)) doc["room_humidity"] = serialized(String(humidity, 1));
 
-  String msg;
-  serializeJson(doc, msg);
+  String msg = buildTelemetryPayload(cfgDeviceId.c_str(), pcOn, temp, humidity,
+                                     rssi, fw.c_str()).c_str();
   sendWs(msg);
   Serial.printf("[tel] pc=%s temp=%.1f hum=%.1f rssi=%d\n",
     pcOn ? "ON" : "off", temp, humidity, rssi);
@@ -700,11 +673,11 @@ void connectWs() {
   ws.setCACert(ONOFFMYPC_ROOT_CA);
 
   ws.onMessage([](WebsocketsMessage msg) {
-    JsonDocument doc;
-    if (deserializeJson(doc, msg.data()) != DeserializationError::Ok) return;
-    String commandId = doc["command_id"].as<String>();
-    String type      = doc["type"].as<String>();
-    if (commandId.length() > 0 && type.length() > 0) handleCommand(commandId, type);
+    char commandId[64] = {0};
+    char type[32]      = {0};
+    if (!parseCommandPayload(msg.data().c_str(), commandId, sizeof(commandId),
+                             type, sizeof(type))) return;
+    handleCommand(String(commandId), String(type));
   });
 
   ws.onEvent([](WebsocketsEvent event, String) {

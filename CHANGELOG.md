@@ -16,6 +16,10 @@
   as a held PC power button.
 
 ### Changed
+- **Shared protocol lib:** PC MAC validation, WoL packet building, command
+  parsing, and telemetry framing moved into `lib/onoffprotocol`, used by both
+  the device firmware and the native unit tests — test doubles no longer drift
+  from what the device actually ships.
 - **Reconnect jitter:** WebSocket reconnect delays are now randomized up to
   +2.5 s so many devices don't reconnect to the API in lockstep after an
   outage.
