@@ -280,6 +280,25 @@ static String stripWs(const String& in) {
   return out;
 }
 
+// Accepts exactly six colon-separated hex byte pairs ("AA:BB:CC:DD:EE:FF").
+// Rejects empty/garbage so a bad MAC can never build a silently all-zero magic
+// packet or be persisted as config that later fails confusingly.
+bool validMac(const String& mac) {
+  if (mac.length() != 17) return false;
+  bool anySet = false;
+  for (size_t i = 0; i < 17; i++) {
+    char c = mac[i];
+    if (i % 3 == 2) {
+      if (c != ':') return false;
+    } else {
+      bool hex = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+      if (!hex) return false;
+      if (c != '0') anySet = true;
+    }
+  }
+  return anySet;   // reject the all-zero MAC too (a useless WoL target)
+}
+
 // ── NVS ──────────────────────────────────────────────────────────────────────
 
 bool loadConfig() {
@@ -471,6 +490,11 @@ void startProvisioning() {
       return;
     }
 
+    if (!pcMac.isEmpty() && !validMac(pcMac)) {
+      httpServer.send(400, "text/plain", "PC MAC must be six hex pairs (AA:BB:CC:DD:EE:FF)");
+      return;
+    }
+
     prefs.begin("onoffmypc", true);
     String expectedPin = prefs.getString("setup_pin", "");
     prefs.end();
@@ -507,8 +531,8 @@ void startProvisioning() {
 // ── Wake-on-LAN ──────────────────────────────────────────────────────────────
 
 void sendWoL() {
-  if (cfgPcMac.isEmpty()) {
-    Serial.println("[wol] no MAC configured");
+  if (cfgPcMac.isEmpty() || !validMac(cfgPcMac)) {
+    Serial.println("[wol] no valid MAC configured");
     return;
   }
 
@@ -536,6 +560,8 @@ void pulsePin(int pin, unsigned long durationMs) {
 
 // ── Commands ──────────────────────────────────────────────────────────────────
 
+void sendTelemetry();
+
 bool sendWs(const String& msg) {
   bool ok = ws.send(msg);
   if (!ok) Serial.println("[ws] send failed (dropped)");
@@ -559,6 +585,11 @@ void handleCommand(const String& commandId, const String& type) {
   else if (type == "reset")           { pulsePin(PIN_RESET_BTN, 200); }
   else { Serial.printf("[cmd] unknown: %s\n", type.c_str()); return; }
   sendAck(commandId);
+  // Reflect the new PC state right away instead of letting the UI wait up to
+  // the full telemetry cadence. Reset the periodic phase so the next report
+  // isn't a back-to-back duplicate.
+  telemetryAt = millis() + TELEMETRY_INTERVAL_MS;
+  sendTelemetry();
 }
 
 // ── Telemetry ─────────────────────────────────────────────────────────────────

@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- **PC MAC validation:** a malformed or all-zero MAC is now rejected at save
+  time and can never produce a silently broken magic packet.
+- **Immediate post-command telemetry:** after a power/reset command, the device
+  reports its new state right away instead of making the UI wait up to the full
+  telemetry cadence.
 - **Loop watchdog:** an ESP32 task watchdog (30 s) now resets the device if the
   main loop stalls, instead of silently going offline. Fed explicitly in the
   main loop and the NTP wait so legitimate blocking paths can't trip it.

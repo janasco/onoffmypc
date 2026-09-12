@@ -16,6 +16,22 @@ static void buildWoLPacket(const char* mac, uint8_t* packet) {
   for (int i = 0; i < 16; i++) memcpy(&packet[6 + i * 6], macBytes, 6);
 }
 
+static bool validMac(const std::string& mac) {
+  if (mac.size() != 17) return false;
+  bool anySet = false;
+  for (size_t i = 0; i < 17; i++) {
+    char c = mac[i];
+    if (i % 3 == 2) {
+      if (c != ':') return false;
+    } else {
+      bool hex = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+      if (!hex) return false;
+      if (c != '0') anySet = true;
+    }
+  }
+  return anySet;
+}
+
 // ── Command parser (extracted from main.cpp) ──────────────────────────────────
 
 struct Command {
@@ -122,6 +138,34 @@ void test_command_parse_missing_type() {
   TEST_ASSERT_FALSE(cmd.valid);
 }
 
+void test_valid_mac_uppercase() {
+  TEST_ASSERT_TRUE(validMac("AA:BB:CC:DD:EE:FF"));
+}
+
+void test_valid_mac_lowercase() {
+  TEST_ASSERT_TRUE(validMac("aa:bb:cc:dd:ee:0f"));
+}
+
+void test_valid_mac_rejects_short() {
+  TEST_ASSERT_FALSE(validMac("AA:BB:CC"));
+}
+
+void test_valid_mac_rejects_bad_separator() {
+  TEST_ASSERT_FALSE(validMac("AA-BB-CC-DD-EE-FF"));
+}
+
+void test_valid_mac_rejects_non_hex() {
+  TEST_ASSERT_FALSE(validMac("AA:BB:CC:DD:EG:FF"));
+}
+
+void test_valid_mac_rejects_empty() {
+  TEST_ASSERT_FALSE(validMac(""));
+}
+
+void test_valid_mac_rejects_all_zero() {
+  TEST_ASSERT_FALSE(validMac("00:00:00:00:00:00"));
+}
+
 void test_telemetry_pc_on() {
   std::string msg = buildTelemetry("device-1", true, 22.5f, 55.0f, -65);
   JsonDocument doc;
@@ -172,6 +216,14 @@ int main() {
   RUN_TEST(test_command_parse_reset);
   RUN_TEST(test_command_parse_bad_json);
   RUN_TEST(test_command_parse_missing_type);
+
+  RUN_TEST(test_valid_mac_uppercase);
+  RUN_TEST(test_valid_mac_lowercase);
+  RUN_TEST(test_valid_mac_rejects_short);
+  RUN_TEST(test_valid_mac_rejects_bad_separator);
+  RUN_TEST(test_valid_mac_rejects_non_hex);
+  RUN_TEST(test_valid_mac_rejects_empty);
+  RUN_TEST(test_valid_mac_rejects_all_zero);
 
   RUN_TEST(test_telemetry_pc_on);
   RUN_TEST(test_telemetry_pc_off);
