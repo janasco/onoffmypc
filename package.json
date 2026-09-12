@@ -12,7 +12,7 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test test/*.test.js",
-    "check": "node --check src/main/index.js && node --check src/main/relay.js && node --check src/main/telemetry.js && node --check src/main/commands.js && node --check src/main/pairing.js && node --check src/main/autostart.js && node --check src/main/tokenStore.js && node --test test/*.test.js",
+    "check": "node --check src/main/index.js && node --check src/main/relay.js && node --check src/main/telemetry.js && node --check src/main/commands.js && node --check src/main/pairing.js && node --check src/main/autostart.js && node --check src/main/tokenStore.js && node --check src/main/config.js && node --test test/*.test.js",
     "dist:linux": "electron-builder --linux",
     "dist:windows": "electron-builder --windows"
   },

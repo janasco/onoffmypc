@@ -8,25 +8,44 @@ on:
 permissions:
   contents: write
 
+# Containment note (SA-010, batch 4): actions are pinned to a commit SHA, the
+# install/test/audit gate below now actually runs (it did not before), and
+# publishing is split into its own job that `needs: build` — a job that
+# depends on a matrixed job only runs once every leg of that matrix has
+# succeeded, so a Windows-only or Linux-only build failure can no longer
+# result in a public release with just one platform's binaries. Still open,
+# and deliberately NOT done by this change because it needs real signing
+# certificates/keys and a code-signing custodian role: actual Windows
+# Authenticode and Linux package signing/attestation. See
+# docs/cross-repository/security-audit (onoffmypc-app repo) batch 13 / SA-010
+# for the full remediation, including the signed/attested release this
+# workflow is a prerequisite for, not a substitute for.
+
 jobs:
-  release:
-    name: Build & Release Desktop Agent
+  build:
+    name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies (reproducible, from the committed lockfile)
+        run: npm ci
+
+      - name: Syntax check + unit tests
+        run: npm run check
+
+      - name: Dependency audit (production dependencies)
+        run: npm audit --omit=dev
 
       - name: Build packages
         run: |
@@ -37,12 +56,39 @@ jobs:
           fi
         shell: bash
 
-      - name: Upload binaries to Release
-        uses: softprops/action-gh-release@v2
+      - name: Generate SBOM (CycloneDX)
+        run: npm sbom --sbom-format cyclonedx --sbom-type application > dist/sbom-${{ matrix.os }}.cdx.json
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          files: |
+          name: build-${{ matrix.os }}
+          path: |
             dist/*.AppImage
             dist/*.deb
             dist/*.exe
+            dist/sbom-*.cdx.json
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all platform artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Upload binaries + SBOMs to Release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          files: |
+            artifacts/*.AppImage
+            artifacts/*.deb
+            artifacts/*.exe
+            artifacts/sbom-*.cdx.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

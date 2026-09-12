@@ -4,7 +4,7 @@ const { app, Tray, Menu, BrowserWindow, ipcMain, nativeImage, dialog } = require
 const path = require('node:path')
 
 const tokenStore = require('./tokenStore')
-const { pairWithCode } = require('./pairing')
+const { pairWithCode, unpairDevice } = require('./pairing')
 const { DeviceRelayClient } = require('./relay')
 const { collectTelemetry } = require('./telemetry')
 const { handleCommand } = require('./commands')
@@ -196,8 +196,25 @@ ipcMain.handle('pair', async (_event, code) => {
   }
 })
 
-function unpair() {
+// Revokes this device's credential server-side before clearing local state,
+// so a locally "unpaired" install can't keep acting as this device. A local
+// unpair always proceeds even if the machine is offline or the request fails
+// — the user must always be able to stop the agent — but that failure is
+// logged (an "honest offline state") rather than silently claimed as a full
+// revoke.
+async function unpair() {
+  const creds = tokenStore.load()
   stopRelay()
+  if (creds) {
+    const revoked = await unpairDevice(API_BASE_URL, creds.deviceId, creds.token)
+    if (!revoked) {
+      console.error(
+        'onoffmypc: could not confirm the server-side unpair (offline, or the request failed) — ' +
+        'this installation is no longer paired locally, but the old device credential may remain ' +
+        'valid on the server until it is removed from the account.'
+      )
+    }
+  }
   tokenStore.clear()
   updateTrayMenu()
 }

@@ -24,4 +24,22 @@ async function pairWithCode(apiBaseUrl, code) {
   return { deviceId: body.device_id, token: body.token }
 }
 
-module.exports = { pairWithCode }
+// Revokes this device's credential server-side (device-token-authenticated
+// self-service, see onoffmypc-app/src/routes/deviceSelf.ts) so a locally
+// "unpaired" install can never keep acting as this device afterward. Returns
+// true only on a confirmed server-side revoke; the caller decides what to do
+// (e.g. still clear local state) if this returns false, such as when the
+// machine is offline.
+async function unpairDevice(apiBaseUrl, deviceId, token) {
+  try {
+    const res = await fetch(`${apiBaseUrl}/device/${deviceId}/unpair`, {
+      method: 'POST',
+      headers: { 'X-Device-Token': token },
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+module.exports = { pairWithCode, unpairDevice }
