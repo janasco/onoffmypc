@@ -10,6 +10,9 @@
 #include <ArduinoJson.h>
 #include <DHT.h>
 #include <esp_random.h>
+#if defined(ESP32)
+#include <esp_task_wdt.h>
+#endif
 #include "certs.h"
 #include "generated/onoff_design_tokens.h"
 
@@ -29,6 +32,9 @@ using namespace websockets;
 // while writing ~6x fewer D1 rows than the old 5s cadence (~2.9k vs ~17k/day).
 #define TELEMETRY_INTERVAL_MS    30000
 #define WS_RECONNECT_DELAY_MS    5000
+#define WS_RECONNECT_JITTER_MAX_MS 2500  // stagger reconnects after an outage so 1000s of devices don't pile on at once
+#define TELEMETRY_JITTER_MAX_MS  10000   // randomise first-telemetry phase after (re)connect to de-synchronise clients
+#define WATCHDOG_TIMEOUT_MS      30000   // slow-fail loop watchdog, above the worst-case TLS/HTTP blocking path
 #define WIFI_ATTEMPT_TIMEOUT_MS 30000   // wait this long for a single connect attempt
 #define WIFI_RETRY_MIN_MS        5000   // backoff after a failed attempt (doubles each time)
 #define WIFI_RETRY_MAX_MS       60000   // backoff ceiling
@@ -213,13 +219,38 @@ enum State { WIFI_CONNECTING, WS_CONNECTING, CONNECTED };
 Mode  mode  = NORMAL;
 State state = WIFI_CONNECTING;
 
-unsigned long lastTelemetry    = 0;
+unsigned long telemetryAt      = 0;   // millis() when the next telemetry is due (jittered after connect)
 unsigned long lastLedToggle    = 0;
 unsigned long wifiStarted      = 0;
 unsigned long wifiRetryAt      = 0;   // when to begin the next attempt (0 = attempt in progress)
 uint32_t      wifiAttempts     = 0;   // consecutive failed attempts (for backoff)
 unsigned long wsDisconnectedAt = 0;
+unsigned long wsReconnectDelayMs = WS_RECONNECT_DELAY_MS;
 bool          ledState         = false;
+
+// ── Watchdog & GPIO safety ────────────────────────────────────────────────────
+
+// ESP32 task watchdog: trips the hardware reset if the loop task stalls in a
+// non-yielding section; delay() feeds it on Arduino cores, and loop() feeds it
+// explicitly. No-op on other targets so native tests still compile.
+#if defined(ESP32)
+void feedWatchdog() { esp_task_wdt_reset(); }
+void startWatchdog() {
+  esp_task_wdt_init(WATCHDOG_TIMEOUT_MS / 1000, true);
+  esp_task_wdt_add(NULL);
+}
+#else
+void feedWatchdog() {}
+void startWatchdog() {}
+#endif
+
+// The PC power/reset lines must never be left asserted. Re-assert LOW at boot
+// (after a watchdog reset the pin state is undefined until setup runs) and
+// after every pulse so a stuck HIGH can never look like a held button press.
+void forceSafePcPins() {
+  digitalWrite(PIN_POWER_BTN, LOW);
+  digitalWrite(PIN_RESET_BTN, LOW);
+}
 
 // ── LED ──────────────────────────────────────────────────────────────────────
 
@@ -500,10 +531,16 @@ void sendWoL() {
 void pulsePin(int pin, unsigned long durationMs) {
   digitalWrite(pin, HIGH);
   delay(durationMs);
-  digitalWrite(pin, LOW);
+  forceSafePcPins();
 }
 
 // ── Commands ──────────────────────────────────────────────────────────────────
+
+bool sendWs(const String& msg) {
+  bool ok = ws.send(msg);
+  if (!ok) Serial.println("[ws] send failed (dropped)");
+  return ok;
+}
 
 void sendAck(const String& commandId) {
   JsonDocument doc;
@@ -511,7 +548,7 @@ void sendAck(const String& commandId) {
   doc["command_id"] = commandId;
   String msg;
   serializeJson(doc, msg);
-  ws.send(msg);
+  sendWs(msg);
 }
 
 void handleCommand(const String& commandId, const String& type) {
@@ -547,7 +584,7 @@ void sendTelemetry() {
 
   String msg;
   serializeJson(doc, msg);
-  ws.send(msg);
+  sendWs(msg);
   Serial.printf("[tel] pc=%s temp=%.1f hum=%.1f rssi=%d\n",
     pcOn ? "ON" : "off", temp, humidity, rssi);
 }
@@ -564,6 +601,7 @@ void syncClock() {
   configTime(0, 0, "pool.ntp.org", "time.google.com", "time.cloudflare.com");
   struct tm ti;
   for (int i = 0; i < 40; i++) {              // up to ~8 s
+    feedWatchdog();
     if (getLocalTime(&ti, 100) && ti.tm_year > (2020 - 1900)) {
       clockSynced = true;
       Serial.printf("[time] clock synced: %04d-%02d-%02d %02d:%02d:%02d UTC\n",
@@ -642,10 +680,13 @@ void connectWs() {
     if (event == WebsocketsEvent::ConnectionOpened) {
       state = CONNECTED;
       digitalWrite(PIN_LED, HIGH);
+      forceSafePcPins();
+      telemetryAt = millis() + (esp_random() % TELEMETRY_JITTER_MAX_MS);
       Serial.println("[ws] connected");
     } else if (event == WebsocketsEvent::ConnectionClosed) {
       state = WS_CONNECTING;
       wsDisconnectedAt = millis();
+      wsReconnectDelayMs = WS_RECONNECT_DELAY_MS + (esp_random() % (WS_RECONNECT_JITTER_MAX_MS + 1));
       digitalWrite(PIN_LED, LOW);
       Serial.println("[ws] disconnected — will retry");
     } else if (event == WebsocketsEvent::GotPing) {
@@ -670,9 +711,11 @@ void setup() {
   pinMode(PIN_POWER_BTN,   OUTPUT);
   pinMode(PIN_RESET_BTN,   OUTPUT);
   pinMode(PIN_LED,         OUTPUT);
-  digitalWrite(PIN_POWER_BTN, LOW);
-  digitalWrite(PIN_RESET_BTN, LOW);
+  forceSafePcPins();
   digitalWrite(PIN_LED,       LOW);
+
+  startWatchdog();
+  feedWatchdog();
 
   dht.begin();
 
@@ -688,6 +731,8 @@ void setup() {
 // ── Loop ──────────────────────────────────────────────────────────────────────
 
 void loop() {
+  feedWatchdog();
+
   // Serial command: send 'r' to factory reset and re-enter setup
   if (Serial.available() && Serial.read() == 'r') {
     clearConfig();
@@ -755,7 +800,7 @@ void loop() {
         connectWifi();
         break;
       }
-      if (millis() - wsDisconnectedAt >= WS_RECONNECT_DELAY_MS) {
+      if (millis() - wsDisconnectedAt >= wsReconnectDelayMs) {
         wsDisconnectedAt = millis();
         connectWs();
       }
@@ -769,9 +814,9 @@ void loop() {
         break;
       }
       ws.poll();
-      if (millis() - lastTelemetry >= TELEMETRY_INTERVAL_MS) {
+      if (millis() >= telemetryAt) {
         sendTelemetry();
-        lastTelemetry = millis();
+        telemetryAt = millis() + TELEMETRY_INTERVAL_MS;
       }
       break;
   }

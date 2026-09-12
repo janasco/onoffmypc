@@ -1,5 +1,24 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Loop watchdog:** an ESP32 task watchdog (30 s) now resets the device if the
+  main loop stalls, instead of silently going offline. Fed explicitly in the
+  main loop and the NTP wait so legitimate blocking paths can't trip it.
+- **Safe GPIO defaults:** power/reset output pins are re-asserted LOW at boot,
+  on (re)connect, and after every command pulse, so a stray HIGH can never read
+  as a held PC power button.
+
+### Changed
+- **Reconnect jitter:** WebSocket reconnect delays are now randomized up to
+  +2.5 s so many devices don't reconnect to the API in lockstep after an
+  outage.
+- **Telemetry phase jitter:** the first telemetry after a (re)connect is
+  randomly delayed up to 10 s to de-synchronize clients' report bursts.
+- **Checked sends:** telemetry and command acknowledgements now log when the
+  WebSocket write fails instead of silently dropping.
+
 ## [1.3.7] - 2026-07-19
 
 ### Added
