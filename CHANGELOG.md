@@ -16,6 +16,9 @@
   as a held PC power button.
 
 ### Changed
+- **WS heartbeat:** the device now pings the API every 30 s and treats a
+  90 s silence as a half-dead connection, forcing a clean reconnect instead of
+  staying silently "connected" after a network partition.
 - **Shared protocol lib:** PC MAC validation, WoL packet building, command
   parsing, and telemetry framing moved into `lib/onoffprotocol`, used by both
   the device firmware and the native unit tests — test doubles no longer drift

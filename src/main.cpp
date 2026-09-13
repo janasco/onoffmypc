@@ -34,6 +34,8 @@ using namespace websockets;
 #define TELEMETRY_INTERVAL_MS    30000
 #define WS_RECONNECT_DELAY_MS    5000
 #define WS_RECONNECT_JITTER_MAX_MS 2500  // stagger reconnects after an outage so 1000s of devices don't pile on at once
+#define WS_HEARTBEAT_INTERVAL_MS 30000   // ping cadence — also drives dead-session detection
+#define WS_HEARTBEAT_TIMEOUT_MS  90000   // no pong for this long => half-dead session, reconnect
 #define TELEMETRY_JITTER_MAX_MS  10000   // randomise first-telemetry phase after (re)connect to de-synchronise clients
 #define WATCHDOG_TIMEOUT_MS      30000   // slow-fail loop watchdog, above the worst-case TLS/HTTP blocking path
 #define WIFI_ATTEMPT_TIMEOUT_MS 30000   // wait this long for a single connect attempt
@@ -227,6 +229,8 @@ unsigned long wifiRetryAt      = 0;   // when to begin the next attempt (0 = att
 uint32_t      wifiAttempts     = 0;   // consecutive failed attempts (for backoff)
 unsigned long wsDisconnectedAt = 0;
 unsigned long wsReconnectDelayMs = WS_RECONNECT_DELAY_MS;
+unsigned long lastWsPingAt      = 0;
+unsigned long lastWsPongAt      = 0;
 bool          ledState         = false;
 
 // ── Watchdog & GPIO safety ────────────────────────────────────────────────────
@@ -686,6 +690,8 @@ void connectWs() {
       digitalWrite(PIN_LED, HIGH);
       forceSafePcPins();
       telemetryAt = millis() + (esp_random() % TELEMETRY_JITTER_MAX_MS);
+      lastWsPongAt = millis();
+      lastWsPingAt = millis();
       Serial.println("[ws] connected");
     } else if (event == WebsocketsEvent::ConnectionClosed) {
       state = WS_CONNECTING;
@@ -693,6 +699,8 @@ void connectWs() {
       wsReconnectDelayMs = WS_RECONNECT_DELAY_MS + (esp_random() % (WS_RECONNECT_JITTER_MAX_MS + 1));
       digitalWrite(PIN_LED, LOW);
       Serial.println("[ws] disconnected — will retry");
+    } else if (event == WebsocketsEvent::GotPong) {
+      lastWsPongAt = millis();
     } else if (event == WebsocketsEvent::GotPing) {
       ws.pong();
     }
@@ -815,6 +823,18 @@ void loop() {
         state = WIFI_CONNECTING;
         digitalWrite(PIN_LED, LOW);
         connectWifi();
+        break;
+      }
+      // Heartbeat: ping periodically; if no pong comes back far beyond the
+      // interval the TCP session is likely half-dead (no close frame arrived)
+      // — force a clean reconnect instead of silently staying "connected".
+      if (millis() - lastWsPingAt >= WS_HEARTBEAT_INTERVAL_MS) {
+        ws.ping();
+        lastWsPingAt = millis();
+      }
+      if (millis() - lastWsPongAt >= WS_HEARTBEAT_TIMEOUT_MS) {
+        Serial.println("[ws] heartbeat timeout — forcing reconnect");
+        ws.close();
         break;
       }
       ws.poll();
