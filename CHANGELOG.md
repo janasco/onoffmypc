@@ -16,6 +16,9 @@
   as a held PC power button.
 
 ### Changed
+- **CI supply-chain pinning:** workflow actions are pinned to commit SHAs and
+  PlatformIO to an exact version, so a moved tag or a bad upstream release can
+  no longer silently change what CI runs.
 - **WS heartbeat:** the device now pings the API every 30 s and treats a
   90 s silence as a half-dead connection, forcing a clean reconnect instead of
   staying silently "connected" after a network partition.
