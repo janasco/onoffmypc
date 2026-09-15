@@ -16,6 +16,10 @@
   as a held PC power button.
 
 ### Changed
+- **Hardened release pipeline:** the release workflow now runs with a
+  read-only default token, pins every action and toolchain version
+  (PlatformIO, esptool, wrangler), and verifies the built binary's SHA-256
+  digest and manifest before publishing or updating the web flasher.
 - **CI supply-chain pinning:** workflow actions are pinned to commit SHAs and
   PlatformIO to an exact version, so a moved tag or a bad upstream release can
   no longer silently change what CI runs.
