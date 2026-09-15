@@ -126,6 +126,19 @@ void test_valid_mac_rejects_all_zero() {
   TEST_ASSERT_FALSE(validMac("00:00:00:00:00:00"));
 }
 
+void test_json_escape_quotes_and_backslash() {
+  TEST_ASSERT_EQUAL_STRING("a\\\"b\\\\c", jsonEscape("a\"b\\c").c_str());
+}
+
+void test_json_escape_control_chars() {
+  TEST_ASSERT_EQUAL_STRING("line\\nbreak\\ttab\\r", jsonEscape("line\nbreak\ttab\r").c_str());
+  TEST_ASSERT_EQUAL_STRING("\\u0001", jsonEscape("\x01").c_str());
+}
+
+void test_json_escape_leaves_normal_text_intact() {
+  TEST_ASSERT_EQUAL_STRING("Home Wi-Fi 5G", jsonEscape("Home Wi-Fi 5G").c_str());
+}
+
 void test_telemetry_pc_on() {
   std::string msg = buildTelemetryPayload("device-1", true, 22.5f, 55.0f, -65, "1.3.7-esp32");
   JsonDocument doc;
@@ -186,6 +199,10 @@ int main() {
   RUN_TEST(test_valid_mac_rejects_non_hex);
   RUN_TEST(test_valid_mac_rejects_empty);
   RUN_TEST(test_valid_mac_rejects_all_zero);
+
+  RUN_TEST(test_json_escape_quotes_and_backslash);
+  RUN_TEST(test_json_escape_control_chars);
+  RUN_TEST(test_json_escape_leaves_normal_text_intact);
 
   RUN_TEST(test_telemetry_pc_on);
   RUN_TEST(test_telemetry_pc_off);

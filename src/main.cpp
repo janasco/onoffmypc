@@ -373,21 +373,34 @@ static bool fieldTooLong(const String& value, size_t maxLen, const char* label) 
 // Networks scanned once at boot (in STA mode) and served to the setup page.
 // We scan-then-cache so the provisioning AP itself can run in plain AP mode —
 // AP+STA made the WPA2 hotspot reject clients on some hardware (1.3.2 regression).
+// The list is capped and SSIDs are JSON-escaped: a hostile nearby AP name must
+// not be able to break the response or exhaust the heap.
+#define MAX_SCAN_NETWORKS 40
 String scanCache = "[]";
+
+// Provisioning PIN throttle (RAM-only; resets on reboot). The AP is already
+// gated by a random per-device WPA2 password; this is defense-in-depth against
+// on-AP guessing of the setup PIN.
+uint8_t       pinFailures    = 0;
+unsigned long pinLockedUntil = 0;
+
+static String jsonEscapeStr(const String& in) {
+  return String(jsonEscape(std::string(in.c_str())).c_str());
+}
 
 static String scanNetworksJson() {
   WiFi.mode(WIFI_STA);
   delay(100);
   int n = WiFi.scanNetworks();
   String json = "[";
-  for (int i = 0; i < n; i++) {
+  int emitted = 0;
+  for (int i = 0; i < n && emitted < MAX_SCAN_NETWORKS; i++) {
     String s = WiFi.SSID(i);
-    if (s.isEmpty()) continue;
-    s.replace("\\", "\\\\");
-    s.replace("\"", "\\\"");
-    if (json.length() > 1) json += ",";
-    json += "{\"ssid\":\"" + s + "\",\"rssi\":" + String(WiFi.RSSI(i)) +
+    if (s.isEmpty() || s.length() > 64) continue;
+    if (emitted > 0) json += ",";
+    json += "{\"ssid\":\"" + jsonEscapeStr(s) + "\",\"rssi\":" + String(WiFi.RSSI(i)) +
             ",\"secure\":" + (WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? "false" : "true") + "}";
+    emitted++;
   }
   json += "]";
   WiFi.scanDelete();
@@ -484,10 +497,22 @@ void startProvisioning() {
     prefs.begin("onoffmypc", true);
     String expectedPin = prefs.getString("setup_pin", "");
     prefs.end();
+    if (millis() < pinLockedUntil) {
+      httpServer.send(429, "text/plain", "Too many attempts — wait a minute and retry");
+      return;
+    }
     if (expectedPin.isEmpty() || pin != expectedPin) {
+      if (++pinFailures >= 5) {
+        pinFailures = 0;
+        pinLockedUntil = millis() + 60000;
+        Serial.println("[prov] too many bad PINs — locked for 60s");
+      } else {
+        Serial.printf("[prov] bad PIN (%u/5)\n", pinFailures);
+      }
       httpServer.send(403, "text/plain", "Invalid setup PIN");
       return;
     }
+    pinFailures = 0;
 
     const bool haveManual = !devId.isEmpty() && !token.isEmpty();
     if (ssid.isEmpty() || (pair.isEmpty() && !haveManual)) {

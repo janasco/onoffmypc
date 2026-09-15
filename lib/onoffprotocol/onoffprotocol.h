@@ -29,3 +29,8 @@ bool parseCommandPayload(const char* json, char* cmdId, size_t cmdIdSize,
 std::string buildTelemetryPayload(const std::string& deviceId, bool pcOn,
                                   float temp, float humidity, int rssi,
                                   const std::string& firmwareVersion);
+
+// Escape a string for safe embedding inside a JSON string literal (quotes,
+// backslashes, and all C0 control characters). Used for Wi-Fi SSIDs, which are
+// attacker-controlled nearby broadcast names.
+std::string jsonEscape(const std::string& in);

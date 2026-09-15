@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- **Provisioning portal hardening:** SSIDs from nearby networks are now
+  JSON-escaped and the scan list is capped, so a hostile access-point name can't
+  corrupt the setup response or exhaust memory; repeated wrong setup PINs now
+  trigger a 60-second lockout.
 - **PC MAC validation:** a malformed or all-zero MAC is now rejected at save
   time and can never produce a silently broken magic packet.
 - **Immediate post-command telemetry:** after a power/reset command, the device
