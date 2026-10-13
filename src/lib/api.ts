@@ -2,17 +2,17 @@ const API_BASE = typeof window !== 'undefined' && window.location.hostname === '
   ? 'http://localhost:8787'
   : 'https://api.onoffmypc.com';
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
   code?: string;
   status?: number;
 }
 
-async function apiReq<T = any>(
+export async function apiReq<T = unknown>(
   method: string,
   path: string,
-  body?: any
+  body?: unknown
 ): Promise<ApiResponse<T>> {
   try {
     const res = await fetch(API_BASE + path, {
@@ -27,7 +27,12 @@ async function apiReq<T = any>(
       return { error: 'unauthorized', status: 401 };
     }
 
-    const data = await res.json().catch(() => ({}));
+    // The response body is typed by the caller's generic parameter: the API
+    // contract is trusted at this boundary, and `T` documents the expected
+    // shape. Parse failures yield an empty object rather than throwing.
+    const parsed: unknown = await res.json().catch(() => ({}));
+    const data = parsed as { error?: string; code?: string } & Record<string, unknown>;
+
     if (!res.ok) {
       return {
         error: data.error || 'request failed',
@@ -35,62 +40,62 @@ async function apiReq<T = any>(
         status: res.status,
       };
     }
-    return { data };
-  } catch (err) {
+    return { data: parsed as T };
+  } catch {
     return { error: 'network error' };
   }
 }
 
 export const api = {
-  login: (email: string, password: string, turnstile_token?: string) =>
-    apiReq('POST', '/auth/login', { email, password, turnstile_token }),
-  googleAuth: (credential: string) =>
-    apiReq('POST', '/auth/google', { credential }),
-  appleAuth: (credential: string) =>
-    apiReq('POST', '/auth/apple', { credential }),
-  microsoftAuth: (credential: string) =>
-    apiReq('POST', '/auth/microsoft', { credential }),
-  register: (email: string, password: string, invite_code?: string, turnstile_token?: string) =>
-    apiReq('POST', '/auth/register', { email, password, invite_code, turnstile_token }),
-  registrationStatus: () =>
-    apiReq('GET', '/auth/registration-status'),
-  joinWaitlist: (email: string) =>
-    apiReq('POST', '/waitlist', { email }),
-  logout: () =>
-    apiReq('POST', '/auth/logout'),
-  me: () =>
-    apiReq('GET', '/auth/me'),
-  exportData: () =>
-    apiReq('GET', '/auth/export'),
-  deleteAccount: () =>
-    apiReq('DELETE', '/auth/account'),
-  cancelDeletion: () =>
-    apiReq('POST', '/auth/account/cancel-deletion'),
-  forgotPassword: (email: string) =>
-    apiReq('POST', '/auth/forgot-password', { email }),
-  resetPassword: (token: string, password: string) =>
-    apiReq('POST', '/auth/reset-password', { token, password }),
-  verifyEmail: (token: string) =>
-    apiReq('GET', `/auth/verify-email?token=${encodeURIComponent(token)}`),
-  resendVerify: () =>
-    apiReq('POST', '/auth/resend-verify'),
-  changePassword: (current_password: string, new_password: string) =>
-    apiReq('POST', '/auth/change-password', { current_password, new_password }),
-  changeEmail: (new_email: string, password: string) =>
-    apiReq('POST', '/auth/change-email', { new_email, password }),
-  devices: () =>
-    apiReq('GET', '/devices'),
-  getDevice: (id: string) =>
-    apiReq('GET', `/devices/${id}`),
-  deviceStatus: (id: string) =>
-    apiReq('GET', `/devices/${id}/status`),
-  history: (id: string, days = 7) =>
-    apiReq('GET', `/telemetry/${id}/history?days=${days}`),
-  addDevice: (name: string) =>
-    apiReq('POST', '/devices', { name }),
-  renameDevice: (id: string, name: string) =>
-    apiReq('PATCH', `/devices/${id}`, { name }),
-  updateTelemetrySettings: (
+  login: <T = unknown>(email: string, password: string, turnstile_token?: string) =>
+    apiReq<T>('POST', '/auth/login', { email, password, turnstile_token }),
+  googleAuth: <T = unknown>(credential: string) =>
+    apiReq<T>('POST', '/auth/google', { credential }),
+  appleAuth: <T = unknown>(credential: string) =>
+    apiReq<T>('POST', '/auth/apple', { credential }),
+  microsoftAuth: <T = unknown>(credential: string) =>
+    apiReq<T>('POST', '/auth/microsoft', { credential }),
+  register: <T = unknown>(email: string, password: string, invite_code?: string, turnstile_token?: string) =>
+    apiReq<T>('POST', '/auth/register', { email, password, invite_code, turnstile_token }),
+  registrationStatus: <T = unknown>() =>
+    apiReq<T>('GET', '/auth/registration-status'),
+  joinWaitlist: <T = unknown>(email: string) =>
+    apiReq<T>('POST', '/waitlist', { email }),
+  logout: <T = unknown>() =>
+    apiReq<T>('POST', '/auth/logout'),
+  me: <T = unknown>() =>
+    apiReq<T>('GET', '/auth/me'),
+  exportData: <T = unknown>() =>
+    apiReq<T>('GET', '/auth/export'),
+  deleteAccount: <T = unknown>() =>
+    apiReq<T>('DELETE', '/auth/account'),
+  cancelDeletion: <T = unknown>() =>
+    apiReq<T>('POST', '/auth/account/cancel-deletion'),
+  forgotPassword: <T = unknown>(email: string) =>
+    apiReq<T>('POST', '/auth/forgot-password', { email }),
+  resetPassword: <T = unknown>(token: string, password: string) =>
+    apiReq<T>('POST', '/auth/reset-password', { token, password }),
+  verifyEmail: <T = unknown>(token: string) =>
+    apiReq<T>('GET', `/auth/verify-email?token=${encodeURIComponent(token)}`),
+  resendVerify: <T = unknown>() =>
+    apiReq<T>('POST', '/auth/resend-verify'),
+  changePassword: <T = unknown>(current_password: string, new_password: string) =>
+    apiReq<T>('POST', '/auth/change-password', { current_password, new_password }),
+  changeEmail: <T = unknown>(new_email: string, password: string) =>
+    apiReq<T>('POST', '/auth/change-email', { new_email, password }),
+  devices: <T = unknown>() =>
+    apiReq<T>('GET', '/devices'),
+  getDevice: <T = unknown>(id: string) =>
+    apiReq<T>('GET', `/devices/${id}`),
+  deviceStatus: <T = unknown>(id: string) =>
+    apiReq<T>('GET', `/devices/${id}/status`),
+  history: <T = unknown>(id: string, days = 7) =>
+    apiReq<T>('GET', `/telemetry/${id}/history?days=${days}`),
+  addDevice: <T = unknown>(name: string) =>
+    apiReq<T>('POST', '/devices', { name }),
+  renameDevice: <T = unknown>(id: string, name: string) =>
+    apiReq<T>('PATCH', `/devices/${id}`, { name }),
+  updateTelemetrySettings: <T = unknown>(
     id: string,
     settings: {
       telemetry_cpu?: boolean;
@@ -98,31 +103,31 @@ export const api = {
       telemetry_gpu?: boolean;
       telemetry_wifi?: boolean;
     }
-  ) => apiReq('PATCH', `/devices/${id}/telemetry-settings`, settings),
-  deleteDevice: (id: string) =>
-    apiReq('DELETE', `/devices/${id}`),
-  rotateToken: (id: string) =>
-    apiReq('POST', `/devices/${id}/rotate-token`),
-  pairCode: (id: string) =>
-    apiReq('POST', `/devices/${id}/pair-code`),
-  billingStatus: () =>
-    apiReq('GET', '/billing/status'),
-  billingCheckout: (device_id: string) =>
-    apiReq('POST', '/billing/checkout', { device_id }),
-  billingPortal: () =>
-    apiReq('POST', '/billing/portal'),
-  billingRequests: () =>
-    apiReq('GET', '/billing/requests'),
-  sendCommand: (deviceId: string, type: string) =>
-    apiReq('POST', `/commands/${deviceId}`, { type }),
-  commands: (deviceId: string) =>
-    apiReq('GET', `/commands/${deviceId}`),
-  schedule: (deviceId: string, type: string, run_at: string) =>
-    apiReq('POST', `/commands/${deviceId}/schedule`, { type, run_at }),
-  schedules: (deviceId: string) =>
-    apiReq('GET', `/commands/${deviceId}/schedule`),
-  cancelSchedule: (deviceId: string, id: string) =>
-    apiReq('DELETE', `/commands/${deviceId}/schedule/${id}`),
-  telemetry: (deviceId: string) =>
-    apiReq('GET', `/telemetry/${deviceId}`),
+  ) => apiReq<T>('PATCH', `/devices/${id}/telemetry-settings`, settings),
+  deleteDevice: <T = unknown>(id: string) =>
+    apiReq<T>('DELETE', `/devices/${id}`),
+  rotateToken: <T = unknown>(id: string) =>
+    apiReq<T>('POST', `/devices/${id}/rotate-token`),
+  pairCode: <T = unknown>(id: string) =>
+    apiReq<T>('POST', `/devices/${id}/pair-code`),
+  billingStatus: <T = unknown>() =>
+    apiReq<T>('GET', '/billing/status'),
+  billingCheckout: <T = unknown>(device_id: string) =>
+    apiReq<T>('POST', '/billing/checkout', { device_id }),
+  billingPortal: <T = unknown>() =>
+    apiReq<T>('POST', '/billing/portal'),
+  billingRequests: <T = unknown>() =>
+    apiReq<T>('GET', '/billing/requests'),
+  sendCommand: <T = unknown>(deviceId: string, type: string) =>
+    apiReq<T>('POST', `/commands/${deviceId}`, { type }),
+  commands: <T = unknown>(deviceId: string) =>
+    apiReq<T>('GET', `/commands/${deviceId}`),
+  schedule: <T = unknown>(deviceId: string, type: string, run_at: string) =>
+    apiReq<T>('POST', `/commands/${deviceId}/schedule`, { type, run_at }),
+  schedules: <T = unknown>(deviceId: string) =>
+    apiReq<T>('GET', `/commands/${deviceId}/schedule`),
+  cancelSchedule: <T = unknown>(deviceId: string, id: string) =>
+    apiReq<T>('DELETE', `/commands/${deviceId}/schedule/${id}`),
+  telemetry: <T = unknown>(deviceId: string) =>
+    apiReq<T>('GET', `/telemetry/${deviceId}`),
 };

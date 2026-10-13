@@ -52,7 +52,7 @@ export default function ContactPage() {
           type: "error",
         });
       }
-    } catch (err) {
+    } catch {
       setStatus({
         text: `Network connection failed. Please contact support via email at ${SUPPORT_EMAIL}.`,
         type: "error",

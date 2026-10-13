@@ -34,7 +34,7 @@ export default function ChangelogPage() {
       {/* Main Content */}
       <main className="flex-1 max-w-2xl mx-auto px-4 py-16 w-full">
         <div className="mb-12 text-center md:text-left">
-          <h1 className="text-4xl font-extrabold text-zinc-100 tracking-tight">What's New</h1>
+          <h1 className="text-4xl font-extrabold text-zinc-100 tracking-tight">What&apos;s New</h1>
           <p className="text-zinc-400 text-sm mt-2">
             OnOffMyPC product updates, releases, and platform enhancements.
           </p>

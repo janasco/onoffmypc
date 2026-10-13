@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { api, ApiResponse } from "@/lib/api";
+import { api } from "@/lib/api";
+import { getPlatformInfo } from "@/lib/platform";
+import { toChartPoints, type TelemetrySample } from "@/lib/telemetry";
 
 interface Device {
   id: string;
@@ -31,38 +33,36 @@ interface AccountInfo {
   email_verified: boolean;
 }
 
-function getPlatformInfo(versionStr: string | null | undefined) {
-  if (!versionStr) return { platform: "Unknown", version: "N/A" };
-  const lower = versionStr.toLowerCase();
-  if (lower.includes("desktop-agent")) {
-    const match = versionStr.match(/desktop-agent\s+([^\s(]+)/i);
-    return {
-      platform: "Windows Software",
-      version: match ? match[1] : versionStr.replace(/desktop-agent\s+/i, ""),
-    };
-  }
-  if (lower.includes("esp32")) {
-    return {
-      platform: "ESP32",
-      version: versionStr.replace(/-esp32/i, ""),
-    };
-  }
-  if (lower.includes("esp8266")) {
-    return {
-      platform: "ESP8266",
-      version: versionStr.replace(/-esp8266/i, ""),
-    };
-  }
-  if (/^[0-9.]+/.test(versionStr)) {
-    return {
-      platform: "ESP32",
-      version: versionStr,
-    };
-  }
-  return {
-    platform: "Unknown",
-    version: versionStr,
-  };
+/** Returned by `POST /devices` — the device token is shown only once. */
+interface CreatedDevice {
+  id: string;
+  token: string;
+}
+
+interface PairCode {
+  code: string;
+  expires_at: string;
+}
+
+/** Latest telemetry snapshot from `GET /telemetry/:id`. */
+interface TelemetryPoint {
+  room_temp?: number | null;
+  room_humidity?: number | null;
+  rssi?: number | null;
+}
+
+interface CommandRecord {
+  id: string;
+  type: string;
+  status: string;
+  delivered?: boolean;
+  created_at: string;
+}
+
+/** `POST /commands/:deviceId` — `delivered` means socket-written, not PC-on. */
+interface CommandResult {
+  delivered: boolean;
+  reason?: string;
 }
 
 export default function DashboardPage() {
@@ -112,9 +112,9 @@ export default function DashboardPage() {
 
   // Device detail dialog state
   const [detailDevice, setDetailDevice] = useState<Device | null>(null);
-  const [detailHistory, setDetailHistory] = useState<any[]>([]);
-  const [detailCommands, setDetailCommands] = useState<any[]>([]);
-  const [detailTelemetry, setDetailTelemetry] = useState<any | null>(null);
+  const [detailHistory, setDetailHistory] = useState<TelemetrySample[]>([]);
+  const [detailCommands, setDetailCommands] = useState<CommandRecord[]>([]);
+  const [detailTelemetry, setDetailTelemetry] = useState<TelemetryPoint | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   const handleOpenDeviceDetail = async (device: Device) => {
@@ -125,9 +125,9 @@ export default function DashboardPage() {
     setDetailTelemetry(null);
     try {
       const [historyRes, commandsRes, telemetryRes] = await Promise.all([
-        api.history(device.id, 7),
-        api.commands(device.id),
-        api.telemetry(device.id),
+        api.history<TelemetrySample[]>(device.id, 7),
+        api.commands<CommandRecord[]>(device.id),
+        api.telemetry<TelemetryPoint>(device.id),
       ]);
       setDetailHistory(historyRes.data || []);
       setDetailCommands(commandsRes.data || []);
@@ -164,9 +164,12 @@ export default function DashboardPage() {
     }
   };
 
-  const loadData = async (quiet = false) => {
+  const loadData = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
-    const [meRes, devRes] = await Promise.all([api.me(), api.devices()]);
+    const [meRes, devRes] = await Promise.all([
+      api.me<AccountInfo>(),
+      api.devices<Device[]>(),
+    ]);
 
     if (meRes.status === 401) {
       router.push("/login");
@@ -181,13 +184,13 @@ export default function DashboardPage() {
       setOffline(true);
     }
     setLoading(false);
-  };
+  }, [router]);
 
   useEffect(() => {
     loadData();
     const interval = setInterval(() => loadData(true), 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadData]);
 
   const handleLogout = async () => {
     await api.logout();
@@ -197,10 +200,10 @@ export default function DashboardPage() {
   const handleAddDevice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDeviceName) return;
-    const { data, error } = await api.addDevice(newDeviceName);
+    const { data } = await api.addDevice<CreatedDevice>(newDeviceName);
     if (data) {
       // Fetch pairing code immediately
-      const codeRes = await api.pairCode(data.id);
+      const codeRes = await api.pairCode<{ code?: string }>(data.id);
       setCreatedCredentials({
         id: data.id,
         token: data.token,
@@ -212,7 +215,7 @@ export default function DashboardPage() {
   };
 
   const handleGetPairCode = async (id: string) => {
-    const { data } = await api.pairCode(id);
+    const { data } = await api.pairCode<PairCode>(id);
     if (data) {
       setPairCodeInfo(data);
       setPairOpen(true);
@@ -221,7 +224,7 @@ export default function DashboardPage() {
 
   const handleRotateToken = async (id: string) => {
     if (!confirm("Are you sure you want to replace this device's token? Pre-paired firmware will stop connecting until updated with the new token.")) return;
-    const { data } = await api.rotateToken(id);
+    const { data } = await api.rotateToken<{ token: string }>(id);
     if (data) {
       alert(`New token generated:\n${data.token}\n\nUpdate your firmware configuration.`);
       loadData(true);
@@ -240,7 +243,7 @@ export default function DashboardPage() {
     if (commandInFlight[deviceId]) return;
     setCommandInFlight((prev) => ({ ...prev, [deviceId]: true }));
     try {
-      const res = await api.sendCommand(deviceId, type);
+      const res = await api.sendCommand<CommandResult>(deviceId, type);
       const data = res.data;
       const error = res.error;
       if (error) {
@@ -263,8 +266,8 @@ export default function DashboardPage() {
         }
         loadData(true);
       }
-    } catch (err: any) {
-      showToast(err.message || "Failed to submit command.", "error");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Failed to submit command.", "error");
     } finally {
       setCommandInFlight((prev) => ({ ...prev, [deviceId]: false }));
     }
@@ -396,7 +399,7 @@ export default function DashboardPage() {
                   <div className="text-emerald-500 font-extrabold">Step 2</div>
                   <h4 className="font-semibold text-zinc-200">Add first device</h4>
                   <p className="text-zinc-400 text-xs">
-                    Click the "+ Add device" button to create your first endpoint.
+                    Click the &quot;+ Add device&quot; button to create your first endpoint.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 p-4 rounded-xl bg-zinc-950 border border-zinc-800/80">
@@ -463,7 +466,7 @@ export default function DashboardPage() {
           <div className="text-center text-zinc-400 py-16">Loading devices…</div>
         ) : devices.length === 0 ? (
           <div className="text-center text-zinc-500 py-20 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/10">
-            No devices configured yet. Click "+ Add device" to get started.
+            No devices configured yet. Click &quot;+ Add device&quot; to get started.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -948,15 +951,9 @@ export default function DashboardPage() {
   );
 }
 
-function HistoryTempChart({ history }: { history: any[] }) {
-  // Extract temp_avg values, filter out nulls/invalid values
-  const points = history
-    .map((h, i) => ({
-      index: i,
-      temp: h.temp_avg !== null ? Number(h.temp_avg) : null,
-      hour: h.hour,
-    }))
-    .filter((p) => p.temp !== null) as { index: number; temp: number; hour: string }[];
+function HistoryTempChart({ history }: { history: TelemetrySample[] }) {
+  // Extract temp_avg values, dropping null/invalid rows
+  const points = toChartPoints(history);
 
   if (points.length === 0) {
     return <div className="text-zinc-500 text-xs text-center py-4">No valid temperature points to display.</div>;

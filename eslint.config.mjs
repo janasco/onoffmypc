@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored third-party browser bundles (ESP Web Tools flasher). Committed
+    // as-is and never linted; they otherwise dominate the warning count.
+    "public/**",
   ]),
 ]);
 

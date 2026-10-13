@@ -12,26 +12,27 @@ function VerifyEmailInner() {
   const token = searchParams.get("token");
   const [verifying, setVerifying] = useState(true);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // A missing token is a render-time concern, so it is derived rather than
+  // written into state from an effect (which would cause a cascading render).
+  const missingToken = !token;
+  const verifyingNow = !missingToken && verifying;
+  const successNow = !missingToken && success;
+  const error = apiError ?? (missingToken ? "Verification token is missing." : null);
 
   useEffect(() => {
-    if (!token) {
-      setError("Verification token is missing.");
-      setVerifying(false);
-      return;
-    }
+    if (!token) return;
 
-    const runVerify = async () => {
-      const { error: apiError } = await api.verifyEmail(token);
+    let cancelled = false;
+    void (async () => {
+      const { error: err } = await api.verifyEmail(token);
+      if (cancelled) return;
       setVerifying(false);
-      if (apiError) {
-        setError(apiError);
-      } else {
-        setSuccess(true);
-      }
-    };
-
-    runVerify();
+      if (err) setApiError(err);
+      else setSuccess(true);
+    })();
+    return () => { cancelled = true; };
   }, [token]);
 
   return (
@@ -43,9 +44,9 @@ function VerifyEmailInner() {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 text-center">
-        {verifying ? (
+        {verifyingNow ? (
           <p className="text-zinc-400 py-6 text-sm">Verifying your email address, please wait…</p>
-        ) : success ? (
+        ) : successNow ? (
           <div className="flex flex-col gap-4 py-4">
             <span className="text-emerald-500 text-5xl">✓</span>
             <p className="text-zinc-300 text-sm">Your email address has been successfully verified! You can now use all dashboard fleet actions.</p>

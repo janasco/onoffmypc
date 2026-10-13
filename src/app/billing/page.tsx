@@ -32,36 +32,42 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
 
-  const loadBillingData = async () => {
-    setLoading(true);
-    const [statusRes, requestsRes] = await Promise.all([
-      api.billingStatus(),
-      api.billingRequests(),
-    ]);
-
-    if (statusRes.status === 401) {
-      router.push("/login");
-      return;
-    }
-
-    if (statusRes.data && Array.isArray(statusRes.data.devices)) {
-      setDevices(statusRes.data.devices);
-    }
-    if (requestsRes.data && Array.isArray(requestsRes.data)) {
-      setHistory(requestsRes.data);
-    }
-    setLoading(false);
-  };
+  interface BillingStatusResponse {
+    devices?: BillingDevice[];
+  }
 
   useEffect(() => {
-    loadBillingData();
-  }, []);
+    let cancelled = false;
+    void (async () => {
+      // `loading` starts as true, so the first state write happens only after
+      // the requests resolve — no cascading render on mount.
+      const [statusRes, requestsRes] = await Promise.all([
+        api.billingStatus<BillingStatusResponse>(),
+        api.billingRequests<BillingRequest[]>(),
+      ]);
+      if (cancelled) return;
+
+      if (statusRes.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (statusRes.data && Array.isArray(statusRes.data.devices)) {
+        setDevices(statusRes.data.devices);
+      }
+      if (requestsRes.data && Array.isArray(requestsRes.data)) {
+        setHistory(requestsRes.data);
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [router]);
 
   const handleCheckout = async (deviceId: string) => {
     if (checkoutBusy) return;
     setCheckoutBusy(true);
 
-    const { data, error } = await api.billingCheckout(deviceId);
+    const { data, error } = await api.billingCheckout<{ url?: string }>(deviceId);
     if (error || !data?.url) {
       alert(`Checkout failed: ${error || "Invalid response URL"}`);
       setCheckoutBusy(false);
@@ -69,16 +75,16 @@ export default function BillingPage() {
     }
 
     // Redirect directly to the secure checkout destination URL
-    window.location.href = data.url;
+    window.location.assign(data.url);
   };
 
   const handleOpenPortal = async () => {
-    const { data, error } = await api.billingPortal();
+    const { data, error } = await api.billingPortal<{ url?: string }>();
     if (error || !data?.url) {
       alert(`Portal load failed: ${error || "Invalid portal response"}`);
       return;
     }
-    window.location.href = data.url;
+    window.location.assign(data.url);
   };
 
   return (

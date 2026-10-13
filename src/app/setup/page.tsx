@@ -2,55 +2,68 @@
 
 import Link from "next/link";
 import Script from "next/script";
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+
+/**
+ * Minimal Web Serial surface used by this page. Only Chromium exposes
+ * `navigator.serial`, and the shipped DOM lib does not type it.
+ */
+interface SerialPortLike {
+  open(options: { baudRate: number }): Promise<void>;
+  close(): Promise<void>;
+  readonly readable: ReadableStream<Uint8Array> | null;
+}
+
+interface SerialLike {
+  getPorts(): Promise<SerialPortLike[]>;
+  requestPort(): Promise<SerialPortLike>;
+}
+
+function getSerial(): SerialLike | undefined {
+  return "serial" in navigator
+    ? (navigator as Navigator & { serial: SerialLike }).serial
+    : undefined;
+}
+
+/** Web Serial support is a browser capability, not React state. */
+function useSerialSupported(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => "serial" in navigator,
+    () => false,
+  );
+}
 
 export default function SetupPage() {
-  const [port, setPort] = useState<any>(null);
+  const [port, setPort] = useState<SerialPortLike | null>(null);
   const [logs, setLogs] = useState("");
   const [statusText, setStatusText] = useState("Not connected");
   const [statusClass, setStatusClass] = useState("text-zinc-400");
-  const [serialSupported, setSerialSupported] = useState(false);
+  const serialSupported = useSerialSupported();
 
   const keepReadingRef = useRef(false);
   const logEndRef = useRef<HTMLPreElement>(null);
 
-  useEffect(() => {
-    setSerialSupported("serial" in navigator);
-  }, []);
-
-  useEffect(() => {
-    if (logEndRef.current) {
-      logEndRef.current.scrollTop = logEndRef.current.scrollHeight;
-    }
-  }, [logs]);
-
-  // Reconnect automatically if one port is already authorized
-  useEffect(() => {
-    if ("serial" in navigator) {
-      (navigator as any).serial.getPorts().then((ports: any[]) => {
-        if (ports.length === 1) {
-          openPort(ports[0]);
-        }
-      }).catch(() => {});
-    }
-    return () => {
-      keepReadingRef.current = false;
-    };
-  }, []);
-
-  const openPort = async (selected: any) => {
+  const openPort = useCallback(async (selected: SerialPortLike | null) => {
     try {
-      const activePort = selected || (await (navigator as any).serial.requestPort());
+      const serial = getSerial();
+      const activePort = selected ?? (await serial?.requestPort());
+      if (!activePort) {
+        setStatusText("No port selected");
+        setStatusClass("text-red-400");
+        setPort(null);
+        return;
+      }
       await activePort.open({ baudRate: 115200 });
       setPort(activePort);
       setStatusText("Connected — press the board's RESET button to see boot logs");
       setStatusClass("text-emerald-400 font-semibold");
-      
+
       const decoder = new TextDecoder();
       keepReadingRef.current = true;
-      
+
       // Run the read loop in background
       (async () => {
         while (keepReadingRef.current && activePort.readable) {
@@ -80,21 +93,39 @@ export default function SetupPage() {
         setStatusText("Disconnected");
         setStatusClass("text-zinc-500");
       })();
-    } catch (e) {
+    } catch {
       if (!selected) {
         setStatusText("No port selected");
         setStatusClass("text-red-400");
       }
       setPort(null);
     }
-  };
+  }, []);
+
+  // Reconnect automatically if one port is already authorized.
+  useEffect(() => {
+    const serial = getSerial();
+    if (!serial) return;
+    serial.getPorts().then((ports) => {
+      if (ports.length === 1) openPort(ports[0]);
+    }).catch(() => {});
+    return () => {
+      keepReadingRef.current = false;
+    };
+  }, [openPort]);
+
+  useEffect(() => {
+    if (logEndRef.current) {
+      logEndRef.current.scrollTop = logEndRef.current.scrollHeight;
+    }
+  }, [logs]);
 
   const handleDisconnect = async () => {
     keepReadingRef.current = false;
     if (port) {
       try {
         await port.close();
-      } catch (e) {}
+      } catch {}
       setPort(null);
     }
     setStatusText("Disconnected");
@@ -196,7 +227,7 @@ export default function SetupPage() {
             <div className="flex-1 pt-1">
               <h3 className="text-lg font-bold text-zinc-100">Identify your PC MAC Address</h3>
               <p className="text-zinc-400 text-sm mt-1">
-                Wake-on-LAN packets target your motherboard adapter's physical MAC address.
+                Wake-on-LAN packets target your motherboard adapter&apos;s physical MAC address.
               </p>
               <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card className="bg-zinc-900/40 border-zinc-800 p-3">
@@ -228,7 +259,7 @@ export default function SetupPage() {
 
               {/* Install Button Wrapper */}
               <div className="my-4">
-                {/* @ts-ignore */}
+                {/* @ts-expect-error custom element provided by the vendored ESP Web Tools bundle */}
                 <esp-web-install-button manifest="/firmware/manifest.json">
                   <Button slot="activate" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 px-5 cursor-pointer">
                     ⚡ One-Click Flash
@@ -239,7 +270,7 @@ export default function SetupPage() {
                   <span slot="not-allowed" className="text-xs text-amber-500 block mt-2">
                     ⚠️ Flashing requires an active secure (HTTPS) connection.
                   </span>
-                {/* @ts-ignore */}
+                {/* @ts-expect-error closing tag of the custom element above */}
                 </esp-web-install-button>
               </div>
 
@@ -268,8 +299,8 @@ export default function SetupPage() {
                 Upon rebooting, the board creates a temporary hot-spot named <strong>OnOffMyPC-XXXXXX</strong>. Join this network using a phone or laptop.
               </p>
               <p className="text-zinc-400 text-sm mt-2">
-                A configuration page should open automatically. If it doesn't, navigate to{" "}
-                <code className="text-zinc-200">http://192.168.4.1</code>. Select your local Wi-Fi, enter your password, paste the pairing code, configure the target PC's MAC address, and input the 6-digit setup PIN. Click <strong>Save &amp; Connect</strong> to finalize.
+                A configuration page should open automatically. If it doesn&apos;t, navigate to{" "}
+                <code className="text-zinc-200">http://192.168.4.1</code>. Select your local Wi-Fi, enter your password, paste the pairing code, configure the target PC&apos;s MAC address, and input the 6-digit setup PIN. Click <strong>Save &amp; Connect</strong> to finalize.
               </p>
 
               {/* Web Serial Logs Console */}

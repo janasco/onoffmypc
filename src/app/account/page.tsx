@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -35,8 +35,9 @@ export default function AccountPage() {
   const [pwSuccess, setPwSuccess] = useState<string | null>(null);
   const [pwLoading, setPwLoading] = useState(false);
 
-  // Countdown timer for deletion
-  const [countdown, setCountdown] = useState("");
+  // Countdown timer for deletion. Only the clock tick is state; the displayed
+  // string is derived from it.
+  const [now, setNow] = useState(() => Date.now());
 
   // Deletion Modal
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -44,46 +45,46 @@ export default function AccountPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const loadProfile = async () => {
-    setLoading(true);
-    const { data, status } = await api.me();
-    if (status === 401) {
-      router.push("/login");
-      return;
-    }
-    if (data) setProfile(data);
-    setLoading(false);
-  };
-
   useEffect(() => {
-    loadProfile();
-  }, []);
-
-  useEffect(() => {
-    if (!profile?.deletion_at) {
-      setCountdown("");
-      return;
-    }
-
-    const target = new Date(profile.deletion_at).getTime();
-    const tick = () => {
-      const ms = target - Date.now();
-      if (ms <= 0) {
-        setCountdown("Deleting now…");
+    let cancelled = false;
+    void (async () => {
+      // `loading` starts as true, so the first state write happens only after
+      // the request resolves — no cascading render on mount.
+      const { data, status } = await api.me<UserProfile>();
+      if (cancelled) return;
+      if (status === 401) {
+        router.push("/login");
         return;
       }
-      const s = Math.floor(ms / 1000);
-      const d = Math.floor(s / 86400);
-      const h = Math.floor((s % 86400) / 3600);
-      const m = Math.floor((s % 3600) / 60);
-      const sec = s % 60;
-      setCountdown(`${d}d ${h}h ${m}m ${sec}s`);
-    };
+      if (data) setProfile(data);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [router]);
 
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [profile?.deletion_at]);
+  // Derived from the profile, so the timer and the rendered string always agree.
+  const deletionAt = profile?.deletion_at ?? null;
+
+  useEffect(() => {
+    if (!deletionAt) return;
+
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [deletionAt]);
+
+  const countdown = useMemo(() => {
+    if (!deletionAt) return "";
+
+    const ms = new Date(deletionAt).getTime() - now;
+    if (ms <= 0) return "Deleting now…";
+
+    const s = Math.floor(ms / 1000);
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${d}d ${h}h ${m}m ${sec}s`;
+  }, [deletionAt, now]);
 
   const handleResendVerify = async () => {
     await api.resendVerify();
@@ -173,7 +174,7 @@ export default function AccountPage() {
     setDeleteError(null);
     setDeleteLoading(true);
 
-    const { data, error } = await api.deleteAccount();
+    const { data, error } = await api.deleteAccount<{ deletion_at: string }>();
     setDeleteLoading(false);
 
     if (error) {
@@ -181,8 +182,7 @@ export default function AccountPage() {
     } else {
       setDeleteOpen(false);
       setDeleteConfirmEmail("");
-      if (profile && data) setProfile({ ...profile, deletion_at: data.deletion_at });
-      alert("Account scheduled for deletion. You can cancel any time before the timer ends.");
+      if (profile && data) setProfile({ ...profile, deletion_at: data.deletion_at });      alert("Account scheduled for deletion. You can cancel any time before the timer ends.");
     }
   };
 
