@@ -69,6 +69,8 @@ struct PowerCommandControls: View {
         case .powerOffForce: return "exclamationmark.octagon"
         case .reset: return "arrow.clockwise"
         case .sleep: return "moon.fill"
+        case .lock: return "lock.fill"
+        case .logout: return "rectangle.portrait.and.arrow.right"
         }
     }
 
@@ -84,6 +86,10 @@ struct PowerCommandControls: View {
             return "This asks “\(deviceName)” to turn the PC on."
         case .sleep:
             return "This asks “\(deviceName)” to sleep. Open apps stay in memory; nothing is closed."
+        case .lock:
+            return "This will lock the current user session on “\(deviceName)”."
+        case .logout:
+            return "This will log out the current user session on “\(deviceName)”. Unsaved work could be lost."
         }
     }
 }
