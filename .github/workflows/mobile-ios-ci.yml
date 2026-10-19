@@ -1,32 +1,40 @@
-name: iOS CI
+name: Mobile (iOS) CI
 
+# Path-filtered to the iOS component. Moved from mobile/.github/workflows/
+# during the repository consolidation (GitHub only reads workflows from the
+# repository root).
+#
 # Builds the iOS app (simulator, unsigned) on GitHub's macOS runners so
 # breakages surface without a local Mac. The Xcode project is generated from
-# ios/project.yml by XcodeGen and is never committed.
+# mobile/ios/project.yml by XcodeGen and is never committed.
 
 on:
   push:
     branches: [main]
-    paths: ['ios/**', '.github/workflows/ios-ci.yml']
+    paths: ['mobile/ios/**', '.github/workflows/mobile-ios-ci.yml']
   pull_request:
-    paths: ['ios/**', '.github/workflows/ios-ci.yml']
+    paths: ['mobile/ios/**', '.github/workflows/mobile-ios-ci.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     # macos-15 ships Xcode 16, which reads XcodeGen's current project format (77).
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install XcodeGen
         run: brew install xcodegen
 
       - name: Generate Xcode project
-        working-directory: ios
+        working-directory: mobile/ios
         run: xcodegen generate
 
       - name: Build (iOS Simulator, unsigned)
-        working-directory: ios
+        working-directory: mobile/ios
         run: |
           xcodebuild build \
             -project OnOffMyPC.xcodeproj \

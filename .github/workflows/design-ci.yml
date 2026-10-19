@@ -1,0 +1,52 @@
+name: Design system CI
+
+# Path-filtered to the design component. Moved from
+# design/.github/workflows/ during the repository consolidation (GitHub only
+# reads workflows from the repository root).
+#
+# The "generated output is committed" step runs `git diff --exit-code` against
+# the whole repo; the paths filter keeps it meaningful by only running when the
+# design sources or their committed artifacts change.
+
+on:
+  push:
+    branches: [main]
+    paths: ['design/**', '.github/workflows/design-ci.yml']
+  pull_request:
+    paths: ['design/**', '.github/workflows/design-ci.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: design
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v4
+        with:
+          node-version: 22
+
+      - name: Validate generated artifacts
+        run: npm run check
+
+      - name: Test build and consumer tooling with standalone fixtures
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      # The design package generates artifacts into its consumers (web, mobile,
+      # firmware). A build that changes tracked output means the generated files
+      # were not committed alongside their source.
+      - name: Generated output is committed
+        working-directory: .
+        run: |
+          if ! git diff --exit-code -- design; then
+            echo "::error::Generated design artifacts are out of date. Run 'npm run build' in design/ and commit the result."
+            exit 1
+          fi
