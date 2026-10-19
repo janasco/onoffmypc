@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://onoffmypc.com/schemas/design-tokens.json",
+  "title": "OnOffMyPC design tokens",
+  "type": "object",
+  "required": ["version", "color", "space", "radius", "font", "motion"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://onoffmypc.com/schemas/generated-design-manifest.schema.json",
+  "title": "OnOffMyPC generated design artifact manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "designVersion", "generatedAt", "sources", "artifacts"],
+  "properties": {
+    "$schema": { "const": "../schema/generated-manifest.schema.json" },
+    "designVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$" },
+    "generatedAt": { "type": "string", "minLength": 1 },
+    "sources": { "$ref": "#/$defs/digests" },
+    "artifacts": { "$ref": "#/$defs/digests" }
+  },
+  "$defs": {
+    "digests": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    }
+  }
+}

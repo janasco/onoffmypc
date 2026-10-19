@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>OnOffMyPC Design Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&amp;family=Source+Sans+3:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dist/web/onoffmypc-tokens.css">
+  <link rel="stylesheet" href="../dist/web/onoffmypc-states.css">
+  <link rel="stylesheet" href="../dist/web/onoffmypc-a11y.css">
+  <link rel="stylesheet" href="gallery.css">
+  <script src="gallery.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#top">Skip to gallery</a>
+  <nav aria-label="Design gallery controls">
+    <div class="nav-inner">
+      <a class="brand" href="#top">OnOffMyPC <span>Design 0.1</span></a>
+      <div class="preference-toolbar">
+        <div class="segmented" role="group" aria-label="Color theme">
+          <button class="compact secondary" type="button" data-theme-choice="system" aria-pressed="true">System</button>
+          <button class="compact secondary" type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+          <button class="compact secondary" type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+        </div>
+        <button id="contrast-toggle" class="compact secondary" type="button" aria-pressed="false">More contrast</button>
+        <button id="forced-colors-toggle" class="compact secondary" type="button" aria-pressed="false">Preview system colors</button>
+        <button id="motion-toggle" class="compact secondary" type="button" aria-pressed="false">Reduce motion</button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top">
+    <header class="hero">
+      <p class="eyebrow">Cross-platform control language</p>
+      <h1>Calm controls. Honest device state.</h1>
+      <p class="lead">Blue shows what a person can request. Operational color shows only what the system can prove.</p>
+      <div class="button-row">
+        <button class="primary" type="button">Add a device</button>
+        <a class="button-link secondary" href="#components">View component patterns</a>
+      </div>
+      <p id="preferences-status" class="visually-hidden" aria-live="polite"></p>
+    </header>
+
+    <section aria-labelledby="foundations-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">Foundations</p><h2 id="foundations-title">Semantic color roles</h2></div>
+        <p>Values adapt with the selected theme.</p>
+      </div>
+      <div class="swatches">
+        <div class="swatch"><span class="canvas"></span><strong>Canvas</strong><small>Page background</small></div>
+        <div class="swatch"><span class="surface"></span><strong>Surface</strong><small>Grouped content</small></div>
+        <div class="swatch"><span class="action"></span><strong>Action</strong><small>Navigation and intent</small></div>
+        <div class="swatch"><span class="positive"></span><strong>Positive</strong><small>Verified outcome</small></div>
+        <div class="swatch"><span class="attention"></span><strong>Attention</strong><small>Queued or stale</small></div>
+        <div class="swatch"><span class="critical"></span><strong>Critical</strong><small>Failed or destructive</small></div>
+      </div>
+      <details class="token-catalog" open>
+        <summary>Complete semantic and foundation token catalog</summary>
+        <p>Every public role appears once here. Primitive palette values are intentionally excluded from consumer APIs.</p>
+
+        <div class="token-family">
+          <h3>Adaptive color roles</h3>
+          <div class="token-role-grid color-role-grid">
+            <code class="role-canvas" data-token-role="color.background.canvas">background.canvas</code>
+            <code class="role-surface" data-token-role="color.background.surface">background.surface</code>
+            <code class="role-subtle" data-token-role="color.background.subtle">background.subtle</code>
+            <code class="role-muted" data-token-role="color.background.muted">background.muted</code>
+            <code class="role-inverse" data-token-role="color.background.inverse">background.inverse</code>
+            <code data-token-role="color.border.default">border.default</code>
+            <code class="strong-role" data-token-role="color.border.strong">border.strong</code>
+            <code data-token-role="color.text.primary">text.primary</code>
+            <code class="secondary-text-role" data-token-role="color.text.secondary">text.secondary</code>
+            <code class="inverse-text-role" data-token-role="color.text.inverse">text.inverse</code>
+            <code class="link-role" data-token-role="color.text.link">text.link</code>
+            <code class="action-primary-role" data-token-role="color.action.primary.background">action.primary.background</code>
+            <code class="action-primary-role" data-token-role="color.action.primary.foreground">action.primary.foreground</code>
+            <code class="action-primary-hover-role" data-token-role="color.action.primary.hover">action.primary.hover</code>
+            <code class="action-secondary-role" data-token-role="color.action.secondary.background">action.secondary.background</code>
+            <code class="action-secondary-role" data-token-role="color.action.secondary.foreground">action.secondary.foreground</code>
+            <code class="action-secondary-role" data-token-role="color.action.secondary.border">action.secondary.border</code>
+            <code class="action-danger-role" data-token-role="color.action.danger.background">action.danger.background</code>
+            <code class="action-danger-role" data-token-role="color.action.danger.foreground">action.danger.foreground</code>
+            <code class="action-danger-hover-role" data-token-role="color.action.danger.hover">action.danger.hover</code>
+            <code class="positive-role" data-token-role="color.status.positive.foreground">status.positive.foreground</code>
+            <code class="positive-role" data-token-role="color.status.positive.container">status.positive.container</code>
+            <code class="attention-role" data-token-role="color.status.attention.foreground">status.attention.foreground</code>
+            <code class="attention-role" data-token-role="color.status.attention.container">status.attention.container</code>
+            <code class="critical-role" data-token-role="color.status.critical.foreground">status.critical.foreground</code>
+            <code class="critical-role" data-token-role="color.status.critical.container">status.critical.container</code>
+            <code class="info-role" data-token-role="color.status.info.foreground">status.info.foreground</code>
+            <code class="info-role" data-token-role="color.status.info.container">status.info.container</code>
+            <code class="neutral-role" data-token-role="color.status.neutral.foreground">status.neutral.foreground</code>
+            <code class="neutral-role" data-token-role="color.status.neutral.container">status.neutral.container</code>
+            <code class="power-on-role" data-token-role="color.power.on.background">power.on.background</code>
+            <code class="power-on-role" data-token-role="color.power.on.foreground">power.on.foreground</code>
+            <code class="power-off-role" data-token-role="color.power.off.background">power.off.background</code>
+            <code class="power-off-role" data-token-role="color.power.off.foreground">power.off.foreground</code>
+            <code class="power-reset-role" data-token-role="color.power.reset.background">power.reset.background</code>
+            <code class="power-reset-role" data-token-role="color.power.reset.foreground">power.reset.foreground</code>
+            <code class="focus-role" data-token-role="color.focus.ring">focus.ring</code>
+          </div>
+        </div>
+
+        <div class="token-family">
+          <h3>Spacing, shape, and targets</h3>
+          <div class="scale-groups">
+            <div class="scale-group spacing-tokens" aria-label="Spacing scale">
+              <span style="--sample-size:4px"><i></i><code data-token-role="space.1">space.1</code></span>
+              <span style="--sample-size:8px"><i></i><code data-token-role="space.2">space.2</code></span>
+              <span style="--sample-size:12px"><i></i><code data-token-role="space.3">space.3</code></span>
+              <span style="--sample-size:16px"><i></i><code data-token-role="space.4">space.4</code></span>
+              <span style="--sample-size:20px"><i></i><code data-token-role="space.5">space.5</code></span>
+              <span style="--sample-size:24px"><i></i><code data-token-role="space.6">space.6</code></span>
+              <span style="--sample-size:32px"><i></i><code data-token-role="space.8">space.8</code></span>
+              <span style="--sample-size:48px"><i></i><code data-token-role="space.12">space.12</code></span>
+            </div>
+            <div class="scale-group radius-tokens" aria-label="Radius scale">
+              <span style="--sample-radius:var(--omp-radius-compact)"><i></i><code data-token-role="radius.compact">radius.compact</code></span>
+              <span style="--sample-radius:var(--omp-radius-small)"><i></i><code data-token-role="radius.small">radius.small</code></span>
+              <span style="--sample-radius:var(--omp-radius-control)"><i></i><code data-token-role="radius.control">radius.control</code></span>
+              <span style="--sample-radius:var(--omp-radius-card)"><i></i><code data-token-role="radius.card">radius.card</code></span>
+              <span style="--sample-radius:var(--omp-radius-large)"><i></i><code data-token-role="radius.large">radius.large</code></span>
+              <span style="--sample-radius:var(--omp-radius-pill)"><i></i><code data-token-role="radius.pill">radius.pill</code></span>
+            </div>
+            <div class="scale-group control-tokens" aria-label="Control sizes">
+              <span><i class="minimum-target">44</i><code data-token-role="size.control.minimum">control.minimum</code></span>
+              <span><i class="comfortable-target">48</i><code data-token-role="size.control.comfortable">control.comfortable</code></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="token-family">
+          <h3>Typography</h3>
+          <div class="type-tokens">
+            <span class="family-display">Display <code data-token-role="font.family.display">family.display</code></span>
+            <span class="family-body">Body <code data-token-role="font.family.body">family.body</code></span>
+            <span class="family-mono">PAIR-482-119 <code data-token-role="font.family.mono">family.mono</code></span>
+            <span class="size-caption">Caption <code data-token-role="font.size.caption">size.caption</code></span>
+            <span class="size-label">Label <code data-token-role="font.size.label">size.label</code></span>
+            <span class="size-body">Body <code data-token-role="font.size.body">size.body</code></span>
+            <span class="size-lead">Lead <code data-token-role="font.size.lead">size.lead</code></span>
+            <span class="size-title">Title <code data-token-role="font.size.title">size.title</code></span>
+            <span class="size-display">Display <code data-token-role="font.size.display">size.display</code></span>
+            <span class="weight-regular">Regular <code data-token-role="font.weight.regular">weight.regular</code></span>
+            <span class="weight-medium">Medium <code data-token-role="font.weight.medium">weight.medium</code></span>
+            <span class="weight-semibold">Semibold <code data-token-role="font.weight.semibold">weight.semibold</code></span>
+            <span class="weight-bold">Bold <code data-token-role="font.weight.bold">weight.bold</code></span>
+            <span class="line-tight">Tight heading line height <code data-token-role="font.lineHeight.tight">lineHeight.tight</code></span>
+            <span class="line-standard">Standard interface line height <code data-token-role="font.lineHeight.standard">lineHeight.standard</code></span>
+            <span class="line-relaxed">Relaxed instructional line height <code data-token-role="font.lineHeight.relaxed">lineHeight.relaxed</code></span>
+          </div>
+        </div>
+
+        <div class="token-family">
+          <h3>Motion and elevation</h3>
+          <div class="motion-shadow-tokens">
+            <span><i class="motion-sample instant"></i><code data-token-role="motion.duration.instant">duration.instant</code></span>
+            <span><i class="motion-sample fast"></i><code data-token-role="motion.duration.fast">duration.fast</code></span>
+            <span><i class="motion-sample standard"></i><code data-token-role="motion.duration.standard">duration.standard</code></span>
+            <span><i class="motion-sample deliberate"></i><code data-token-role="motion.duration.deliberate">duration.deliberate</code></span>
+            <span><i class="easing-sample"></i><code data-token-role="motion.easing.standard">easing.standard</code></span>
+            <span class="shadow-sample surface-shadow"><i></i><code data-token-role="shadow.surface">shadow.surface</code></span>
+            <span class="shadow-sample overlay-shadow"><i></i><code data-token-role="shadow.overlay">shadow.overlay</code></span>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section id="components" aria-labelledby="device-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">Reference component</p><h2 id="device-title">Device status summary</h2></div>
+        <p>Connection, last contact, and PC state stay independent.</p>
+      </div>
+      <article class="device-card">
+        <div class="device-heading">
+          <div><p class="meta">Office</p><h3>Workstation</h3></div>
+          <span class="omp-status" data-omp-tone="positive">Online</span>
+        </div>
+        <div class="status-grid">
+          <div><span class="meta">Last contact</span><strong>Just now</strong></div>
+          <div><span class="meta">PC state</span><strong>On · reported 40s ago</strong></div>
+          <div><span class="meta">Firmware</span><strong>1.3.6</strong></div>
+        </div>
+        <div class="power-grid">
+          <button class="power-on" type="button">Power On</button>
+          <button class="danger-soft" type="button">Power Off</button>
+          <button class="secondary" type="button">Reset</button>
+          <button class="danger-outline" type="button">Force Off</button>
+        </div>
+      </article>
+    </section>
+
+    <section aria-labelledby="command-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">Trust-critical state</p><h2 id="command-title">Command lifecycle</h2></div>
+        <p>Acknowledgement is informational until the PC reports a result.</p>
+      </div>
+      <ol class="timeline">
+        <li><span class="omp-status" data-omp-tone="attention">Queued</span><p>Power On is queued for Workstation. It expires at 14:32.</p></li>
+        <li><span class="omp-status" data-omp-tone="info">Awaiting acknowledgement</span><p>The request was written to the device connection.</p></li>
+        <li><span class="omp-status" data-omp-tone="info">Device acknowledged</span><p>PC state is not yet confirmed.</p></li>
+        <li><span class="omp-status" data-omp-tone="positive">PC state confirmed</span><p>Reserved for command-linked telemetry evidence.</p></li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="form-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">Native-friendly pattern</p><h2 id="form-title">Form and feedback</h2></div>
+      </div>
+      <div class="form-card">
+        <label for="device-name">Device name</label>
+        <input id="device-name" value="Workstation">
+        <p class="help">Use a name you will recognize in command confirmations.</p>
+        <div class="banner" role="status"><strong>Device acknowledged.</strong> PC state has not yet been confirmed.</div>
+        <button class="primary" type="button">Save changes</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

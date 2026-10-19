@@ -1,0 +1,38 @@
+{
+  "$schema": "./schema/consumers.schema.json",
+  "designVersion": "0.1.0",
+  "artifacts": {
+    "dist/web/onoffmypc-tokens.css": [
+      "onoffmypc-web/css/onoffmypc-tokens.css",
+      "onoffmypc-web/app/css/onoffmypc-tokens.css",
+      "onoffmypc-web/admin/css/onoffmypc-tokens.css"
+    ],
+    "dist/web/onoffmypc-states.css": [
+      "onoffmypc-web/css/onoffmypc-states.css",
+      "onoffmypc-web/app/css/onoffmypc-states.css",
+      "onoffmypc-web/admin/css/onoffmypc-states.css"
+    ],
+    "dist/assets/onoffmypc-mark.svg": [
+      "onoffmypc-web/favicon.svg",
+      "onoffmypc-web/app/favicon.svg"
+    ],
+    "dist/compose/OnOffTokens.kt": [
+      "onoffmypc-mobile/android/app/src/main/kotlin/com/onoffmypc/design/generated/OnOffTokens.kt"
+    ],
+    "dist/compose/OnOffStates.kt": [
+      "onoffmypc-mobile/android/app/src/main/kotlin/com/onoffmypc/design/generated/OnOffStates.kt"
+    ],
+    "dist/swift/OnOffTokens.swift": [
+      "onoffmypc-mobile/ios/OnOffMyPC/Design/Generated/OnOffTokens.swift"
+    ],
+    "dist/swift/OnOffStates.swift": [
+      "onoffmypc-mobile/ios/OnOffMyPC/Design/Generated/OnOffStates.swift"
+    ],
+    "dist/firmware/onoff_design_tokens.h": [
+      "onoffmypc-firmware/src/generated/onoff_design_tokens.h"
+    ],
+    "dist/email/onoffEmailTokens.ts": [
+      "onoffmypc-app/src/generated/onoffEmailTokens.ts"
+    ]
+  }
+}

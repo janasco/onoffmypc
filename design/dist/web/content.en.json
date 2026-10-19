@@ -1,0 +1,50 @@
+{
+  "version": "0.1.0",
+  "command": {
+    "requested": "{action} requested for {device}.",
+    "pending": "{action} is queued for {device}. It expires at {expiresAt}.",
+    "sent": "{action} was sent to the device. Waiting for acknowledgement.",
+    "delivered": "The device acknowledged {action} at {acknowledgedAt}. PC state is not yet confirmed.",
+    "expired": "{action} expired before the device acknowledged it. No further attempt will be made.",
+    "confirmed": "{device} reported {pcState} at {observedAt}.",
+    "submitting": "Submitting {action} for {device}…"
+  },
+  "connection": {
+    "online": "Connected to the OnOffMyPC service.",
+    "offline": "Offline. Last contact {lastContactAt}.",
+    "unknown": "Live connection status is temporarily unavailable."
+  },
+  "pc": {
+    "current": "{state} · reported {observedAt}",
+    "stale": "Last reported {state} · {observedAt}",
+    "unknown": "PC state has not been reported."
+  },
+  "confirmation": {
+    "power_off_title": "Power Off “{device}”?",
+    "power_off_body": "This sends a normal power-button press to {device}.",
+    "reset_title": "Reset “{device}”?",
+    "reset_body": "This immediately triggers the connected PC reset control and can interrupt active work.",
+    "force_off_title": "Force Off “{device}”?",
+    "force_off_body": "This holds the power control for six seconds. Unsaved work may be lost; use normal Power Off first when possible.",
+    "cancel": "Cancel"
+  },
+  "credentials": {
+    "title": "Save the device credentials",
+    "warning": "The token is shown once. Keep it private and use the pairing code for normal setup.",
+    "copied": "Copied. Clear it from clipboard history after setup.",
+    "manual_fallback": "Advanced manual setup"
+  },
+  "billing": {
+    "trial_active": "Trial active for {device} through {endsAt}.",
+    "trial_expired": "The trial for {device} has ended.",
+    "checkout_pending": "Payment is processing. Returning from checkout does not confirm access; refresh after payment completes.",
+    "unlocked": "{device} is unlocked.",
+    "free": "Device control is included."
+  },
+  "errors": {
+    "network": "Couldn’t reach OnOffMyPC. Check your connection and try again.",
+    "service": "OnOffMyPC is temporarily unavailable. Your last known information is shown where possible.",
+    "partial": "Some information could not be refreshed.",
+    "session": "Your session expired. Sign in again to continue."
+  }
+}

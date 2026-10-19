@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://onoffmypc.com/schemas/presentation-states.json",
+  "title": "OnOffMyPC presentation state catalog",
+  "type": "object",
+  "required": ["version", "connection", "pc", "command", "provisioning", "access", "commandAction"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+  },
+  "additionalProperties": true
+}
