@@ -1,0 +1,117 @@
+name: Release APK
+
+# On an app version tag (app-vX.Y.Z), build a signed release APK and publish it
+# to the shared public release repo onoffmypc/onoffmypc-release (which also hosts
+# the firmware binaries). App tags are prefixed 'app-v' so they don't collide
+# with the firmware's 'fw-v' tags. The tag's version must match versionName in
+# android/app/build.gradle.kts (checked first, so a mismatched tag fails fast).
+#
+# Required repository secrets:
+#   RELEASE_REPO_TOKEN       PAT with contents:write on onoffmypc/onoffmypc-release
+#   ANDROID_KEYSTORE_BASE64  base64 of the release keystore (.jks)
+#   KEYSTORE_PASSWORD        keystore password
+#   KEY_ALIAS                key alias
+#   KEY_PASSWORD             key password
+# See RELEASE.md for how to generate the keystore and set these.
+
+on:
+  push:
+    tags: ['app-v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # let the built-in GITHUB_TOKEN publish a Release here
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify tag matches versionName
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#app-v}"
+          APP_VERSION="$(grep -oE 'versionName = "[^"]+"' android/app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')"
+          if [ "$TAG_VERSION" != "$APP_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME (version $TAG_VERSION) does not match versionName $APP_VERSION"
+            exit 1
+          fi
+          echo "VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      # Pin the SDK platform the build targets. Google Play requires
+      # targetSdk 36 (Android 16) from 31 Aug 2026, so a runner image that
+      # still ships only API 35 must not silently produce an un-publishable
+      # artifact.
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Decode release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        working-directory: android
+        env:
+          KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew :app:assembleRelease --no-daemon
+
+      - name: Build release notes from CHANGELOG
+        run: |
+          NOTES="$RUNNER_TEMP/notes.md"
+          bash scripts/release-notes.sh "$VERSION" > "$NOTES" || true
+          if [ ! -s "$NOTES" ]; then
+            echo "OnOffMyPC Android ${VERSION}." > "$NOTES"
+          fi
+          printf '\n---\nInstall on a device with "Install unknown apps" enabled.\n' >> "$NOTES"
+          echo "NOTES_FILE=$NOTES" >> "$GITHUB_ENV"
+          echo "----- release notes -----"; cat "$NOTES"
+
+      - name: Stage the APK
+        run: |
+          APK="$(ls android/app/build/outputs/apk/release/*.apk | head -1)"
+          cp "$APK" "onoffmypc-android-${VERSION}.apk"
+
+      # Always available, even if the cross-repo token is expired: download the
+      # APK straight from this workflow run's "Artifacts".
+      - name: Upload APK as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: onoffmypc-android-${{ env.VERSION }}
+          path: onoffmypc-android-${{ env.VERSION }}.apk
+
+      # Primary published home for the APK: this repo's own Releases, using the
+      # built-in GITHUB_TOKEN (no PAT needed, so it can't be broken by a stale
+      # RELEASE_REPO_TOKEN).
+      - name: Publish Release on this repo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "Android ${GITHUB_REF_NAME}" \
+            --notes-file "$NOTES_FILE" \
+            "onoffmypc-android-${VERSION}.apk" \
+          || gh release upload "${GITHUB_REF_NAME}" "onoffmypc-android-${VERSION}.apk" --clobber
+
+      # Best-effort mirror to the shared public release repo. Non-blocking so an
+      # expired RELEASE_REPO_TOKEN never fails the build (rotate it to re-enable).
+      - name: Mirror to the shared release repo
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --repo onoffmypc/onoffmypc-release \
+            --title "Android ${GITHUB_REF_NAME}" \
+            --notes-file "$NOTES_FILE" \
+            "onoffmypc-android-${VERSION}.apk"

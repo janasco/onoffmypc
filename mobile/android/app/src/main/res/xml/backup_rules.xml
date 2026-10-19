@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pre-Android 12 backup rules. Mirrors data_extraction_rules.xml: the app
+  stores an encrypted session token and device credentials, so nothing is
+  eligible for cloud backup, adb backup, or device transfer on API 26-30.
+  This is belt-and-braces with android:allowBackup="false".
+-->
+<full-backup-content>
+    <exclude domain="root" />
+    <exclude domain="database" />
+    <exclude domain="sharedpref" />
+    <exclude domain="file" />
+    <exclude domain="external" />
+</full-backup-content>

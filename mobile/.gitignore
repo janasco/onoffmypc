@@ -1,0 +1,30 @@
+*.iml
+.gradle/
+.kotlin/
+/local.properties
+/.idea/
+.DS_Store
+build/
+/captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+app/build/
+*.keystore
+!debug.keystore
+key.properties
+keystore.properties
+*.jks
+.env*
+!.env.example
+
+# Local-only secrets runbook (never commit)
+SECRETS.md
+
+# iOS (Xcode / XcodeGen — .xcodeproj and Info.plist are generated from project.yml)
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+*.xcuserstate
+ios/OnOffMyPC/Info.plist

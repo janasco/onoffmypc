@@ -1,0 +1,79 @@
+# Releasing the Android app
+
+A version tag `app-vX.Y.Z` builds a **signed release APK** and publishes it to the
+public release repo `onoffmypc/onoffmypc-release` (shared with the firmware). Tags
+are prefixed `app-v` so they don't collide with firmware `fw-v` tags.
+
+## One-time setup
+
+### 1. Generate an upload/signing keystore
+Keep this file safe and **never commit it** — losing it means you can't update the
+app on the same signing identity.
+
+```bash
+keytool -genkeypair -v \
+  -keystore android/onoffmypc-release.jks \
+  -alias onoffmypc \
+  -keyalg RSA -keysize 2048 -validity 10000
+# choose a strong keystore password + key password (can be the same)
+```
+
+### 2. Add GitHub Actions secrets (on the onoffmypc-mobile repo)
+| Secret | Value |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 onoffmypc-release.jks` (Linux) / `base64 -i onoffmypc-release.jks` (macOS) |
+| `KEYSTORE_PASSWORD` | the keystore password |
+| `KEY_ALIAS` | `onoffmypc` |
+| `KEY_PASSWORD` | the key password |
+| `RELEASE_REPO_TOKEN` | a fine-grained PAT with **contents: write** on `onoffmypc/onoffmypc-release` |
+
+If `android/keystore.properties` and `android/onoffmypc-release.jks` already
+exist, import them into the gitignored root `.env` without printing secrets:
+
+```bash
+bash scripts/import-android-keystore.sh
+```
+
+This fills `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`, and
+`ANDROID_KEYSTORE_BASE64`, and restricts `.env`, the properties file, and the JKS
+to mode `0600`. To upload the four CI signing secrets from `.env` afterward:
+
+```bash
+bash scripts/set-android-secrets.sh
+```
+
+## Cutting a release
+1. Bump `versionCode` (and `versionName` if the number changes) in `app/build.gradle.kts`.
+2. Add a `CHANGELOG.md` entry.
+3. Tag and push — the tag version must match `versionName`:
+   ```bash
+   git commit -am "release: app v0.1.0"
+   git tag app-v0.1.0
+   git push origin main app-v0.1.0
+   ```
+The workflow verifies the tag matches `versionName`, builds `:app:assembleRelease`
+(signed with the keystore), and creates the GitHub Release with the APK attached.
+
+## Building a signed release locally (optional)
+
+The preferred local source is the repository root `.env`, populated using the
+import command above. Gradle reads environment variables first, then `.env`, and
+finally the legacy `android/keystore.properties` fallback. The fallback format is:
+```properties
+storeFile=/absolute/path/to/onoffmypc-release.jks
+storePassword=...
+keyAlias=onoffmypc
+keyPassword=...
+```
+Then: `cd android && ./gradlew :app:assembleRelease` → `android/app/build/outputs/apk/release/`.
+
+Without usable signing values in process environment variables, root `.env`, or
+the legacy `keystore.properties`, the release build is left **unsigned**; debug
+builds are unaffected.
+
+## Notes
+- R8/minification is **off** for this first release (`isMinifyEnabled = false`) to
+  avoid mis-stripping the reflection-based networking stack. Keep rules for
+  kotlinx.serialization live in `app/proguard-rules.pro` for when it's enabled.
+- Distribution is a direct APK for now (sideload). Play Store / App Bundle
+  (`bundleRelease` + Play signing) is a later step.

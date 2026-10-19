@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" font-family="DejaVu Sans">
+  <rect width="1080" height="1920" fill="#0F0F0F"/>
+  <!-- status bar -->
+  <text x="48" y="60" font-size="30" fill="#888888">9:41</text>
+  <text x="1032" y="60" font-size="30" fill="#888888" text-anchor="end">5G  100%</text>
+
+  <!-- logo mark -->
+  <g transform="translate(468,470) scale(2.1)">
+    <rect x="30" y="19.5" width="21" height="9" rx="4.5" fill="#F0F0F0"/>
+    <circle cx="23" cy="24" r="9.5" fill="#F0F0F0"/>
+    <circle cx="23" cy="24" r="5.5" fill="#0F0F0F"/>
+    <rect x="13" y="35.5" width="21" height="9" rx="4.5" fill="#F0F0F0"/>
+    <circle cx="41" cy="40" r="9.5" fill="#F0F0F0"/>
+    <circle cx="41" cy="40" r="5.5" fill="#0F0F0F"/>
+  </g>
+
+  <text x="540" y="770" font-size="76" font-weight="bold" fill="#F0F0F0" text-anchor="middle">OnOffMyPC</text>
+  <text x="540" y="835" font-size="36" fill="#888888" text-anchor="middle">Control your PC from anywhere.</text>
+
+  <!-- email field -->
+  <rect x="90" y="940" width="900" height="120" rx="14" fill="#0F0F0F" stroke="#2A2A2A" stroke-width="2"/>
+  <text x="120" y="990" font-size="26" fill="#888888">Email</text>
+  <text x="120" y="1030" font-size="38" fill="#F0F0F0">you@example.com</text>
+
+  <!-- password field -->
+  <rect x="90" y="1100" width="900" height="120" rx="14" fill="#0F0F0F" stroke="#2A2A2A" stroke-width="2"/>
+  <text x="120" y="1150" font-size="26" fill="#888888">Password</text>
+  <text x="120" y="1196" font-size="44" fill="#F0F0F0">••••••••••</text>
+
+  <!-- sign in -->
+  <rect x="90" y="1280" width="900" height="126" rx="16" fill="#3B82F6"/>
+  <text x="540" y="1360" font-size="44" font-weight="bold" fill="#ffffff" text-anchor="middle">Sign in</text>
+
+  <text x="540" y="1470" font-size="36" fill="#3B82F6" text-anchor="middle">Forgot password?</text>
+  <text x="540" y="1540" font-size="36" fill="#3B82F6" text-anchor="middle">Don't have an account? Register</text>
+</svg>

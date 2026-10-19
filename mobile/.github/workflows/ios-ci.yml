@@ -1,0 +1,35 @@
+name: iOS CI
+
+# Builds the iOS app (simulator, unsigned) on GitHub's macOS runners so
+# breakages surface without a local Mac. The Xcode project is generated from
+# ios/project.yml by XcodeGen and is never committed.
+
+on:
+  push:
+    branches: [main]
+    paths: ['ios/**', '.github/workflows/ios-ci.yml']
+  pull_request:
+    paths: ['ios/**', '.github/workflows/ios-ci.yml']
+
+jobs:
+  build:
+    # macos-15 ships Xcode 16, which reads XcodeGen's current project format (77).
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build (iOS Simulator, unsigned)
+        working-directory: ios
+        run: |
+          xcodebuild build \
+            -project OnOffMyPC.xcodeproj \
+            -scheme OnOffMyPC \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO

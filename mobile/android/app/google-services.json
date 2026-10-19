@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "156303072600",
+    "project_id": "onoffmypc-project",
+    "storage_bucket": "onoffmypc-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:156303072600:android:50561a49e2c0d54a69592d",
+        "android_client_info": {
+          "package_name": "com.onoffmypc.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "156303072600-vtq2a2hcfbhhosk70btf1tn25k861jug.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.onoffmypc.android",
+            "certificate_hash": "cfbecfe01c190dec7b70244798a20bf185089ff4"
+          }
+        },
+        {
+          "client_id": "156303072600-50a2rt2j0gnb81nr093bi7jkcgln5rlq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQpXD6YmuGx9GQU-IOscXa8mlKwQdBTCM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "156303072600-50a2rt2j0gnb81nr093bi7jkcgln5rlq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "156303072600-ge9r29an6f26erri76ld7015c2vi8jv8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.onoffmypc.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
