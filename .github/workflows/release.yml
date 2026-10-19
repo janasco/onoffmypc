@@ -43,6 +43,13 @@ jobs:
 
       - uses: android-actions/setup-android@v3
 
+      # Pin the SDK platform the build targets. Google Play requires
+      # targetSdk 36 (Android 16) from 31 Aug 2026, so a runner image that
+      # still ships only API 35 must not silently produce an un-publishable
+      # artifact.
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
       - name: Decode release keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

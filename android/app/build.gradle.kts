@@ -62,14 +62,14 @@ fun signingStoreFile(path: String): File {
 
 android {
     namespace = "com.onoffmypc.android"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.onoffmypc.android"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 20
-        versionName = "0.4.3"
+        targetSdk = 36
+        versionCode = 21
+        versionName = "0.4.4"
         vectorDrawables { useSupportLibrary = true }
 
         // Google Sign-In server (Web) client ID used to request an ID token.

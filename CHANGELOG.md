@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.4] - 2026-10-19
+
+### Changed
+- **Android 16 (API 36) target:** compileSdk/targetSdk raised from 35 to 36 to
+  meet Google Play's target API level requirement (apps targeting below
+  Android 16 can no longer be updated from 31 Aug 2026). AGP 8.10.1 and
+  Gradle 8.11.1, with the Android SDK 36 platform pinned in CI.
+- **Edge-to-edge:** `enableEdgeToEdge()` is now called after
+  `super.onCreate()`, matching the documented Android 16 edge-to-edge
+  behaviour. All Scaffold surfaces already consume window insets.
+
 ## [0.4.3] - 2026-07-19
 
 ### Added

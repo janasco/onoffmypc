@@ -37,6 +37,10 @@ jobs:
 
       - uses: android-actions/setup-android@v3
 
+      # Pin the platform Google Play requires (targetSdk 36 / Android 16).
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
       - name: Decode release keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

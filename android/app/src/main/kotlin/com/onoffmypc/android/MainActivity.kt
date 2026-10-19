@@ -12,8 +12,11 @@ import com.onoffmypc.android.ui.theme.OnOffMyPCTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Android 16 (API 36) enforces edge-to-edge for apps targeting 36.
+        // Call this after super.onCreate and before setContent; Scaffold
+        // consumes the resulting insets on every screen.
+        enableEdgeToEdge()
         setContent {
             OnOffMyPCTheme {
                 RequestNotificationPermission()

@@ -21,6 +21,11 @@ jobs:
 
       - uses: android-actions/setup-android@v3
 
+      # Pin the SDK platform the build targets so a runner image change can
+      # never compile against a different API level than the manifest claims.
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
       - name: Assemble debug
         working-directory: android
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace

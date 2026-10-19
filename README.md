@@ -19,8 +19,8 @@ receive device notifications. Both use the shared API at `https://api.onoffmypc.
 | Auth | Cookie-based — an OkHttp `CookieJar` persists the API `session` cookie |
 | Push | **Firebase Cloud Messaging** (Firebase BOM 33.5.1); google-services plugin 4.4.2 |
 | Charts | dependency-free **Compose `Canvas`** (temperature history) |
-| Build | **Gradle** 8.9 (Kotlin DSL) + version catalog; **AGP** 8.6.1 |
-| Toolchain | **JDK 17**; `compileSdk 35` · `minSdk 26` · `targetSdk 35` |
+| Build | **Gradle** 8.11.1 (Kotlin DSL) + version catalog; **AGP** 8.10.1 |
+| Toolchain | **JDK 17**; `compileSdk 36` · `minSdk 26` · `targetSdk 36` |
 | CI/CD | GitHub Actions — build check on push; signed-APK release on `app-v*` tags |
 
 Android is the primary mobile target. iOS is generated from `ios/project.yml`
