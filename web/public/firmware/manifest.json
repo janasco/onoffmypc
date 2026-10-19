@@ -1,0 +1,8 @@
+{
+  "name": "OnOffMyPC",
+  "version": "1.3.6",
+  "new_install_prompt_erase": true,
+  "builds": [
+    { "chipFamily": "ESP32", "parts": [ { "path": "onoffmypc-firmware-1.3.6.bin", "offset": 0 } ] }
+  ]
+}
