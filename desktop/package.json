@@ -1,0 +1,65 @@
+{
+  "name": "onoffmypc-desktop",
+  "version": "0.1.4",
+  "description": "OnOffMyPC desktop companion agent (Linux/Windows) — reports hardware telemetry and handles software-side shutdown/restart/reset commands over the same device pairing protocol as the ESP32/ESP8266 firmware.",
+  "private": true,
+  "author": {
+    "name": "OnOffMyPC",
+    "email": "support@onoffmypc.com"
+  },
+  "license": "MIT",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "check": "node --check src/main/index.js && node --check src/main/relay.js && node --check src/main/telemetry.js && node --check src/main/commands.js && node --check src/main/pairing.js && node --check src/main/autostart.js && node --check src/main/tokenStore.js && node --check src/main/config.js && node --test test/*.test.js",
+    "dist:linux": "electron-builder --linux",
+    "dist:windows": "electron-builder --windows"
+  },
+  "dependencies": {
+    "auto-launch": "5.0.6",
+    "systeminformation": "5.31.17",
+    "ws": "8.21.1"
+  },
+  "devDependencies": {
+    "electron": "43.1.1",
+    "electron-builder": "26.15.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "build": {
+    "appId": "com.onoffmypc.desktop",
+    "productName": "OnOffMyPC",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
