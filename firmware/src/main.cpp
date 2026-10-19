@@ -12,6 +12,7 @@
 #include <esp_random.h>
 #if defined(ESP32)
 #include <esp_task_wdt.h>
+#include <esp_idf_version.h>
 #endif
 #include "certs.h"
 #include "generated/onoff_design_tokens.h"
@@ -241,7 +242,22 @@ bool          ledState         = false;
 #if defined(ESP32)
 void feedWatchdog() { esp_task_wdt_reset(); }
 void startWatchdog() {
+#if ESP_IDF_VERSION_MAJOR >= 5
+  // ESP-IDF 5 replaced the (timeout_seconds, panic) form with a config struct.
+  esp_task_wdt_config_t config = {
+      .timeout_ms = WATCHDOG_TIMEOUT_MS,
+      .idle_core_mask = 0,
+      .trigger_panic = true,
+  };
+  // The Arduino core may have initialised the TWDT already. Reconfiguring an
+  // already-running watchdog is fine; re-initialising it returns
+  // ESP_ERR_INVALID_STATE and would leave the old timeout in place.
+  if (esp_task_wdt_init(&config) == ESP_ERR_INVALID_STATE) {
+    esp_task_wdt_reconfigure(&config);
+  }
+#else
   esp_task_wdt_init(WATCHDOG_TIMEOUT_MS / 1000, true);
+#endif
   esp_task_wdt_add(NULL);
 }
 #else
