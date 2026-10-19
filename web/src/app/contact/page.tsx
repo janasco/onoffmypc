@@ -109,8 +109,8 @@ export default function ContactPage() {
           <Card className="bg-zinc-900/40 border-zinc-800 p-4">
             <h3 className="text-sm font-bold text-zinc-200">Report a Bug</h3>
             <p className="text-xs text-zinc-500 mt-1">Spotted an issue on the firmware, dashboard, or apps? Open a GitHub ticket.</p>
-            <a href="https://github.com/onoffmypc/onoffmypc-release/issues" target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:underline font-semibold block mt-3">
-              github.com/onoffmypc/issues
+            <a href="https://github.com/janasco/onoffmypc/issues" target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:underline font-semibold block mt-3">
+              github.com/janasco/onoffmypc/issues
             </a>
           </Card>
         </div>

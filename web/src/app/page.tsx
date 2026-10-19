@@ -129,7 +129,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
-              <Link href="https://github.com/onoffmypc/onoffmypc-release/releases/latest" target="_blank" rel="noopener">
+              <Link href="/downloads">
                 <Button variant="ghost" className="w-full text-emerald-500 hover:text-emerald-400 hover:bg-zinc-900 justify-start px-0">
                   Download Installers →
                 </Button>
@@ -146,7 +146,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
-              <Link href="https://github.com/onoffmypc/onoffmypc-release/releases/latest" target="_blank" rel="noopener">
+              <Link href="/downloads">
                 <Button variant="ghost" className="w-full text-emerald-500 hover:text-emerald-400 hover:bg-zinc-900 justify-start px-0">
                   Get Android APK →
                 </Button>

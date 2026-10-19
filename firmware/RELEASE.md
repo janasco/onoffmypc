@@ -1,67 +1,58 @@
 # Releasing firmware
 
-A release publishes compiled binaries to the public release repo and, for a
-stable tag, updates the one-click web flasher on the marketing site. This is a
-privileged cross-repository operation; review the diff, artifact digest, and
-workflow permissions before tagging.
+Firmware ships **with the web app**: the one-click flasher and the manual
+download both read `web/public/firmware/`. There is no GitHub Actions pipeline
+and no GitHub Release — releases are built and published by hand.
 
-## Automated (recommended)
+## Cutting a release
 
 1. Bump `FIRMWARE_VERSION` in `src/main.cpp` and confirm compatibility with
    existing devices.
-2. Add the matching section to `CHANGELOG.md` (the release notes are pulled from it).
-3. Commit, then tag and push (firmware tags are prefixed `fw-v` so they don't
-   collide with the Android app's `app-v` tags in the shared release repo):
+2. Add the matching section to `CHANGELOG.md` — the release notes are pulled
+   from it.
+3. Build the artifacts:
+
    ```bash
-   git commit -am "release: v1.3.0"
-   git tag -a fw-v1.3.0 -m "fw-v1.3.0"
-   git push origin main fw-v1.3.0
+   ./tools/release.sh
    ```
 
-The tag push triggers `.github/workflows/release.yml`, which:
-1. verifies the tag's base version matches `FIRMWARE_VERSION` (fails fast, before building);
-2. builds + merges the flashable image, app image, and checksums (`tools/release.sh`);
-3. creates the GitHub Release on `onoffmypc/onoffmypc-release`;
-4. updates `onoffmypc/onoffmypc-web` (`firmware/manifest.json` + the new `.bin`) and deploys the marketing site.
+   Produces in `dist/`:
 
-## Rehearsing safely (pre-release tags)
+   - `onoffmypc-firmware-<version>.bin` — complete image, flash at `0x0`
+   - `onoffmypc-firmware-<version>-app.bin` — application-only image (`0x10000`)
+   - `SHA256SUMS-<version>.txt`
+   - `manifest.json` — the flasher manifest
+   - `RELEASE_NOTES.md`
 
-A tag with a hyphen suffix is treated as a **pre-release**: it builds and publishes a
-GitHub pre-release, but **skips** the web-flasher update and marketing deploy — so you
-can exercise the full build + publish path without touching the live flasher. The base
-version must still match `FIRMWARE_VERSION` (e.g. `FIRMWARE_VERSION = "1.3.0"` → tag
-`fw-v1.3.0-rc1`).
+4. Verify the image before publishing — the checksum file is generated from the
+   same build, so compare against a second, independent run if the change
+   touches the boot path:
 
-```bash
-git tag fw-v1.3.0-rc1 && git push origin fw-v1.3.0-rc1
-# publishes a pre-release only; delete it and the tag afterwards if it was just a test
-```
+   ```bash
+   cd dist && sha256sum -c SHA256SUMS-<version>.txt
+   ```
 
-A clean tag (`fw-v1.3.0`, no suffix) runs the full pipeline including the web flasher and deploy.
+5. Copy the new binary and manifest into the web app, replacing the previous
+   pair so the flasher only ever serves one current version:
 
-### Required repository secrets
-| Secret | Purpose |
-|---|---|
-| `RELEASE_REPO_TOKEN` | Narrow publication credential; prefer a GitHub App or equivalent |
-| `WEB_REPO_TOKEN` | Web-flasher promotion credential; prefer reviewed PR promotion |
-| `CLOUDFLARE_API_TOKEN` | Cloudflare token with `Pages:Edit` |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account id |
+   ```bash
+   cp dist/onoffmypc-firmware-<version>.bin web/public/firmware/
+   cp dist/manifest.json                    web/public/firmware/manifest.json
+   rm -f web/public/firmware/onoffmypc-firmware-<old-version>.bin
+   ```
 
-## Manual fallback
+   The setup guide's manual-download link in `web/src/app/setup/page.tsx` names
+   the binary explicitly — update it in the same commit.
 
-Run the same build locally, then upload by hand:
+6. Commit, then deploy the web app.
 
-```bash
-./tools/release.sh         # outputs to dist/
-```
+Optional mirror for archival: the `.bin` and checksums can also be uploaded to
+R2 under `releases/firmware/<version>/` using the same helpers as the desktop
+and Android artifacts. The flasher does not use that copy; it stays on the
+site so it is same-origin and works offline from the install button.
 
-Produces in `dist/`:
-- `onoffmypc-firmware-<version>.bin` — complete image, flash at `0x0`
-- `onoffmypc-firmware-<version>-app.bin` — application-only image (`0x10000`)
-- `SHA256SUMS-<version>.txt`
-- `manifest.json` — copy to `onoffmypc-web/firmware/` (with the `.bin`) for the flasher
-- `RELEASE_NOTES.md`
+## Pre-release rehearsal
 
-Then create the GitHub Release on `onoffmypc-release` with the binaries +
-checksums, copy `manifest.json` and the `.bin` into `onoffmypc-web/firmware/`, and
-deploy the marketing site (`wrangler pages deploy . --project-name onoffmypc-web`).
+There is no tag-driven pipeline any more, so rehearse the same way you ship:
+run `./tools/release.sh`, check the checksums, and flash a sacrificial board
+from a local `next dev` session before replacing the published binary.

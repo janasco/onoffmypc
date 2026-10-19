@@ -1,6 +1,6 @@
 # Changelog
 
-Notable changes to this repository's documentation and packaging. Firmware version history is published on the [Releases](https://github.com/onoffmypc/onoffmypc-release/releases) page.
+Notable changes to this directory's documentation and packaging. Published binaries now live on Cloudflare R2 — see the [downloads guide](R2-RELEASES.md). Firmware version history is in `../firmware/CHANGELOG.md`.
 
 ## 2026-07-10
 

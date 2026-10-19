@@ -1,13 +1,20 @@
-# OnOffMyPC — Public release artifacts
+# Release artifacts, security policy, and firmware config
 
-This public repository publishes stable OnOffMyPC artifacts. Source projects
-remain separate: `onoffmypc-app` contains the API, `onoffmypc-web` the web UI
-and flasher, `onoffmypc-mobile` the native clients, and `onoffmypc-firmware` the
-ESP32 source and build pipeline. `onoffmypc-design` owns their shared visual
-tokens, product-state presentation, assets, accessibility rules, and UX writing
-guidance; this artifact repository has no runtime UI dependency.
+This directory is part of the consolidated `onoffmypc` repository. It no longer
+publishes binaries itself — GitHub holds source only.
 
-This repository publishes the pre-built firmware binaries. Download the latest from the [Releases](https://github.com/onoffmypc/onoffmypc-release/releases) page and flash it to your ESP32 — no toolchain or source build required.
+| What | Where it lives |
+|---|---|
+| Desktop installers, Android APK | Cloudflare R2, `https://releases.onoffmypc.com` |
+| ESP32 firmware | `web/public/firmware/`, shipped with the web app |
+| Machine-readable index | `https://releases.onoffmypc.com/releases/manifest.json` |
+| Vulnerability reporting | [`SECURITY.md`](SECURITY.md) |
+| Firmware build config example | [`src/config.example.h`](src/config.example.h) |
+
+The downloads page at `/downloads` in the web app reads
+`web/src/lib/releases.ts` and links straight to R2, with the size and SHA-256 of
+every artifact. See [`R2-RELEASES.md`](R2-RELEASES.md) for how artifacts are
+published.
 
 ## Features
 
@@ -38,32 +45,30 @@ guarantee that the controlled PC reached the requested state.
 | Power button    | D26       |
 | Reset button    | D27       |
 
-Use a 330Ω resistor in series with the status LED.  
-Use NPN transistors (e.g. 2N2222) driven by D26/D27 to simulate button presses.  
+Use a 330Ω resistor in series with the status LED.
+Use NPN transistors (e.g. 2N2222) driven by D26/D27 to simulate button presses.
 Connect D34 to the PC's power LED header (3.3 V max).
 
 ## Flashing
 
-1. Download the latest **`onoffmypc-firmware-<version>.bin`** from the [Releases](https://github.com/onoffmypc/onoffmypc-release/releases) page. This is the complete image (bootloader, partition table, and application in one file).
+The easiest path is the browser flasher on the `/setup` page — no toolchain or
+source build required.
 
-2. (Optional) Verify your download against the published checksums:
+To flash manually, build or download `onoffmypc-firmware-<version>.bin` (the
+complete image: bootloader, partition table, and application in one file), then:
 
-   ```bash
-   sha256sum -c SHA256SUMS-<version>.txt
-   ```
+```bash
+esptool.py --port /dev/ttyUSB0 --chip esp32 write_flash 0x0 onoffmypc-firmware-<version>.bin
+```
 
-3. Flash it to your ESP32 at offset `0x0`:
-
-   ```bash
-   esptool.py --port /dev/ttyUSB0 --chip esp32 write_flash 0x0 onoffmypc-firmware-<version>.bin
-   ```
-
-   On Windows the port is typically `COMx`.
+On Windows the port is typically `COMx`. See
+[`../firmware/RELEASE.md`](../firmware/RELEASE.md) for how a firmware binary is
+produced and verified.
 
 ## First-time setup
 
-1. **Add a device** at [app.onoffmypc.com](https://app.onoffmypc.com), open that
-   device, and request its short-lived **pairing code**.
+1. **Add a device** in the dashboard, open that device, and request its
+   short-lived **pairing code**.
 
 2. **Power on the ESP32.** On first boot it creates a Wi-Fi network named
    **`OnOffMyPC-XXXXXX`**. Connect with the setup-network password shown in the
@@ -82,8 +87,10 @@ reopen the setup network.
 
 ## Artifact verification
 
-Verify the matching checksum file before flashing. Checksums detect corruption,
-but are not a substitute for a future device-verified firmware signature.
+Every R2 artifact publishes its SHA-256 in the manifest and on the downloads
+page, so a download can be checked against what was published. Checksums detect
+corruption; they are not a substitute for device-verified firmware signing,
+which is still open work.
 
 ## License
 

@@ -1,36 +1,39 @@
-# Workflows in this directory do not run
+# Workflows
 
-GitHub Actions **only** reads workflow files from `.github/workflows/` at the
-repository root. Workflows kept inside a component directory are inert — they
-are not registered, not scheduled, and never triggered.
+GitHub Actions is used **only for tests**, not for delivery. Releases are built
+and published by hand to Cloudflare R2 — see `release/R2-RELEASES.md`.
 
-## Migrated
+## Active
 
-The following workflows were moved to the repository root during the
-repository consolidation and are filtered to their component via `paths:`:
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `firmware-ci.yml` | changes under `firmware/` | `pio test -e native`, compile ESP32 |
+| `design-ci.yml` | changes under `design/` | validate generated artifacts, tests, build |
+| `web-ci.yml` | changes under `web/` | lint, typecheck, unit tests, `next build` |
+| `mobile-ci.yml` | changes under `mobile/android/` | assemble debug + unit tests |
+| `mobile-ios-ci.yml` | changes under `mobile/ios/` | XcodeGen + simulator build |
 
-| Original location | New location |
-|---|---|
-| `design/.github/workflows/ci.yml` | `.github/workflows/design-ci.yml` |
-| `firmware/.github/workflows/ci.yml` | `.github/workflows/firmware-ci.yml` |
-| `mobile/.github/workflows/ci.yml` | `.github/workflows/mobile-ci.yml` |
-| `mobile/.github/workflows/ios-ci.yml` | `.github/workflows/mobile-ios-ci.yml` |
-| `web/.github/workflows/ci.yml` | `.github/workflows/web-ci.yml` |
+These only need a stock runner. No secrets are configured, and none are
+required.
 
-## Not migrated
+## Removed
 
-The release pipelines below are still here and are **not running**. They are
-deliberately left in place rather than moved, because moving them is not a
-path change — each needs repository secrets re-added and real rework before it
-can run safely in the consolidated repository:
+The release pipelines were deleted when distribution moved to R2. They used to
+live here as `firmware/release.yml`, `desktop/release.yml`,
+`mobile/{release,aab,play,release-verify}.yml`; they triggered on `v*`,
+`fw-v*` and `app-v*` tags and published GitHub Releases (the firmware one also
+pushed to two other repositories and deployed Pages with cross-repo PATs).
 
-| File | What it needs |
-|---|---|
-| `desktop/.github/workflows/release.yml` | `v*` tag trigger. Builds Linux/Windows installers and publishes a GitHub Release. Needs the signing/attestation work noted in its header, plus secrets. |
-| `firmware/.github/workflows/release.yml` | `fw-v*` tag trigger. **Pushes to two other repositories** (`onoffmypc/onoffmypc-release` and `onoffmypc/onoffmypc-web`) using cross-repo PATs and deploys Cloudflare Pages. Under consolidation those targets are `release/` and `web/` in *this* repository, so the cross-repo clone/push logic must become an in-repo commit. Do not re-enable as-is. |
-| `mobile/.github/workflows/release.yml` | `app-v*` tag trigger. Builds and publishes a signed APK. Needs keystore secrets re-added. |
-| `mobile/.github/workflows/aab.yml` | Manual. Builds the Play Store AAB. Needs keystore secrets re-added. |
-| `mobile/.github/workflows/play.yml` | Manual. Uploads the AAB to Google Play. Needs the Play service-account secret re-added. |
-| `mobile/.github/workflows/release-verify.yml` | Manual. Dry-run signed build. Needs keystore secrets re-added. |
+Releasing is now:
 
-See `CONSOLIDATION.md` at the repository root for the full migration checklist.
+1. build locally,
+2. upload with `wrangler r2 object put` (or `scripts/migrate-releases-to-r2.sh`),
+3. update `web/src/lib/releases.ts`.
+
+See `firmware/RELEASE.md`, `mobile/RELEASE.md`, and `desktop/RELEASE.md` if
+present.
+
+**Why bother with the test workflows at all?** They are not CD, and they caught
+real defects that were otherwise shipping: a non-compiling iOS build, a
+Java 21/17 bytecode mismatch in the Android unit tests, and a broken pnpm
+install. Keeping them costs nothing and blocks regressions on push.

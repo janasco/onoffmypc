@@ -108,21 +108,38 @@ Check that the APK responds `200`, reports `content-type:
 application/vnd.android.package-archive`, and that its `sha256` matches the one
 the dry run printed.
 
-## 5. Repoint the app
+## 5. Repoint the app — done
 
-After the URLs are live:
+The web app no longer links to GitHub Releases:
 
-- `web/src/app/page.tsx` — two `releases/latest` links
-- `web/src/app/setup/page.tsx` — manual-flash download link
-- `web/src/app/contact/page.tsx` — issues link (this one should point at the
-  new repo's issues, not R2)
-- `firmware/RELEASE.md`, `mobile/RELEASE.md`
+- `web/src/lib/releases.ts` is the single source of truth for the current
+  version, filename, size, and SHA-256 of every artifact.
+- `web/src/app/downloads/page.tsx` lists them and links straight to R2.
+- `web/src/app/page.tsx` links both download buttons to `/downloads`.
+- `web/src/app/setup/page.tsx` downloads firmware from `/firmware/` (it ships
+  with the site, not R2).
+- `web/src/app/contact/page.tsx` points at
+  `github.com/janasco/onoffmypc/issues`.
+
+## Publishing a new release
+
+There is no CI/CD. For each release:
+
+1. Build the artifact locally.
+2. Upload it with the same key layout:
+   `releases/<family>/<version>/<file>`, with `Content-Type` set and
+   `Cache-Control: public, max-age=31536000, immutable`.
+3. Re-upload `releases/manifest.json` (or rerun the migration script).
+4. Update `web/src/lib/releases.ts` and deploy the web app.
+5. Delete the previous version's prefix once the new one is verified.
+
+`mobile/RELEASE.md` and `firmware/RELEASE.md` have the per-platform steps.
 
 ## 6. Retire the old repository
 
-Only after steps 4–5 pass: `onoffmypc/onoffmypc-release` can be deleted. It
-currently holds 18 releases / 26 assets / 1.37 GB; the 22 superseded assets are
-intentionally not migrated.
+Once the links above, the workflows, and the docs no longer reference
+`onoffmypc/onoffmypc-release`, it can be deleted. It holds 18 releases /
+26 assets / 1.37 GB; the 22 superseded assets are intentionally not migrated.
 
 ## Rollback
 

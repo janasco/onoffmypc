@@ -277,8 +277,8 @@ export default function SetupPage() {
               <div className="bg-zinc-900/30 border border-zinc-850 p-3 rounded-lg text-xs leading-relaxed text-zinc-400">
                 <span className="font-semibold text-zinc-300 block mb-1">Manual Flash Option:</span>
                 Download the binary payload from the{" "}
-                <a href="https://github.com/onoffmypc/onoffmypc-release/releases" target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline">
-                  firmware releases page
+                <a href="/firmware/onoffmypc-firmware-1.3.6.bin" className="text-emerald-400 underline">
+                  firmware binary
                 </a>{" "}
                 and use the Espressif CLI tools:
                 <pre className="bg-zinc-950 text-zinc-300 p-2 rounded mt-1.5 overflow-x-auto font-mono text-[10px]">
