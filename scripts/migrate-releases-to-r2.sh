@@ -65,6 +65,30 @@ if [ "$DRY_RUN" != "true" ]; then
   [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ] || die "CLOUDFLARE_ACCOUNT_ID is required (or pass --dry-run)" 1
 fi
 
+# This host has no IPv6 route, and Node's Happy Eyeballs does not fall back to
+# IPv4 for api.cloudflare.com / registry.npmjs.org, so Node-based tools
+# (wrangler, npm) hang with ETIMEDOUT. Disabling family autoselection makes
+# them use IPv4 directly. Harmless on a healthy dual-stack host; set
+# RELEASES_NODE_IPV4=0 to opt out.
+if [ "${RELEASES_NODE_IPV4:-1}" = "1" ]; then
+  export NODE_OPTIONS="${NODE_OPTIONS:-} --no-network-family-autoselection"
+fi
+
+# Prefer a wrangler that is already installed; fall back to npx (which needs
+# registry access). Set WRANGLER=/path/to/wrangler to override.
+find_wrangler() {
+  if [ -n "${WRANGLER:-}" ] && [ -x "${WRANGLER}" ]; then printf '%s' "$WRANGLER"; return; fi
+  for candidate in \
+    ./node_modules/.bin/wrangler \
+    ../app/node_modules/.bin/wrangler \
+    ./app/node_modules/.bin/wrangler; do
+    if [ -x "$candidate" ]; then printf '%s' "$candidate"; return; fi
+  done
+  printf '%s' "npx --yes wrangler@$WRANGLER_VERSION"
+}
+
+WRANGLER_CMD="$(find_wrangler)"
+
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
@@ -213,7 +237,7 @@ while IFS=$'\t' read -r kind fam version name size url; do
   dest="$WORK/$fam-$version-$name"
   key="$PREFIX/$fam/$version/$name"
   info "uploading $key"
-  npx --yes "wrangler@$WRANGLER_VERSION" r2 object put "$BUCKET/$key" \
+  $WRANGLER_CMD r2 object put "$BUCKET/$key" \
     --file "$dest" \
     --content-type "$(content_type "$name")" \
     --cache-control "public, max-age=31536000, immutable" \
@@ -221,7 +245,7 @@ while IFS=$'\t' read -r kind fam version name size url; do
 done < "$WORK/selected.tsv"
 
 info "uploading $PREFIX/manifest.json"
-npx --yes "wrangler@$WRANGLER_VERSION" r2 object put "$BUCKET/$PREFIX/manifest.json" \
+$WRANGLER_CMD r2 object put "$BUCKET/$PREFIX/manifest.json" \
   --file "$WORK/manifest.upload.json" \
   --content-type "application/json" \
   --cache-control "public, max-age=300" \
