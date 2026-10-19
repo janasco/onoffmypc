@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "author": "OnOffMyPC",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "top": -80,
+      "left": 220,
+      "attrs": { "temperature": "22.5", "humidity": "55" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led-status",
+      "top": -80,
+      "left": 340,
+      "attrs": { "color": "blue", "label": "Status" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led-pc",
+      "top": -80,
+      "left": 400,
+      "attrs": { "color": "green", "label": "PC Power" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 20,
+      "left": 340,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 20,
+      "left": 400,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn-power",
+      "top": 80,
+      "left": 220,
+      "attrs": { "color": "red", "label": "PC Power Btn" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn-reset",
+      "top": 80,
+      "left": 310,
+      "attrs": { "color": "orange", "label": "PC Reset Btn" }
+    }
+  ],
+  "connections": [
+    ["esp:GND.1",    "dht:GND",        "black",  []],
+    ["esp:3V3",      "dht:VCC",        "red",    []],
+    ["esp:D4",       "dht:SDA",        "green",  []],
+
+    ["esp:D2",       "r1:1",           "yellow", []],
+    ["r1:2",         "led-status:A",   "yellow", []],
+    ["led-status:C", "esp:GND.2",      "black",  []],
+
+    ["esp:D34",      "led-pc:A",       "green",  []],
+    ["led-pc:C",     "r2:1",           "green",  []],
+    ["r2:2",         "esp:GND.2",      "black",  []],
+
+    ["esp:D26",      "btn-power:1.l",  "red",    []],
+    ["btn-power:2.l","esp:GND.2",      "black",  []],
+
+    ["esp:D27",      "btn-reset:1.l",  "orange", []],
+    ["btn-reset:2.l","esp:GND.2",      "black",  []]
+  ]
+}

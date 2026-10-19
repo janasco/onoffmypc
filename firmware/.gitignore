@@ -1,0 +1,9 @@
+.pio/
+.vscode/
+src/config.h
+dist/
+.env*
+!.env.example
+
+# Local-only secrets runbook (never commit)
+SECRETS.md
