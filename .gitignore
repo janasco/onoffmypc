@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+out/
+.next/
+.wrangler/
+.gradle/
+**/app/build/
+**/build/outputs/
+
+# Secrets — never commit these
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+keystore.properties
+local.properties
+secrets/
+.npmrc
+.mcp-auth/
+*.p12
+
+# Tracked on purpose, so not ignored:
+#   mobile/android/app/google-services.json   Firebase *client* config; ships in the APK
+#   mobile/android/upload_certificate.pem     Play upload certificate (public key)
+
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# Firmware local config
+firmware/src/config.h
+
+# iOS / Xcode (generated from project.yml)
+*.xcodeproj/
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.xcuserstate
+mobile/ios/OnOffMyPC/Info.plist
+
+# Editors / OS
+.DS_Store
+*.iml
+.idea/
+.vscode/
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
