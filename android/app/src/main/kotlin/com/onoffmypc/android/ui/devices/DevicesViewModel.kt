@@ -43,7 +43,7 @@ data class DevicesUiState(
 
 class DevicesViewModel : ViewModel() {
     private val repo = Graph.repository
-    private val prefs = Graph.context.getSharedPreferences("onoffmypc_onboarding", 0)
+    private val prefs = Graph.application.getSharedPreferences("onoffmypc_onboarding", 0)
 
     private val _state = MutableStateFlow(DevicesUiState(
         onboardingDismissed = prefs.getBoolean(KEY_ONBOARDING_DISMISSED, false),
@@ -117,7 +117,7 @@ class DevicesViewModel : ViewModel() {
                     repo.sendCommand(device.id, type).fold(
                         onSuccess = { response ->
                             if (!prefs.getBoolean(KEY_HAS_SENT_COMMAND, false)) {
-                                prefs.edit().putBoolean(KEY_HAS_SENT_COMMAND, true).commit()
+                                prefs.edit().putBoolean(KEY_HAS_SENT_COMMAND, true).apply()
                                 _state.update { it.copy(hasSentCommand = true) }
                             }
                             _state.update {
@@ -332,7 +332,7 @@ class DevicesViewModel : ViewModel() {
     fun dismissPairCode() = _state.update { it.copy(pairCode = null) }
 
     fun dismissOnboarding() {
-        prefs.edit().putBoolean(KEY_ONBOARDING_DISMISSED, true).commit()
+        prefs.edit().putBoolean(KEY_ONBOARDING_DISMISSED, true).apply()
         _state.update { it.copy(onboardingDismissed = true) }
     }
 
