@@ -114,8 +114,7 @@ subtrees imported completely.
 - [ ] Re-add repository secrets to both repositories.
 - [ ] Confirm the `web/` deployment target (the Next.js app currently has no
       deployment workflow).
-- [ ] Decide whether `web/` should keep its own `pnpm-lock.yaml` (it now has
-      one derived from the old workspace root lockfile) or participate in a
-      root-level workspace.
+- [x] `web/` uses npm and carries its own `package-lock.json`; the pnpm
+      lockfile and workspace file were removed so there is one package manager.
 - [ ] The old repositories still exist and are still the live deployment
       sources until the new ones take over. Retire them deliberately.

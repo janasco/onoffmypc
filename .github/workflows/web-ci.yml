@@ -4,8 +4,8 @@ name: Web CI
 # the repository consolidation (GitHub only reads workflows from the repository
 # root).
 #
-# The web app was extracted from a pnpm workspace, so it now carries its own
-# pnpm-lock.yaml and is installed as a standalone package.
+# The web app is a standalone npm package (package-lock.json), matching the
+# desktop agent. It no longer participates in a pnpm workspace.
 
 on:
   push:
@@ -32,17 +32,14 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4
-        with:
-          version: 11
-          run_install: false
-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies (reproducible, from the committed lockfile)
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Lint
         run: npm run lint
