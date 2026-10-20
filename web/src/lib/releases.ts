@@ -32,41 +32,41 @@ export interface ReleaseChannel {
 }
 
 export const ANDROID_RELEASE: ReleaseChannel = {
-  version: "0.4.2",
+  version: "0.4.3",
   assets: [
     {
-      file: "onoffmypc-android-0.4.2.apk",
+      file: "onoffmypc-android-0.4.3.apk",
       label: "Android APK",
       platform: "Android 8.0+",
-      sizeBytes: 9721458,
-      sha256: "42b5204ca841bdd4694631ca864f6447c2f106006bf20b610b4f43a5b68159dd",
+      sizeBytes: 9721462,
+      sha256: "1952a7c2851cce756538df911464b44f797a6fae38e3ec18047e561dd4e2f328",
     },
   ],
 };
 
 export const DESKTOP_RELEASE: ReleaseChannel = {
-  version: "0.1.3",
+  version: "0.1.4",
   assets: [
     {
-      file: "OnOffMyPC.Setup.0.1.3.exe",
+      file: "OnOffMyPC.Setup.0.1.4.exe",
       label: "Windows installer",
       platform: "Windows 10/11, x64",
-      sizeBytes: 99098801,
-      sha256: "3791487d02554c73e25b9d5b902a143a1d2baf63c822a56471476c0888c9d45c",
+      sizeBytes: 99100697,
+      sha256: "5cb5b695bfb00aa8f7a4fce10d4ededfb03e08a622db56fda52cc80f02c948a2",
     },
     {
-      file: "OnOffMyPC-0.1.3.AppImage",
+      file: "OnOffMyPC-0.1.4.AppImage",
       label: "Linux AppImage",
       platform: "Any distro, x64",
-      sizeBytes: 127421390,
-      sha256: "2337f0aa9e5af64c8eea7948b28710bb7396fe6ff286573c5dc14920a5828315",
+      sizeBytes: 127421351,
+      sha256: "4cacc73a5161406e7137d14da813c29575c902eac0c06936ed479e7028a79a86",
     },
     {
-      file: "onoffmypc-desktop_0.1.3_amd64.deb",
+      file: "onoffmypc-desktop_0.1.4_amd64.deb",
       label: "Linux .deb",
       platform: "Debian / Ubuntu, amd64",
-      sizeBytes: 99524228,
-      sha256: "49bedbc6257d52fd3374a58b70f40cecd463ea2063c7e7ce4ec41cf63bce1d28",
+      sizeBytes: 99526608,
+      sha256: "8bc58be6bcf56b5fb1f9aaab4cc81356cfc2f97bc7bbc49ffb4c31ed504cf852",
     },
   ],
 };
