@@ -2,8 +2,12 @@
 
 const { app, Notification } = require('electron')
 
+// Release artifacts live on Cloudflare R2; GitHub holds source only. The
+// manifest is the same one the web downloads page reads.
+const RELEASES_MANIFEST_URL = 'https://releases.onoffmypc.com/releases/manifest.json'
+
 function compareVersions(v1, v2) {
-  const clean = (v) => v.replace(/^v/, '').split('.').map(Number)
+  const clean = (v) => String(v).replace(/^v/, '').split('.').map(Number)
   const parts1 = clean(v1)
   const parts2 = clean(v2)
   for (let i = 0; i < 3; i++) {
@@ -15,16 +19,31 @@ function compareVersions(v1, v2) {
   return 0
 }
 
+/**
+ * Pull the desktop version out of the release manifest. Pure and lenient:
+ * a malformed or older manifest yields null rather than throwing, because a
+ * bad manifest must never break the agent.
+ */
+function latestDesktopVersion(manifest) {
+  const version = manifest && manifest.families && manifest.families.desktop
+    ? manifest.families.desktop.version
+    : null
+  return typeof version === 'string' && version.length > 0 ? version : null
+}
+
 async function checkForUpdates() {
   if (!Notification.isSupported()) return
 
   try {
-    const response = await fetch('https://api.github.com/repos/onoffmypc/onoffmypc-desktop/releases/latest', {
-      headers: { 'User-Agent': 'OnOffMyPC-Desktop-Agent' }
+    const response = await fetch(RELEASES_MANIFEST_URL, {
+      headers: {
+        'User-Agent': 'OnOffMyPC-Desktop-Agent',
+        Accept: 'application/json',
+      },
     })
     if (!response.ok) return
-    const data = await response.json()
-    const latestVersion = data.tag_name
+
+    const latestVersion = latestDesktopVersion(await response.json())
     if (!latestVersion) return
 
     const currentVersion = app.getVersion()
@@ -32,13 +51,13 @@ async function checkForUpdates() {
       const notification = new Notification({
         title: 'OnOffMyPC Update Available',
         body: `A new version (${latestVersion}) is available. Please update to get the latest features.`,
-        silent: false
+        silent: false,
       })
       notification.show()
     }
-  } catch (err) {
-    // Fail silently on network errors
+  } catch {
+    // Network or parse failures are non-fatal; update checks are best-effort.
   }
 }
 
-module.exports = { checkForUpdates }
+module.exports = { checkForUpdates, compareVersions, latestDesktopVersion, RELEASES_MANIFEST_URL }
