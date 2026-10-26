@@ -65,13 +65,14 @@ if [ "$DRY_RUN" != "true" ]; then
   [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ] || die "CLOUDFLARE_ACCOUNT_ID is required (or pass --dry-run)" 1
 fi
 
-# This host has no IPv6 route, and Node's Happy Eyeballs does not fall back to
-# IPv4 for api.cloudflare.com / registry.npmjs.org, so Node-based tools
-# (wrangler, npm) hang with ETIMEDOUT. Disabling family autoselection makes
-# them use IPv4 directly. Harmless on a healthy dual-stack host; set
-# RELEASES_NODE_IPV4=0 to opt out.
+# Node's Happy Eyeballs gives each candidate address a 250 ms connection
+# budget. On a network where the first connection takes seconds, every attempt
+# is abandoned and Node-based tools (wrangler, pnpm, npm) fail with ETIMEDOUT
+# even though curl succeeds. Raising the per-attempt budget keeps the dual-stack
+# fallback while letting a slow connection finish. Harmless on a fast network;
+# set RELEASES_NODE_IPV4=0 to opt out.
 if [ "${RELEASES_NODE_IPV4:-1}" = "1" ]; then
-  export NODE_OPTIONS="${NODE_OPTIONS:-} --no-network-family-autoselection"
+  export NODE_OPTIONS="${NODE_OPTIONS:-} --network-family-autoselection-attempt-timeout=5000"
 fi
 
 # Prefer a wrangler that is already installed; fall back to npx (which needs

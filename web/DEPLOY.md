@@ -73,6 +73,8 @@ previous commit with `npm run deploy`.
   middleware list `https://onoffmypc.com`, `https://www.onoffmypc.com`,
   `https://app.onoffmypc.com`, and `https://admin.onoffmypc.com`. A new domain
   must be added there or cookie-authenticated requests fail.
-- On this machine, Node needs `NODE_OPTIONS=--no-network-family-autoselection`
-  because it has no IPv6 route and Node does not fall back to IPv4; without it
-  `npx`/`wrangler` time out. That is machine-specific and not committed.
+- On a slow network, Node's Happy Eyeballs abandons each connection attempt
+  after 250 ms and `npx`/`wrangler` fail with ETIMEDOUT even though `curl`
+  works. Set
+  `NODE_OPTIONS=--network-family-autoselection-attempt-timeout=5000`.
+  That is environment-specific and not committed.
