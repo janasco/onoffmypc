@@ -6,12 +6,17 @@ news: our release signing config already applies to the bundle, so
 `:app:bundleRelease` produces a **signed** `.aab` with no extra work.
 
 ## Get the signed .aab
-You don't need a local Android setup — use CI:
 
-1. GitHub → the `onoffmypc-mobile` repo → **Actions** → **Build AAB (Play Store)** → **Run workflow**.
-2. When it finishes, download the **`onoffmypc-release-aab`** artifact → it contains `app-release.aab`.
+There is no CI/CD. Build it locally:
 
-(Or locally, if you have the SDK: `cd android && ./gradlew :app:bundleRelease` → `android/app/build/outputs/bundle/release/app-release.aab`.)
+```bash
+cd android
+./gradlew :app:bundleRelease
+# -> app/build/outputs/bundle/release/app-release.aab
+```
+
+The AAB is signed with the upload key from `android/keystore.properties`
+(gitignored). If that file is missing, recreate it — see `RELEASE.md`.
 
 ## Understand Play App Signing (important)
 Google **manages your app's real signing key** ("Play App Signing", mandatory for
@@ -64,29 +69,45 @@ keytool -list -v -keystore android/onoffmypc-release.jks -alias onoffmypc
   `CHANGELOG.md` up to date and the release body writes itself.
 - **Play "What's new"** — the short, user-facing note in
   `distribution/whatsnew/whatsnew-en-US` (≤ 500 chars/locale). Edit this per
-  release to a plain-language summary; the Play upload workflow attaches it.
+  release to a plain-language summary; `scripts/publish-play.mjs` attaches it.
 
 ## Automated uploads
-The **Upload to Google Play** workflow (`.github/workflows/play.yml`) builds a
-signed `.aab` and pushes it to a Play track via the Play Developer API. It's
-manual (Actions → Run workflow → pick **track** + **status**), so uploads are
-always deliberate.
+
+`scripts/publish-play.mjs` uploads a signed AAB through the Android Publisher
+API. It replaces the deleted GitHub Actions workflow, needs no dependencies,
+and runs by hand.
 
 One-time setup (after the app exists on Play with its first manual release):
-1. **Play Console → Setup → API access** → link a Google Cloud project (create one if needed).
-2. In that Google Cloud project (**IAM & Admin → Service accounts**) create a service account, then **Keys → Add key → JSON** and download the key.
-3. Back in **Play Console → Users and permissions → Invite user**, invite the service-account email and grant **release** permissions (e.g. "Release to testing tracks", and "Release to production" if you'll push production), scoped to this app.
-4. Add the downloaded JSON as the GitHub secret **`PLAY_SERVICE_ACCOUNT_JSON`** (plaintext) on `onoffmypc-mobile`.
 
-Then per release: bump `versionCode`, update `distribution/whatsnew/whatsnew-en-US`,
-and run the workflow (default track **internal**). Promote between tracks in Play
-Console, or re-run with a higher track.
+1. **Play Console → Setup → API access** → link a Google Cloud project.
+2. In that project (**IAM & Admin → Service accounts**) create a service account, then **Keys → Add key → JSON** and download the key.
+3. **Play Console → Users and permissions → Invite user**, invite the service-account email, and grant **release** permissions scoped to this app.
+4. Keep the JSON off the repository, e.g. `/opt/repo/onoffmypc-private/play-service-account.json` (mode `600`), and export its path.
 
-> The **first** release must still be created and uploaded **manually** — the Play
-> API only accepts uploads once the package exists on Play.
+Per release, after bumping `versionCode` and updating
+`distribution/whatsnew/whatsnew-en-US`:
+
+```bash
+export PLAY_SERVICE_ACCOUNT_JSON=/path/to/play-service-account.json
+
+# Prove credentials and options without changing anything
+node scripts/publish-play.mjs --dry-run
+
+# Upload to internal testing as a draft (review + roll out in the console)
+node scripts/publish-play.mjs --track internal
+
+# Or submit straight to production
+node scripts/publish-play.mjs --track production --status completed
+```
+
+Flags: `--aab`, `--track internal|alpha|beta|production`, `--status draft|completed`,
+`--whatsnew`, `--notes`.
+
+> The **first** release must still be created and uploaded **manually** — the
+> Play API only accepts uploads once the package exists on Play.
 
 ## Recommended path
-1. Run the **Build AAB** workflow, download the `.aab`.
+1. Build the `.aab` locally (`cd android && ./gradlew :app:bundleRelease`).
 2. Create the app, enroll in Play App Signing, upload to **Internal testing**, install on your phone, verify login + push.
 3. Fill the store listing (icon + feature graphic are ready in `playstore/`; add screenshots) and the data-safety/content-rating forms.
 4. Promote to **Production** and submit for review.

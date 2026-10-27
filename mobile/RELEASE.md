@@ -77,7 +77,15 @@ environment (see `release/R2-RELEASES.md`).
    then deploy the web app. The downloads page reads only that file.
 7. Update `releases/manifest.json` in the bucket (rerun
    `scripts/migrate-releases-to-r2.sh`, or edit the manifest and re-upload it).
-8. Upload the AAB to the Play Console and roll it out.
+8. Upload the AAB with the Play API (or by hand in the console):
+
+   ```bash
+   export PLAY_SERVICE_ACCOUNT_JSON=/path/to/play-service-account.json
+   node scripts/publish-play.mjs --track internal --dry-run
+   node scripts/publish-play.mjs --track internal
+   ```
+
+   See `PLAYSTORE.md` for the one-time service-account setup.
 
 Remove the previous version's prefix once the new one is live:
 
