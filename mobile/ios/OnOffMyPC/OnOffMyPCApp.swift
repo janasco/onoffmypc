@@ -11,6 +11,9 @@ struct OnOffMyPCApp: App {
                 .environmentObject(appState)
                 .tint(AppColors.action)
                 .onOpenURL { url in _ = GoogleSignInManager.handle(url) }
+                .onReceive(NotificationCenter.default.publisher(for: .sessionExpired)) { _ in
+                    appState.sessionExpired()
+                }
         }
     }
 }

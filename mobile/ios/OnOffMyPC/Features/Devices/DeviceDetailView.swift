@@ -100,7 +100,8 @@ struct DeviceDetailView: View {
         let status = deviceStatusFromEndpoint(
             online: vm.online,
             lastSeenAt: vm.lastSeenAt ?? current.last_seen_at,
-            pcOn: vm.latest?.pc_on ?? current.pc_on
+            pcOn: vm.latest?.pc_on ?? current.pc_on,
+            telemetryAt: vm.latest?.recorded_at ?? current.telemetry_at
         )
         return Section("Device status") {
             DeviceStatusSummary(presentation: status)
@@ -136,7 +137,9 @@ struct DeviceDetailView: View {
         Section("Controls") {
             PowerCommandControls(
                 deviceName: vm.device?.name ?? device.name,
-                commandInFlight: vm.commandInFlight
+                commandInFlight: vm.commandInFlight,
+                includeDesktopActions: (vm.device?.firmware_version ?? device.firmware_version)?
+                    .lowercased().contains("desktop-agent") == true
             ) { type in
                 Task { await vm.send(type, id: device.id, appState) }
             }
@@ -182,12 +185,29 @@ struct DeviceDetailView: View {
             } else {
                 ForEach(vm.commands, id: \.rowId) { command in
                     VStack(alignment: .leading, spacing: AppSpacing.small) {
-                        Text(commandLabel(command.type))
-                            .font(.subheadline.weight(.semibold))
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(commandLabel(command.type))
+                                .font(.subheadline.weight(.semibold))
+                            Spacer(minLength: AppSpacing.small)
+                            if let created = command.created_at.flatMap(Date.fromISO) {
+                                Text(created, format: .dateTime.month(.abbreviated).day().hour().minute())
+                                    .font(.caption2)
+                                    .foregroundStyle(AppColors.textSecondary)
+                            }
+                        }
                         AppStatusBadge(
-                            text: commandStatusText(command.status),
+                            text: commandStatusText(
+                                command.status,
+                                deliveryState: command.delivery_state,
+                                expiresAt: command.expires_at
+                            ),
                             role: commandStatusRole(command.status)
                         )
+                        if command.status == "pending", let expires = command.expires_at.flatMap(Date.fromISO) {
+                            Text("Expires \(expires, format: .dateTime.hour().minute())")
+                                .font(.caption2)
+                                .foregroundStyle(AppColors.textSecondary)
+                        }
                     }
                     .padding(.vertical, AppSpacing.xSmall)
                 }

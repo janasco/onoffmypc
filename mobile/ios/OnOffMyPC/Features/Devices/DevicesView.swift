@@ -1,14 +1,13 @@
 import SwiftUI
 
 private enum DevicesSheet: Identifiable {
-    case account, addDevice, dashboardMockup
+    case account, addDevice
     case billing(String?)
     var id: Int {
         switch self {
         case .account: return 0
         case .addDevice: return 1
         case .billing: return 2
-        case .dashboardMockup: return 3
         }
     }
 }
@@ -48,11 +47,6 @@ struct DevicesView: View {
                             } label: {
                                 Label("Device Unlocks", systemImage: "creditcard")
                             }
-                            Button {
-                                sheet = .dashboardMockup
-                            } label: {
-                                Label("Dashboard concept", systemImage: "square.grid.2x2")
-                            }
                             Button(role: .destructive) {
                                 showLogoutConfirm = true
                             } label: {
@@ -75,7 +69,6 @@ struct DevicesView: View {
             case .account: AccountView()
             case .addDevice: AddDeviceView(vm: vm)
             case .billing(let deviceId): BillingView(initialDeviceId: deviceId)
-            case .dashboardMockup: DashboardMockupView()
             }
         }
         .alert("Sign out?", isPresented: $showLogoutConfirm) {
@@ -274,7 +267,11 @@ private struct DeviceRow: View {
     let onCommand: (CommandType) -> Void
 
     var body: some View {
-        let status = deviceStatusFromLastContact(lastSeenAt: device.last_seen_at, pcOn: device.pc_on)
+        let status = deviceStatusFromLastContact(
+            lastSeenAt: device.last_seen_at,
+            pcOn: device.pc_on,
+            telemetryAt: device.telemetry_at
+        )
         AppSurface {
             VStack(alignment: .leading, spacing: AppSpacing.standard) {
                 NavigationLink(value: device) {
@@ -338,6 +335,8 @@ private struct DeviceRow: View {
                     deviceName: device.name,
                     commandInFlight: commandInFlight,
                     includeForceOff: false,
+                    includeDesktopActions: device.firmware_version?
+                        .lowercased().contains("desktop-agent") == true,
                     onCommand: onCommand
                 )
             }
@@ -347,7 +346,7 @@ private struct DeviceRow: View {
     private func statBar(label: String, value: String, fraction: CGFloat, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(AppColors.textSecondary)
             GeometryReader { geo in
                 ZStack(alignment: .leading) {

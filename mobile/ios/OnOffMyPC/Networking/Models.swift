@@ -13,7 +13,11 @@ struct PushRegisterRequest: Encodable {
 }
 struct ChangeEmailRequest: Encodable { let new_email: String; let password: String }
 struct ChangePasswordRequest: Encodable { let current_password: String; let new_password: String }
-struct CommandRequest: Encodable { let type: String }
+struct CommandRequest: Encodable {
+    let type: String
+    /// Deduplication key: a retry with the same id replays instead of acting twice.
+    let client_request_id: String
+}
 
 // MARK: - Responses
 
@@ -120,6 +124,13 @@ struct Device: Decodable, Identifiable, Hashable {
     var ram_used_mb: Double?
     var ram_total_mb: Double?
     var gpu_temp: Double?
+    /// When pc_on and the hardware metrics were observed.
+    var telemetry_at: String?
+    var last_command_id: String?
+    var last_command_type: String?
+    var last_command_status: String?
+    var last_command_at: String?
+    var last_command_expires_at: String?
 }
 
 struct DeviceStatus: Decodable {
@@ -153,6 +164,9 @@ struct Command: Decodable {
     var created_at: String?
     var type: String?
     var status: String?
+    var delivery_state: String?
+    var delivered_at: String?
+    var expires_at: String?
 
     /// Stable key for ForEach (the API rows carry an id).
     var rowId: String { id ?? [created_at, type].compactMap { $0 }.joined(separator: "-") }
@@ -223,16 +237,45 @@ func commandRequestFeedback(
 }
 
 /// Honest lifecycle labels shared by every command-history presentation.
-func commandStatusText(_ status: String?) -> String {
-    guard let status else { return "Unknown" }
-    guard let generated = onOffCommandStates[status] else {
-        return status.replacingOccurrences(of: "_", with: " ").capitalized
+///
+/// Mirrors the web `commandProgress`: a socket write is not a success, and an
+/// acknowledgement is not a confirmed state change.
+func commandStatusText(
+    _ status: String?,
+    deliveryState: String? = nil,
+    expiresAt: String? = nil
+) -> String {
+    let deadlinePassed: Bool = {
+        guard let expiresAt, let date = Date.fromISO(expiresAt) else { return false }
+        return date <= Date()
+    }()
+    let normalized = status?.lowercased()
+
+    if normalized == "expired" || deliveryState == "expired" {
+        return "Expired — not acknowledged"
     }
-    switch status {
-    case "delivered": return "\(generated.label) (PC state not confirmed)"
-    case "expired": return "\(generated.label) — not acknowledged"
-    default: return generated.label
+    if normalized == "delivered" || deliveryState == "acknowledged" {
+        return "Device acknowledged (PC state not confirmed)"
     }
+    if deliveryState == "failed_ambiguous" {
+        return "Delivery uncertain — check before retrying"
+    }
+    if deliveryState == "socket_written" {
+        return "Sent — awaiting acknowledgement"
+    }
+    if deliveryState == "sending" {
+        return "Sending…"
+    }
+    if deadlinePassed && (normalized == "pending" || normalized == "sent" || normalized == nil) {
+        return "Expired — not acknowledged"
+    }
+    if normalized == "pending" {
+        return "Queued"
+    }
+    guard let status, let generated = onOffCommandStates[status] else {
+        return status?.replacingOccurrences(of: "_", with: " ").capitalized ?? "Unknown"
+    }
+    return generated.label
 }
 
 extension Date {

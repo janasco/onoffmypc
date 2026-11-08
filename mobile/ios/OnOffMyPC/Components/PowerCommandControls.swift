@@ -6,6 +6,8 @@ struct PowerCommandControls: View {
     let deviceName: String
     let commandInFlight: Bool
     var includeForceOff = true
+    /// Lock / Log Out only exist on the desktop agent.
+    var includeDesktopActions = false
     let onCommand: (CommandType) -> Void
 
     @State private var confirmation: CommandType?
@@ -18,6 +20,10 @@ struct PowerCommandControls: View {
             ) {
                 commandButton(.powerOn, role: .informational)
                 commandButton(.sleep, role: .neutral)
+                if includeDesktopActions {
+                    commandButton(.lock, role: .neutral)
+                    commandButton(.logout, role: .neutral)
+                }
                 commandButton(.powerOff, role: .danger)
                 if includeForceOff { commandButton(.powerOffForce, role: .danger) }
                 commandButton(.reset, role: .warning)

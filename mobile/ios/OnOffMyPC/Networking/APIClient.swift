@@ -56,6 +56,9 @@ final class APIClient {
 
         if http.statusCode == 401 {
             Session.cookie = nil
+            // Centralised so every caller is covered: Account and Billing used
+            // to swallow this and leave the app in a logged-in UI.
+            NotificationCenter.default.post(name: .sessionExpired, object: nil)
             throw APIError.unauthorized
         }
         guard (200..<300).contains(http.statusCode) else {
@@ -173,12 +176,29 @@ final class APIClient {
     func commands(id: String) async throws -> [Command] { try decode(try await send("GET", "commands/\(id)")) }
 
     func sendCommand(deviceId: String, type: CommandType) async throws -> CommandResponse {
-        try decode(try await send("POST", "commands/\(deviceId)", body: CommandRequest(type: type.rawValue)))
+        // A fresh id per attempt: if the request times out and the user retries,
+        // the server replays the same command instead of repeating the physical
+        // action.
+        let requestId = UUID().uuidString
+        return try decode(try await send(
+            "POST",
+            "commands/\(deviceId)",
+            body: CommandRequest(type: type.rawValue, client_request_id: requestId)
+        ))
     }
 }
 
 struct CommandResponse: Decodable {
     var id: String?
+    var status: String?
+    var delivery_state: String?
+    var expires_at: String?
     var delivered: Bool?
+    var replayed: Bool?
     var reason: String?
+}
+
+
+extension Notification.Name {
+    static let sessionExpired = Notification.Name("onoffmypc.sessionExpired")
 }

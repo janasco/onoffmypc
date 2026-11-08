@@ -18,11 +18,16 @@ struct DeviceStatusPresentation {
     }
 }
 
-func deviceStatusFromLastContact(lastSeenAt: String?, pcOn: Int?) -> DeviceStatusPresentation {
+func deviceStatusFromLastContact(
+    lastSeenAt: String?,
+    pcOn: Int?,
+    telemetryAt: String? = nil
+) -> DeviceStatusPresentation {
     makeDeviceStatus(
         connection: connectionFromLastContact(lastSeenAt),
         lastSeenAt: lastSeenAt,
         pcOn: pcOn,
+        telemetryAt: telemetryAt,
         onlineLabel: "Recently online"
     )
 }
@@ -30,7 +35,8 @@ func deviceStatusFromLastContact(lastSeenAt: String?, pcOn: Int?) -> DeviceStatu
 func deviceStatusFromEndpoint(
     online: Bool?,
     lastSeenAt: String?,
-    pcOn: Int?
+    pcOn: Int?,
+    telemetryAt: String? = nil
 ) -> DeviceStatusPresentation {
     let connection: DeviceConnectionState
     if online == true {
@@ -44,6 +50,7 @@ func deviceStatusFromEndpoint(
         connection: connection,
         lastSeenAt: lastSeenAt,
         pcOn: pcOn,
+        telemetryAt: telemetryAt,
         onlineLabel: "Online"
     )
 }
@@ -92,6 +99,7 @@ private func makeDeviceStatus(
     connection: DeviceConnectionState,
     lastSeenAt: String?,
     pcOn: Int?,
+    telemetryAt: String?,
     onlineLabel: String
 ) -> DeviceStatusPresentation {
     let connectionLabel: String
@@ -108,12 +116,14 @@ private func makeDeviceStatus(
         connectionRole = .neutral
     }
 
+    // A PC-state reading without its age is indistinguishable from a live one.
+    let observed = observedText(telemetryAt)
     let pcStateLabel: String
     switch pcOn {
     case 1:
-        pcStateLabel = "Last reported PC state: on"
+        pcStateLabel = "Last reported PC state: on, \(observed)"
     case 0:
-        pcStateLabel = "Last reported PC state: off"
+        pcStateLabel = "Last reported PC state: off, \(observed)"
     default:
         pcStateLabel = "PC state not reported"
     }
@@ -130,6 +140,16 @@ private func makeDeviceStatus(
 private func connectionFromLastContact(_ value: String?) -> DeviceConnectionState {
     guard let value, let date = Date.fromISO(value) else { return .unknown }
     return max(0, Date().timeIntervalSince(date)) < 90 ? .online : .offline
+}
+
+private func observedText(_ value: String?) -> String {
+    guard let value, let date = Date.fromISO(value) else { return "observation time unknown" }
+    let age = max(0, Date().timeIntervalSince(date))
+    if age < 15 { return "observed just now" }
+    if age < 60 { return "observed \(Int(age))s ago" }
+    if age < 3_600 { return "observed \(Int(age / 60))m ago" }
+    if age < 86_400 { return "observed \(Int(age / 3_600))h ago" }
+    return "observed \(Int(age / 86_400))d ago"
 }
 
 private func lastContactText(_ value: String?) -> String {

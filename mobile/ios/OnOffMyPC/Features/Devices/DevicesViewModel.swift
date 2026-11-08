@@ -53,6 +53,8 @@ final class DevicesViewModel: ObservableObject {
                 sentToDevice: result.delivered == true,
                 reason: result.reason
             )
+            // Reflect the new last-command state and refreshed ages immediately.
+            await silentReload()
         } catch APIError.unauthorized {
             appState.sessionExpired()
         } catch APIError.trialExpired {
