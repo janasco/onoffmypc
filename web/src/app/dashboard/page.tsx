@@ -10,6 +10,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { api } from "@/lib/api";
 import { getPlatformInfo } from "@/lib/platform";
 import { toChartPoints, type TelemetrySample } from "@/lib/telemetry";
+import { commandProgress, progressFromSendResult } from "@/lib/commandLifecycle";
+import { describeConnection, describePcState } from "@/lib/freshness";
 
 interface Device {
   id: string;
@@ -25,6 +27,13 @@ interface Device {
   telemetry_ram: number;
   telemetry_gpu: number;
   telemetry_wifi: number;
+  /** Observation time for pc_on and the hardware metrics. */
+  telemetry_at: string | null;
+  last_command_id: string | null;
+  last_command_type: string | null;
+  last_command_status: string | null;
+  last_command_at: string | null;
+  last_command_expires_at: string | null;
 }
 
 interface AccountInfo {
@@ -55,13 +64,25 @@ interface CommandRecord {
   id: string;
   type: string;
   status: string;
+  delivery_state?: string | null;
   delivered?: boolean;
   created_at: string;
+  delivered_at?: string | null;
+  expires_at?: string | null;
 }
 
-/** `POST /commands/:deviceId` — `delivered` means socket-written, not PC-on. */
+/**
+ * `POST /commands/:deviceId`. `delivered` means the frame was written to the
+ * device socket — not that the device acknowledged it, and not that the PC
+ * changed state. Prefer `status` / `delivery_state`.
+ */
 interface CommandResult {
+  id?: string;
+  status?: string | null;
+  delivery_state?: string | null;
+  expires_at?: string | null;
   delivered: boolean;
+  replayed?: boolean;
   reason?: string;
 }
 
@@ -239,37 +260,68 @@ export default function DashboardPage() {
     }
   };
 
+  const actionLabel = (type: string) =>
+    type === "power_on" ? "Power On" :
+    type === "power_off" ? "Power Off" :
+    type === "power_off_force" ? "Force Off" :
+    type === "reset" ? "Reset" :
+    type === "sleep" ? "Sleep" :
+    type === "lock" ? "Lock" :
+    type === "logout" ? "Log Out" : type;
+
   const handleSendCommand = async (deviceId: string, type: string) => {
     if (commandInFlight[deviceId]) return;
     setCommandInFlight((prev) => ({ ...prev, [deviceId]: true }));
     try {
-      const res = await api.sendCommand<CommandResult>(deviceId, type);
-      const data = res.data;
-      const error = res.error;
-      if (error) {
-        showToast(error || `Failed to send command '${type}'.`, 'error');
+      // A stable per-attempt key makes retries safe: the server dedupes on
+      // (device_id, client_request_id) and replays the same command instead of
+      // performing the physical action twice.
+      const res = await api.sendCommand<CommandResult>(deviceId, type, crypto.randomUUID());
+      const device = devices.find((d) => d.id === deviceId);
+      const name = device?.name ?? "Device";
+
+      if (res.error) {
+        // A timeout is ambiguous: the request may have queued before the
+        // connection dropped, so do not invite a blind retry.
+        showToast(
+          `${actionLabel(type)} for ${name}: ${res.error}. Check the device before retrying — the request may already have been queued.`,
+          "error",
+        );
       } else {
-        const device = devices.find((d) => d.id === deviceId);
-        const name = device ? device.name : "Device";
-        const actionLabel = type === "power_on" ? "Power On" :
-                            type === "power_off" ? "Power Off" :
-                            type === "power_off_force" ? "Force Off" :
-                            type === "reset" ? "Reset" :
-                            type === "sleep" ? "Sleep" :
-                            type === "lock" ? "Lock" :
-                            type === "logout" ? "Log Out" : type;
-                            
-        if (data?.delivered) {
-          showToast(`${actionLabel} request delivered to ${name} successfully!`, 'success');
-        } else {
-          showToast(`${actionLabel} request queued for ${name}. It will execute when the device reconnects.`, 'info');
-        }
+        const progress = progressFromSendResult(res.data ?? { delivered: false });
+        const message = `${actionLabel(type)} for ${name}: ${progress.label}. ${progress.detail}`;
+        showToast(message, progress.tone === "danger" ? "error" : progress.tone === "warning" ? "info" : "info");
         loadData(true);
       }
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : "Failed to submit command.", "error");
+      showToast(
+        err instanceof Error
+          ? `${actionLabel(type)} failed: ${err.message}. Check the device before retrying.`
+          : `${actionLabel(type)} failed. Check the device before retrying.`,
+        "error",
+      );
     } finally {
       setCommandInFlight((prev) => ({ ...prev, [deviceId]: false }));
+    }
+  };
+
+  // Physical actions with data-loss risk get an explicit, device-specific
+  // confirmation instead of firing on a single click.
+  const CONFIRM_TYPES = new Set(["power_off", "power_off_force", "reset"]);
+  const handlePowerAction = (device: Device, type: string) => {
+    if (commandInFlight[device.id]) return;
+    if (!CONFIRM_TYPES.has(type)) {
+      void handleSendCommand(device.id, type);
+      return;
+    }
+    const consequence =
+      type === "reset"
+        ? "The PC will restart immediately and unsaved work will be lost."
+        : type === "power_off_force"
+          ? "This holds the power button for 6 seconds. Power may be cut immediately and unsaved work will be lost. Use it only when a normal Power Off does not work."
+          : "The PC will begin shutting down and unsaved work may be lost.";
+    if (confirm(`${actionLabel(type)} “${device.name}”?\n\n${consequence}`)) {
+      void handleSendCommand(device.id, type);
     }
   };
 
@@ -281,35 +333,66 @@ export default function DashboardPage() {
 
   const handleBulkCommand = async (type: string) => {
     if (selectedIds.length === 0 || bulkInFlight) return;
-    if (!confirm(`Send '${type}' command to ${selectedIds.length} selected devices?`)) return;
-    setBulkInFlight(true);
 
-    let succeeded = 0;
+    // Never stack a bulk send on top of a single command already in flight for
+    // the same device.
+    const targets = selectedIds.filter((id) => !commandInFlight[id]);
+    const skipped = selectedIds.length - targets.length;
+    if (targets.length === 0) {
+      showToast("Every selected device already has a command in flight.", "info");
+      return;
+    }
+    if (!confirm(`${actionLabel(type)} for ${targets.length} device(s)?\n\nThis sends a physical action to each selected device.`)) return;
+
+    setBulkInFlight(true);
+    setCommandInFlight((prev) => {
+      const next = { ...prev };
+      for (const id of targets) next[id] = true;
+      return next;
+    });
+
+    let queued = 0;
+    let sent = 0;
     let failed = 0;
-    for (const id of selectedIds) {
+    for (const id of targets) {
       try {
-        const res = await api.sendCommand(id, type);
-        if (res.data) succeeded++;
-        else failed++;
+        const res = await api.sendCommand<CommandResult>(id, type, crypto.randomUUID());
+        if (res.error) {
+          failed++;
+        } else {
+          const progress = progressFromSendResult(res.data ?? { delivered: false });
+          if (progress.stage === "queued") queued++;
+          else sent++;
+        }
       } catch {
         failed++;
       }
     }
 
+    setCommandInFlight((prev) => {
+      const next = { ...prev };
+      for (const id of targets) next[id] = false;
+      return next;
+    });
     setBulkInFlight(false);
     setSelectedIds([]);
     setBulkMode(false);
-    if (failed > 0) {
-      showToast(`Bulk command complete. Delivered/Queued: ${succeeded}, Failed: ${failed}.`, 'info');
-    } else {
-      showToast(`Bulk command transmission complete. All ${succeeded} commands dispatched!`, 'success');
-    }
+
+    const parts = [`${sent} sent`, `${queued} queued`];
+    if (failed) parts.push(`${failed} failed`);
+    if (skipped) parts.push(`${skipped} skipped (already in flight)`);
+    showToast(
+      `${actionLabel(type)} — ${parts.join(", ")}. Acknowledged does not mean the PCs changed state.`,
+      failed ? "error" : "info",
+    );
     loadData(true);
   };
 
   // Fleet summary stats
-  const onlineCount = devices.filter((d) => d.pc_on === 1).length;
-  const offlineCount = devices.filter((d) => d.pc_on === 0).length;
+  // "Online" means we heard from the controller recently; PC power state is a
+  // separate axis and may be stale/unknown.
+  const onlineCount = devices.filter((d) => describeConnection(d.last_seen_at).online).length;
+  const offlineCount = devices.length - onlineCount;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
@@ -321,16 +404,27 @@ export default function DashboardPage() {
       )}
 
       {/* Custom toast banner */}
-      {notification && (
-        <div className={`text-center py-2.5 px-4 text-sm font-medium border-b flex justify-between items-center transition-all ${
-          notification.type === 'success' ? 'bg-emerald-950/85 text-emerald-400 border-emerald-900/50' : 
-          notification.type === 'error' ? 'bg-red-950/85 text-red-400 border-red-900/50' :
-          'bg-zinc-900/90 text-zinc-300 border-zinc-850'
-        }`}>
-          <span className="mx-auto">{notification.message}</span>
-          <button onClick={() => setNotification(null)} className="text-zinc-500 hover:text-zinc-300 text-xs ml-4">✕</button>
-        </div>
-      )}
+      {/* Command outcomes are announced to assistive tech, and stay until
+          dismissed so a slow reader does not lose the result. */}
+      <div role="status" aria-live="polite" aria-atomic="true">
+        {notification && (
+          <div className={`text-center py-2.5 px-4 text-sm font-medium border-b flex justify-between items-center transition-all ${
+            notification.type === 'success' ? 'bg-emerald-950/85 text-emerald-400 border-emerald-900/50' : 
+            notification.type === 'error' ? 'bg-red-950/85 text-red-400 border-red-900/50' :
+            'bg-zinc-900/90 text-zinc-300 border-zinc-850'
+          }`}>
+            <span className="mx-auto">{notification.message}</span>
+            <button
+              type="button"
+              aria-label="Dismiss notification"
+              onClick={() => setNotification(null)}
+              className="text-zinc-500 hover:text-zinc-300 text-xs ml-4 min-h-[44px] min-w-[44px] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Header */}
       <header className="border-b border-zinc-900 bg-zinc-950">
@@ -470,15 +564,39 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {devices.map((d) => (
+            {devices.map((d) => {
+              const pc = describePcState(d.pc_on, d.telemetry_at);
+              const connection = describeConnection(d.last_seen_at);
+              const lastCommand = d.last_command_status
+                ? commandProgress({
+                    status: d.last_command_status,
+                    expires_at: d.last_command_expires_at,
+                    created_at: d.last_command_at,
+                  })
+                : null;
+              const busy = Boolean(commandInFlight[d.id]);
+              return (
               <Card key={d.id} className="bg-zinc-900 border-zinc-800 flex flex-col justify-between hover:border-zinc-700 transition-colors">
-                <div onClick={() => handleOpenDeviceDetail(d)} className="cursor-pointer group flex-1">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open details for ${d.name}`}
+                  onClick={() => handleOpenDeviceDetail(d)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleOpenDeviceDetail(d);
+                    }
+                  }}
+                  className="cursor-pointer group flex-1 rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
                   <CardHeader className="pb-4">
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex items-center gap-3">
                         {bulkMode && (
                           <input
                             type="checkbox"
+                            aria-label={`Select ${d.name}`}
                             checked={selectedIds.includes(d.id)}
                             onChange={(e) => {
                               e.stopPropagation();
@@ -490,17 +608,27 @@ export default function DashboardPage() {
                         <div>
                           <CardTitle className="text-zinc-100 text-lg font-bold group-hover:text-emerald-400 transition-colors">{d.name}</CardTitle>
                           <CardDescription className="text-zinc-500 text-xs mt-0.5">
-                            ID: {d.id}
+                            <span className={pc.state === "Unknown" ? "text-zinc-500" : pc.stale ? "text-amber-400" : "text-zinc-300"}>
+                              {pc.state === "Unknown" ? "PC state unknown" : `PC ${pc.state.toLowerCase()}`}
+                            </span>
+                            <span className="text-zinc-600"> · {pc.ageLabel}</span>
                           </CardDescription>
+                          <span className="text-[10px] text-zinc-600 font-mono">ID: {d.id}</span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                        <span className={`inline-block h-2 w-2 rounded-full ${d.pc_on === 1 ? "bg-emerald-500" : "bg-zinc-600"}`} />
-                        <span className="text-xs text-zinc-400">{d.pc_on === 1 ? "Online" : "Offline"}</span>
+                        <span
+                          className={`inline-block h-2 w-2 rounded-full ${connection.online ? "bg-emerald-500" : "bg-zinc-600"}`}
+                          aria-hidden="true"
+                        />
+                        <span className="text-xs text-zinc-400" title={connection.ageLabel}>{connection.label}</span>
 
                         <DropdownMenu>
-                          <DropdownMenuTrigger className="h-8 w-8 text-zinc-500 hover:text-zinc-300 flex items-center justify-center rounded-lg hover:bg-zinc-800 transition-colors focus:outline-none cursor-pointer">
+                          <DropdownMenuTrigger
+                            aria-label={`Actions for ${d.name}`}
+                            className="h-9 w-9 text-zinc-500 hover:text-zinc-300 flex items-center justify-center rounded-lg hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
+                          >
                             •••
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-zinc-300">
@@ -556,76 +684,106 @@ export default function DashboardPage() {
                 {/* Power Action Buttons */}
                 <CardContent className="pt-0">
                   {!bulkMode && (
-                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-zinc-800">
-                      <Button 
-                        size="sm" 
-                        disabled={commandInFlight[d.id]} 
-                        onClick={() => handleSendCommand(d.id, "power_on")} 
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
-                      >
-                        {commandInFlight[d.id] ? "⏳" : "On"}
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="secondary" 
-                        disabled={commandInFlight[d.id]} 
-                        onClick={() => handleSendCommand(d.id, "sleep")} 
-                        className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
-                      >
-                        Sleep
-                      </Button>
-                      {d.firmware_version?.toLowerCase().includes("desktop-agent") && (
-                        <>
-                          <Button 
-                            size="sm" 
-                            variant="secondary" 
-                            disabled={commandInFlight[d.id]} 
-                            onClick={() => handleSendCommand(d.id, "lock")} 
-                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
-                          >
-                            Lock
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="secondary" 
-                            disabled={commandInFlight[d.id]} 
-                            onClick={() => handleSendCommand(d.id, "logout")} 
-                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
-                          >
-                            Log Out
-                          </Button>
-                        </>
+                    <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-zinc-800">
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          disabled={busy}
+                          aria-label={`Power On ${d.name}`}
+                          onClick={() => handlePowerAction(d, "power_on")}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold min-h-[44px] focus-visible:ring-2 focus-visible:ring-emerald-400"
+                        >
+                          {busy ? "…" : "On"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={busy}
+                          aria-label={`Sleep ${d.name}`}
+                          onClick={() => handlePowerAction(d, "sleep")}
+                          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 min-h-[44px]"
+                        >
+                          Sleep
+                        </Button>
+                        {d.firmware_version?.toLowerCase().includes("desktop-agent") && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={busy}
+                              aria-label={`Lock ${d.name}`}
+                              onClick={() => handlePowerAction(d, "lock")}
+                              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 min-h-[44px]"
+                            >
+                              Lock
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={busy}
+                              aria-label={`Log Out ${d.name}`}
+                              onClick={() => handlePowerAction(d, "logout")}
+                              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 min-h-[44px]"
+                            >
+                              Log Out
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={busy}
+                          aria-label={`Power Off ${d.name}`}
+                          onClick={() => handlePowerAction(d, "power_off")}
+                          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 min-h-[44px]"
+                        >
+                          Off
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={busy}
+                          aria-label={`Force Off ${d.name}`}
+                          onClick={() => handlePowerAction(d, "power_off_force")}
+                          className="min-h-[44px]"
+                        >
+                          Force Off
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={busy}
+                          aria-label={`Reset ${d.name}`}
+                          onClick={() => handlePowerAction(d, "reset")}
+                          className="min-h-[44px]"
+                        >
+                          Reset
+                        </Button>
+                      </div>
+
+                      {/* Latest command outcome, so a queued/expired command is
+                          visible without opening the device. */}
+                      {lastCommand && (
+                        <p
+                          className={`text-[11px] ${
+                            lastCommand.tone === "danger"
+                              ? "text-red-400"
+                              : lastCommand.tone === "warning"
+                                ? "text-amber-400"
+                                : lastCommand.tone === "success"
+                                  ? "text-emerald-400"
+                                  : "text-zinc-500"
+                          }`}
+                        >
+                          Last command: {lastCommand.label}
+                        </p>
                       )}
-                      <Button 
-                        size="sm" 
-                        variant="secondary" 
-                        disabled={commandInFlight[d.id]} 
-                        onClick={() => handleSendCommand(d.id, "power_off")} 
-                        className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
-                      >
-                        Off
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive" 
-                        disabled={commandInFlight[d.id]} 
-                        onClick={() => handleSendCommand(d.id, "power_off_force")}
-                      >
-                        Force Off
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive" 
-                        disabled={commandInFlight[d.id]} 
-                        onClick={() => handleSendCommand(d.id, "reset")}
-                      >
-                        Reset
-                      </Button>
                     </div>
                   )}
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
@@ -817,9 +975,24 @@ export default function DashboardPage() {
                   Device ID: {detailDevice?.id}
                 </DialogDescription>
               </div>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${detailDevice?.pc_on === 1 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-zinc-800 text-zinc-400"}`}>
-                {detailDevice?.pc_on === 1 ? "Online" : "Offline"}
-              </span>
+              {(() => {
+                if (!detailDevice) return null;
+                const pc = describePcState(detailDevice.pc_on, detailDevice.telemetry_at);
+                return (
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                      pc.state === "Unknown"
+                        ? "bg-zinc-800 text-zinc-400"
+                        : pc.stale
+                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                          : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    }`}
+                    title={pc.ageLabel}
+                  >
+                    PC {pc.state.toLowerCase()}{pc.state !== "Unknown" ? ` · ${pc.ageLabel}` : ""}
+                  </span>
+                );
+              })()}
             </div>
           </DialogHeader>
 
@@ -1008,7 +1181,14 @@ function HistoryTempChart({ history }: { history: TelemetrySample[] }) {
         <span>Max: {maxTemp.toFixed(1)}°C</span>
       </div>
       <div className="relative">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full overflow-visible">
+        <figure role="img" aria-labelledby="temp-chart-title" aria-describedby="temp-chart-desc">
+        <figcaption id="temp-chart-title" className="sr-only">Hourly room temperature history</figcaption>
+        <p id="temp-chart-desc" className="sr-only">
+          {points.length} readings from {points[0].hour} to {points[points.length - 1].hour}.
+          Minimum {Math.round(minTemp)} degrees Celsius, maximum {Math.round(maxTemp)} degrees Celsius,
+          latest {Math.round(points[points.length - 1].temp)} degrees Celsius.
+        </p>
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full overflow-visible" aria-hidden="true">
           {/* Grid lines */}
           <line x1={paddingX} y1={paddingY} x2={width - paddingX} y2={paddingY} stroke="#27272a" strokeWidth="1" strokeDasharray="3,3" />
           <line x1={paddingX} y1={paddingY + chartHeight / 2} x2={width - paddingX} y2={paddingY + chartHeight / 2} stroke="#27272a" strokeWidth="1" strokeDasharray="3,3" />
@@ -1051,6 +1231,7 @@ function HistoryTempChart({ history }: { history: TelemetrySample[] }) {
             />
           ))}
         </svg>
+        </figure>
       </div>
       {/* Timeline Labels */}
       <div className="flex justify-between text-[9px] text-zinc-500 mt-1 px-1">

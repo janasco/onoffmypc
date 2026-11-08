@@ -118,8 +118,11 @@ export const api = {
     apiReq<T>('POST', '/billing/portal'),
   billingRequests: <T = unknown>() =>
     apiReq<T>('GET', '/billing/requests'),
-  sendCommand: <T = unknown>(deviceId: string, type: string) =>
-    apiReq<T>('POST', `/commands/${deviceId}`, { type }),
+  sendCommand: <T = unknown>(deviceId: string, type: string, clientRequestId?: string) =>
+    apiReq<T>('POST', `/commands/${deviceId}`, {
+      type,
+      ...(clientRequestId ? { client_request_id: clientRequestId } : {}),
+    }),
   commands: <T = unknown>(deviceId: string) =>
     apiReq<T>('GET', `/commands/${deviceId}`),
   schedule: <T = unknown>(deviceId: string, type: string, run_at: string) =>
