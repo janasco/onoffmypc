@@ -50,6 +50,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.ui.components.PowerControls
@@ -163,6 +164,7 @@ private fun DetailContent(
     val status = deviceStatusPresentation(
         lastSeenAt = state.lastSeenAt ?: device.last_seen_at,
         pcOn = latest?.pc_on ?: device.pc_on,
+        telemetryAt = latest?.recorded_at ?: device.telemetry_at,
         connection = state.connection,
     )
 
@@ -212,6 +214,8 @@ private fun DetailContent(
                             deviceName = device.name,
                             commandInFlight = state.commandInFlight,
                             onCommand = onCommand,
+                            supportsDesktopActions = device.firmware_version
+                                ?.contains("desktop-agent", ignoreCase = true) == true,
                         )
                     }
                 }
@@ -571,14 +575,8 @@ private fun CommandRow(command: Command) {
     }
 }
 
-private fun commandLabel(type: String?): String = when (type) {
-    "power_on" -> "Power On"
-    "power_off" -> "Power Off"
-    "power_off_force" -> "Force Off"
-    "reset" -> "Reset"
-    "sleep" -> "Sleep"
-    else -> type ?: "Unknown command"
-}
+private fun commandLabel(type: String?): String =
+    CommandType.entries.firstOrNull { it.wire == type }?.label ?: (type ?: "Unknown command")
 
 private fun fmtDateTime(iso: String?): String {
     if (iso == null) return ""

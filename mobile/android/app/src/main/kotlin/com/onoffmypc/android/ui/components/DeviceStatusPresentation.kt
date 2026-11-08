@@ -43,6 +43,7 @@ fun connectionFromLastContact(lastSeenAt: String?, now: Instant = Instant.now())
 fun deviceStatusPresentation(
     lastSeenAt: String?,
     pcOn: Int?,
+    telemetryAt: String? = null,
     connection: DeviceConnectionState? = null,
     onlineLabel: String = "Online",
     now: Instant = Instant.now(),
@@ -58,9 +59,11 @@ fun deviceStatusPresentation(
         DeviceConnectionState.OFFLINE -> StatusRole.Offline
         DeviceConnectionState.UNKNOWN -> StatusRole.Unknown
     }
+    // A PC-state reading without its age is indistinguishable from a live one.
+    val observed = observedLabel(telemetryAt, now)
     val pcStateLabel = when (pcOn) {
-        1 -> "Last reported PC state: on"
-        0 -> "Last reported PC state: off"
+        1 -> "Last reported PC state: on, $observed"
+        0 -> "Last reported PC state: off, $observed"
         else -> "PC state not reported"
     }
     return DeviceStatusPresentation(
@@ -104,6 +107,19 @@ fun DeviceStatusSummary(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
         )
+    }
+}
+
+private fun observedLabel(value: String?, now: Instant): String {
+    if (value == null) return "observation time unknown"
+    val observed = parseInstant(value) ?: return "observation time unknown"
+    val age = Duration.between(observed, now).seconds.coerceAtLeast(0)
+    return when {
+        age < 15 -> "observed just now"
+        age < 60 -> "observed ${age}s ago"
+        age < 3_600 -> "observed ${age / 60}m ago"
+        age < 86_400 -> "observed ${age / 3_600}h ago"
+        else -> "observed ${age / 86_400}d ago"
     }
 }
 

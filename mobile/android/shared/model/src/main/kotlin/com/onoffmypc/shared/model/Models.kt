@@ -1,5 +1,6 @@
 package com.onoffmypc.shared.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -144,6 +145,13 @@ data class Device(
     val telemetry_ram: Int? = null,
     val telemetry_gpu: Int? = null,
     val telemetry_wifi: Int? = null,
+    /** When pc_on and the hardware metrics were observed (ISO-8601). */
+    val telemetry_at: String? = null,
+    val last_command_id: String? = null,
+    val last_command_type: String? = null,
+    val last_command_status: String? = null,
+    val last_command_at: String? = null,
+    val last_command_expires_at: String? = null,
 )
 
 @Serializable
@@ -208,12 +216,20 @@ data class Command(
 )
 
 @Serializable
-data class CommandRequest(val type: String)
+data class CommandRequest(
+    val type: String,
+    /** Deduplication key. A retry with the same id replays instead of acting twice. */
+    @SerialName("client_request_id") val clientRequestId: String? = null,
+)
 
 @Serializable
 data class CommandResponse(
     val id: String? = null,
+    val status: String? = null,
+    @SerialName("delivery_state") val deliveryState: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
     val delivered: Boolean = false,
+    val replayed: Boolean = false,
     val reason: String? = null,
 )
 

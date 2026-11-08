@@ -115,8 +115,15 @@ class OnOffRepository(
 
     suspend fun commands(id: String): Result<List<Command>> = call { api.commands(id) }
 
-    suspend fun sendCommand(id: String, type: CommandType): Result<CommandResponse> =
-        call { api.sendCommand(id, CommandRequest(type.wire)) }
+    suspend fun sendCommand(
+        id: String,
+        type: CommandType,
+        // Every attempt gets a stable id so a retry (timeout, process death,
+        // duplicate tap) replays the same command server-side instead of
+        // performing the physical action twice.
+        clientRequestId: String = java.util.UUID.randomUUID().toString(),
+    ): Result<CommandResponse> =
+        call { api.sendCommand(id, CommandRequest(type.wire, clientRequestId)) }
 
     suspend fun logout() {
         // Drop this device's push token while the session cookie is still valid.

@@ -178,25 +178,36 @@ class DevicesViewModel : ViewModel() {
     }
 
     fun sendBulkCommand(type: CommandType) {
-        val selectedIds = _state.value.selectedDeviceIds
-        val targets = _state.value.devices.filter { it.id in selectedIds }
-        if (targets.isEmpty() || _state.value.bulkCommandInFlight) return
+        val snapshot = _state.value
+        val selectedIds = snapshot.selectedDeviceIds
+        val targets = snapshot.devices.filter {
+            it.id in selectedIds && it.id !in snapshot.commandInFlightDeviceIds
+        }
+        val skipped = selectedIds.size - targets.size
+        if (targets.isEmpty() || snapshot.bulkCommandInFlight) {
+            if (targets.isEmpty() && selectedIds.isNotEmpty()) {
+                _state.update { it.copy(message = "Every selected device already has a command in flight.") }
+            }
+            return
+        }
 
-        _state.update { it.copy(bulkCommandInFlight = true) }
+        _state.update {
+            it.copy(
+                bulkCommandInFlight = true,
+                commandInFlightDeviceIds = it.commandInFlightDeviceIds + targets.map { d -> d.id },
+            )
+        }
         viewModelScope.launch {
             var sent = 0
             var queued = 0
+            var queuedOffline = 0
             val failed = mutableListOf<String>()
             var stoppedAt = -1
 
             try {
                 for (i in targets.indices) {
                     val device = targets[i]
-                    _state.update { it.copy(commandInFlightDeviceIds = it.commandInFlightDeviceIds + device.id) }
-                    
                     val result = repo.sendCommand(device.id, type)
-                    
-                    _state.update { it.copy(commandInFlightDeviceIds = it.commandInFlightDeviceIds - device.id) }
 
                     result.fold(
                         onSuccess = { response ->
@@ -204,6 +215,7 @@ class DevicesViewModel : ViewModel() {
                                 sent++
                             } else {
                                 queued++
+                                if (response.reason == "device_offline") queuedOffline++
                             }
                         },
                         onFailure = { error ->
@@ -215,24 +227,34 @@ class DevicesViewModel : ViewModel() {
                         }
                     )
 
-                    if (stoppedAt >= 0) {
-                        break
-                    }
+                    if (stoppedAt >= 0) break
                 }
             } finally {
-                _state.update { it.copy(bulkCommandInFlight = false) }
+                _state.update {
+                    it.copy(
+                        bulkCommandInFlight = false,
+                        commandInFlightDeviceIds = it.commandInFlightDeviceIds - targets.map { d -> d.id }.toSet(),
+                    )
+                }
             }
 
             val label = type.label
             val parts = mutableListOf<String>()
             if (sent > 0) parts.add("sent to $sent")
-            if (queued > 0) parts.add("queued for $queued offline")
+            if (queued > 0) {
+                parts.add(
+                    if (queuedOffline == queued) "queued for $queued offline"
+                    else "not delivered to $queued (device offline or unavailable)"
+                )
+            }
             if (failed.isNotEmpty()) parts.add("rejected for ${failed.size}")
+            if (skipped > 0) parts.add("$skipped skipped (already in flight)")
             if (stoppedAt >= 0) {
                 val remaining = targets.size - stoppedAt
                 parts.add("stopped by the rate limit with $remaining remaining — wait a minute and retry those")
             }
-            val summary = "$label: ${parts.joinToString(", ").ifEmpty { "nothing sent" }}."
+            val summary = "$label: ${parts.joinToString(", ").ifEmpty { "nothing sent" }}. " +
+                "Acknowledged does not mean the PCs changed state."
 
             _state.update {
                 it.copy(

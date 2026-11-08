@@ -34,8 +34,30 @@ class DeviceStatusPresentationTest {
         val p = deviceStatusPresentation(lastSeenAt = lastSeen, pcOn = 0, now = now)
         assertEquals(DeviceConnectionState.ONLINE, p.connection)
         assertEquals(StatusRole.Online, p.connectionRole)
-        assertEquals("Last reported PC state: off", p.pcStateLabel)
+        // The observation age is part of the label: a reading without its age
+        // is indistinguishable from a live one.
+        assertEquals("Last reported PC state: off, observation time unknown", p.pcStateLabel)
         assertTrue(p.accessibilityLabel.contains("off", ignoreCase = true))
+    }
+
+    @Test
+    fun deviceStatusPresentation_includesPcObservationAge() {
+        val now = Instant.parse("2026-07-16T12:00:00Z")
+        val fresh = deviceStatusPresentation(
+            lastSeenAt = now.toString(),
+            pcOn = 1,
+            telemetryAt = Instant.parse("2026-07-16T11:59:50Z").toString(),
+            now = now,
+        )
+        assertEquals("Last reported PC state: on, observed just now", fresh.pcStateLabel)
+
+        val stale = deviceStatusPresentation(
+            lastSeenAt = now.toString(),
+            pcOn = 1,
+            telemetryAt = Instant.parse("2026-07-16T10:00:00Z").toString(),
+            now = now,
+        )
+        assertEquals("Last reported PC state: on, observed 2h ago", stale.pcStateLabel)
     }
 
     @Test

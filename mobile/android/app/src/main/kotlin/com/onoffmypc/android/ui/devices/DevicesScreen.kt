@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.draw.clip
@@ -105,13 +108,26 @@ fun DevicesScreen(
     var hasResumedOnce by remember { mutableStateOf(false) }
     var bulkConfirmCommand by remember { mutableStateOf<CommandType?>(null) }
 
+    // The list used to load once and never update, so "last contact just now"
+    // could stay on screen indefinitely. Refresh while the screen is composed
+    // and tick once a minute so relative ages keep moving even when the data
+    // is unchanged.
+    var now by remember { mutableStateOf(java.time.Instant.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(30_000)
+            now = java.time.Instant.now()
+            vm.refresh()
+        }
+    }
+
     val context = LocalContext.current
     val openSetupGuide = {
         try {
             val intent = CustomTabsIntent.Builder().build()
-            intent.launchUrl(context, Uri.parse("https://onoffmypc.com/setup.html"))
+            intent.launchUrl(context, Uri.parse("https://onoffmypc.com/setup"))
         } catch (_: Exception) {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://onoffmypc.com/setup.html"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://onoffmypc.com/setup"))
             context.startActivity(intent)
         }
     }
@@ -282,6 +298,7 @@ fun DevicesScreen(
                                             commandInFlight = device.id in state.commandInFlightDeviceIds,
                                             selectMode = state.selectMode,
                                             selected = device.id in state.selectedDeviceIds,
+                                            now = now,
                                             onSelectedChange = { selected ->
                                                 vm.toggleDeviceSelected(device.id)
                                             },
@@ -431,6 +448,7 @@ private fun DeviceCard(
     commandInFlight: Boolean,
     selectMode: Boolean,
     selected: Boolean,
+    now: java.time.Instant,
     onSelectedChange: (Boolean) -> Unit,
     onOpen: () -> Unit,
     onCommand: (CommandType) -> Unit,
@@ -442,7 +460,9 @@ private fun DeviceCard(
     val status = deviceStatusPresentation(
         lastSeenAt = device.last_seen_at,
         pcOn = device.pc_on,
+        telemetryAt = device.telemetry_at,
         onlineLabel = "Recently online",
+        now = now,
     )
     var menuOpen by remember { mutableStateOf(false) }
 
@@ -451,7 +471,11 @@ private fun DeviceCard(
             .fillMaxWidth()
             .then(
                 if (selectMode) {
-                    Modifier.clickable { onSelectedChange(!selected) }
+                    Modifier.toggleable(
+                        value = selected,
+                        role = Role.Checkbox,
+                        onValueChange = onSelectedChange,
+                    )
                 } else {
                     Modifier
                 }
@@ -573,6 +597,8 @@ private fun DeviceCard(
                     deviceName = device.name,
                     commandInFlight = commandInFlight,
                     onCommand = onCommand,
+                    supportsDesktopActions = device.firmware_version
+                        ?.contains("desktop-agent", ignoreCase = true) == true,
                 )
                 Spacer(Modifier.height(4.dp))
                 TextButton(
@@ -637,7 +663,7 @@ private fun BulkActionBar(
                         containerColor = operational.powerOnBackground,
                         contentColor = operational.powerOnForeground,
                     ),
-                    modifier = Modifier.semantics { contentDescription = "Bulk Power On" }
+                    modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Bulk Power On" }
                 ) {
                     Text("Power On")
                 }
@@ -645,7 +671,7 @@ private fun BulkActionBar(
                 FilledTonalButton(
                     onClick = { onBulkCommand(CommandType.SLEEP) },
                     enabled = enabled,
-                    modifier = Modifier.semantics { contentDescription = "Bulk Sleep" }
+                    modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Bulk Sleep" }
                 ) {
                     Text("Sleep")
                 }
@@ -657,7 +683,7 @@ private fun BulkActionBar(
                         containerColor = operational.powerOffBackground,
                         contentColor = operational.powerOffForeground,
                     ),
-                    modifier = Modifier.semantics { contentDescription = "Bulk Power Off" }
+                    modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Bulk Power Off" }
                 ) {
                     Text("Power Off")
                 }
@@ -669,7 +695,7 @@ private fun BulkActionBar(
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error,
                     ),
-                    modifier = Modifier.semantics { contentDescription = "Bulk Force Off" }
+                    modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Bulk Force Off" }
                 ) {
                     Text("Force Off")
                 }
@@ -681,7 +707,7 @@ private fun BulkActionBar(
                         containerColor = operational.powerResetBackground,
                         contentColor = operational.powerResetForeground,
                     ),
-                    modifier = Modifier.semantics { contentDescription = "Bulk Reset" }
+                    modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Bulk Reset" }
                 ) {
                     Text("Reset")
                 }

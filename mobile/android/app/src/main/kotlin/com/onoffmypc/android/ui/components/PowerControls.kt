@@ -48,6 +48,8 @@ fun PowerControls(
     commandInFlight: Boolean,
     onCommand: (CommandType) -> Unit,
     modifier: Modifier = Modifier,
+    /** Lock / Log Out only exist on the desktop agent, not on firmware. */
+    supportsDesktopActions: Boolean = false,
 ) {
     var confirmation by remember { mutableStateOf<CommandType?>(null) }
     val fontScale = LocalDensity.current.fontScale
@@ -70,6 +72,22 @@ fun PowerControls(
                         enabled = !commandInFlight,
                         accessibilityLabel = "Sleep $deviceName",
                     ) { onCommand(CommandType.SLEEP) }
+                    if (supportsDesktopActions) {
+                        CmdButton(
+                            label = "Lock",
+                            style = CommandButtonStyle.Neutral,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !commandInFlight,
+                            accessibilityLabel = "Lock $deviceName",
+                        ) { onCommand(CommandType.LOCK) }
+                        CmdButton(
+                            label = "Log Out",
+                            style = CommandButtonStyle.Neutral,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !commandInFlight,
+                            accessibilityLabel = "Log Out $deviceName",
+                        ) { onCommand(CommandType.LOGOUT) }
+                    }
                     CmdButton(
                         label = "Power Off",
                         style = CommandButtonStyle.DestructiveTonal,
@@ -112,6 +130,27 @@ fun PowerControls(
                             enabled = !commandInFlight,
                             accessibilityLabel = "Sleep $deviceName",
                         ) { onCommand(CommandType.SLEEP) }
+                    }
+                    if (supportsDesktopActions) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        ) {
+                            CmdButton(
+                                label = "Lock",
+                                style = CommandButtonStyle.Neutral,
+                                modifier = Modifier.weight(1f),
+                                enabled = !commandInFlight,
+                                accessibilityLabel = "Lock $deviceName",
+                            ) { onCommand(CommandType.LOCK) }
+                            CmdButton(
+                                label = "Log Out",
+                                style = CommandButtonStyle.Neutral,
+                                modifier = Modifier.weight(1f),
+                                enabled = !commandInFlight,
+                                accessibilityLabel = "Log Out $deviceName",
+                            ) { onCommand(CommandType.LOGOUT) }
+                        }
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
