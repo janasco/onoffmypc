@@ -21,7 +21,7 @@ receive device notifications. Both use the shared API at `https://api.onoffmypc.
 | Charts | dependency-free **Compose `Canvas`** (temperature history) |
 | Build | **Gradle** 8.11.1 (Kotlin DSL) + version catalog; **AGP** 8.10.1 |
 | Toolchain | **JDK 17**; `compileSdk 36` · `minSdk 26` · `targetSdk 36` |
-| CI/CD | GitHub Actions — build check on push; signed-APK release on `app-v*` tags |
+| CI/CD | GitHub Actions — build check on push only; releases are built and published by hand |
 
 Android is the primary mobile target. iOS is generated from `ios/project.yml`
 and currently has simulator build CI; signing, store distribution, push, and

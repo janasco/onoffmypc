@@ -86,10 +86,11 @@ Secrets do not transfer between repositories. The new repositories need:
 `POLAR_PRODUCT_ID`, `POLAR_SERVER`, `POLAR_SUCCESS_URL`, `POLAR_RETURN_URL`,
 `HEALTHCHECK_URL`. See `app/wrangler.toml` and `app/DEPLOYMENT.md`.
 
-**Public repository** (only for releases, once migrated):
-keystore secrets for Android (`ANDROID_KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`,
-`KEY_ALIAS`, `KEY_PASSWORD`), Play service account, `CLOUDFLARE_API_TOKEN`,
-`CLOUDFLARE_ACCOUNT_ID`.
+**Public repository:** no GitHub Actions secrets are configured or required.
+CI runs tests only. Release signing material (the Android keystore and its
+passwords) stays in the local gitignored `.env`; the Play service-account JSON
+is consumed locally by `mobile/scripts/publish-play.mjs`. Releases are uploaded
+to Cloudflare R2 by hand.
 
 ## Verification performed after consolidation
 

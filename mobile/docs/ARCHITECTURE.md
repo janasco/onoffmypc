@@ -131,7 +131,7 @@ Start destination: `devices` if `Graph.session.session != null`, else `login`.
 
 - AGP 8.10.1, Gradle 8.11.1, Kotlin 2.0.20, Compose BOM 2024.09.03, `minSdk 26`, `targetSdk`/`compileSdk` 36, JDK 17.
 - Release: R8 **disabled** (`isMinifyEnabled = false`); signing from env / `.env` / `keystore.properties`.
-- Workflows: `ci.yml`, `release.yml`, `aab.yml`, `play.yml`, `release-verify.yml`, `ios-ci.yml`.
+- Workflows: `mobile-ci.yml` (Android build check) and `mobile-ios-ci.yml` (simulator build). Delivery is manual.
 
 ---
 

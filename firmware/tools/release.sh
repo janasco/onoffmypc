@@ -9,9 +9,8 @@
 #   dist/manifest.json                          ESP Web Tools manifest for the web flasher
 #   dist/RELEASE_NOTES.md                       notes pulled from CHANGELOG.md
 #
-# Used by .github/workflows/release.yml and runnable locally. Requires PlatformIO
-# and esptool (CI: `pip install platformio esptool`; locally either on PATH or a
-# PlatformIO install under ~/.platformio).
+# Run locally. Requires PlatformIO and esptool (either on PATH or a PlatformIO
+# install under ~/.platformio).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
