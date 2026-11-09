@@ -70,7 +70,7 @@ rule allowing `GET` from the app origin:
 
 ```bash
 cat > /tmp/r2-cors.json <<'JSON'
-{ "rules": [ { "allowed": { "origins": ["https://app.onoffmypc.com", "https://onoffmypc.com"], "methods": ["GET", "HEAD"] } } ] }
+{ "rules": [ { "allowed": { "origins": ["https://onoffmypc.com", "https://www.onoffmypc.com", "https://app.onoffmypc.com"], "methods": ["GET", "HEAD"] } } ] }
 JSON
 npx wrangler@4.112.0 r2 bucket cors set onoffmypc-releases --file /tmp/r2-cors.json
 ```
@@ -101,19 +101,23 @@ The script is idempotent — re-running overwrites the same keys.
 
 ```bash
 curl -fsS https://releases.onoffmypc.com/releases/manifest.json | head -20
-curl -fsSI https://releases.onoffmypc.com/releases/android/0.4.2/onoffmypc-android-0.4.2.apk
+curl -fsSI https://releases.onoffmypc.com/releases/android/0.4.3/onoffmypc-android-0.4.3.apk
+(cd web && npm run releases:check)          # metadata matches the manifest
+(cd web && npm run releases:check -- --verify)  # also re-downloads and hashes
 ```
 
 Check that the APK responds `200`, reports `content-type:
 application/vnd.android.package-archive`, and that its `sha256` matches the one
-the dry run printed.
+the dry run printed. `releases:check` fails if the downloads page would show a
+version, size, or hash that the bucket does not serve.
 
 ## 5. Repoint the app — done
 
 The web app no longer links to GitHub Releases:
 
-- `web/src/lib/releases.ts` is the single source of truth for the current
-  version, filename, size, and SHA-256 of every artifact.
+- `web/src/data/releases.json` holds the current version, filename, size, and
+  SHA-256 of every artifact; `web/src/lib/releases.ts` is the typed view used by
+  the downloads page.
 - `web/src/app/downloads/page.tsx` lists them and links straight to R2.
 - `web/src/app/page.tsx` links both download buttons to `/downloads`.
 - `web/src/app/setup/page.tsx` downloads firmware from `/firmware/` (it ships
@@ -130,7 +134,8 @@ There is no CI/CD. For each release:
    `releases/<family>/<version>/<file>`, with `Content-Type` set and
    `Cache-Control: public, max-age=31536000, immutable`.
 3. Re-upload `releases/manifest.json` (or rerun the migration script).
-4. Update `web/src/lib/releases.ts` and deploy the web app.
+4. Update `web/src/data/releases.json`, run `npm run releases:check` in
+   `web/`, then deploy the web app.
 5. Delete the previous version's prefix once the new one is verified.
 
 `mobile/RELEASE.md` and `firmware/RELEASE.md` have the per-platform steps.

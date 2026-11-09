@@ -9,9 +9,14 @@
  *      object put`), using the same key layout,
  *   3. update the version / file / size / sha256 below.
  *
- * The values mirror releases/manifest.json in the bucket. Sizes and hashes are
- * shown on the downloads page so a user can verify what they downloaded.
+ * The version / file / size / sha256 values live in src/data/releases.json and
+ * mirror releases/manifest.json in the bucket. Sizes and hashes are shown on
+ * the downloads page so a user can verify what they downloaded. After
+ * publishing, run `npm run releases:check` — it fails when the local data and
+ * the live manifest disagree.
  */
+
+import releaseData from "../data/releases.json";
 
 export const RELEASES_BASE_URL = "https://releases.onoffmypc.com";
 
@@ -31,45 +36,8 @@ export interface ReleaseChannel {
   assets: ReleaseAsset[];
 }
 
-export const ANDROID_RELEASE: ReleaseChannel = {
-  version: "0.4.3",
-  assets: [
-    {
-      file: "onoffmypc-android-0.4.3.apk",
-      label: "Android APK",
-      platform: "Android 8.0+",
-      sizeBytes: 9721462,
-      sha256: "1952a7c2851cce756538df911464b44f797a6fae38e3ec18047e561dd4e2f328",
-    },
-  ],
-};
-
-export const DESKTOP_RELEASE: ReleaseChannel = {
-  version: "0.1.4",
-  assets: [
-    {
-      file: "OnOffMyPC.Setup.0.1.4.exe",
-      label: "Windows installer",
-      platform: "Windows 10/11, x64",
-      sizeBytes: 99100697,
-      sha256: "5cb5b695bfb00aa8f7a4fce10d4ededfb03e08a622db56fda52cc80f02c948a2",
-    },
-    {
-      file: "OnOffMyPC-0.1.4.AppImage",
-      label: "Linux AppImage",
-      platform: "Any distro, x64",
-      sizeBytes: 127421351,
-      sha256: "4cacc73a5161406e7137d14da813c29575c902eac0c06936ed479e7028a79a86",
-    },
-    {
-      file: "onoffmypc-desktop_0.1.4_amd64.deb",
-      label: "Linux .deb",
-      platform: "Debian / Ubuntu, amd64",
-      sizeBytes: 99526608,
-      sha256: "8bc58be6bcf56b5fb1f9aaab4cc81356cfc2f97bc7bbc49ffb4c31ed504cf852",
-    },
-  ],
-};
+export const ANDROID_RELEASE: ReleaseChannel = releaseData.android;
+export const DESKTOP_RELEASE: ReleaseChannel = releaseData.desktop;
 
 function assetUrl(channel: "android" | "desktop", version: string, file: string): string {
   return `${RELEASES_BASE_URL}/releases/${channel}/${version}/${encodeURIComponent(file)}`;
