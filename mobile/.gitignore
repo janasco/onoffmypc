@@ -28,3 +28,6 @@ xcuserdata/
 DerivedData/
 *.xcuserstate
 ios/OnOffMyPC/Info.plist
+
+# Google Play service-account keys (never commit)
+play-service-account*.json

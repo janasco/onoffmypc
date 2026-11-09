@@ -52,9 +52,10 @@ The first submission can't be fully automated — you set up the listing + polic
 6. **Production** — Release → Production → create release → upload (or promote the tested build) → submit for review.
 
 ## Versioning
-Every upload needs a higher **`versionCode`**. We're at `versionCode 7`
-(`versionName 0.3.0`). Bump `versionCode` in `app/build.gradle.kts` for each Play
-upload (and `versionName` when the user-facing version changes).
+Every upload needs a higher **`versionCode`**. The current build is
+`versionCode 21` (`versionName 0.4.4`). Bump `versionCode` in
+`app/build.gradle.kts` for each Play upload (and `versionName` when the
+user-facing version changes).
 
 To print the upload certificate SHA-1 without putting the password on the command
 line, run the following and enter the keystore password when prompted:
@@ -74,40 +75,105 @@ keytool -list -v -keystore android/onoffmypc-release.jks -alias onoffmypc
 ## Automated uploads
 
 `scripts/publish-play.mjs` uploads a signed AAB through the Android Publisher
-API. It replaces the deleted GitHub Actions workflow, needs no dependencies,
-and runs by hand.
+API. It has no dependencies and runs by hand. It does **not** read `.env`; the
+credential must be in the environment (see below).
 
-One-time setup (after the app exists on Play with its first manual release):
+### One-time setup
 
-1. **Play Console → Setup → API access** → link a Google Cloud project.
-2. In that project (**IAM & Admin → Service accounts**) create a service account, then **Keys → Add key → JSON** and download the key.
-3. **Play Console → Users and permissions → Invite user**, invite the service-account email, and grant **release** permissions scoped to this app.
-4. Keep the JSON off the repository, e.g. `/opt/repo/onoffmypc-private/play-service-account.json` (mode `600`), and export its path.
+The Play Console must already have the app (`com.onoffmypc.android`) and at
+least one release created manually. The API cannot create the first release.
 
-Per release, after bumping `versionCode` and updating
-`distribution/whatsnew/whatsnew-en-US`:
+**Fast path if the old service account still exists:** open
+**Play Console → Setup → API access**. If the linked Google Cloud project and
+the old `...@....iam.gserviceaccount.com` account are still listed, you only
+need a **new JSON key** for that account (Part A, step 5) — the Play
+permissions are already granted. Keys cannot be downloaded twice; creating a
+new key does not revoke the old one, so delete keys you no longer use.
+
+#### Part A — Google Cloud
+
+1. Sign in to <https://console.cloud.google.com> with the account that owns the
+   Play Console link.
+2. Select the project shown on **Play Console → Setup → API access**. If none is
+   linked, create a project and link it there.
+3. **APIs & Services → Library**, search for **Google Play Android Developer
+   API**, and enable it (if it is not already).
+4. **IAM & Admin → Service accounts**:
+   - use the existing `play-publisher`-style account, or create one
+     (name it `play-publisher`; no Google Cloud IAM roles are needed);
+   - open it → **Keys → Add key → Create new key → JSON**;
+   - the JSON downloads once. Store it outside the repository or in the
+     gitignored `secrets/` directory, mode `0600`.
+5. Note the `client_email` inside the JSON; that is the identity to invite.
+
+#### Part B — Play Console
+
+1. **Setup → API access**: confirm the same Google Cloud project is linked.
+2. **Users and permissions → Invite new user** (or open the existing service
+   account):
+   - Email: the `client_email` from the JSON.
+   - App permissions: add **OnOffMyPC** and grant
+     **Release to testing tracks** (required for internal),
+     **Release to production, exclude devices, and use Play App Signing**
+     (required for production), and optionally
+     **View app information and download bulk reports**.
+   - Account permissions: none are required.
+   - Send the invite/save.
+3. Permission propagation is usually minutes and can take up to 24 hours.
+   Do not debug the script until the invite is saved.
+
+#### Part C — Local credential
 
 ```bash
-export PLAY_SERVICE_ACCOUNT_JSON=/path/to/play-service-account.json
+mkdir -p /opt/repo/onoffmypc-private/secrets
+mv ~/Downloads/onoffmypc-play-*.json \
+   /opt/repo/onoffmypc-private/secrets/play-service-account.json
+chmod 600 /opt/repo/onoffmypc-private/secrets/play-service-account.json
 
-# Prove credentials and options without changing anything
+export PLAY_SERVICE_ACCOUNT_JSON=/opt/repo/onoffmypc-private/secrets/play-service-account.json
+```
+
+`PLAY_SERVICE_ACCOUNT_JSON` may also contain the JSON inline, but a file path is
+safer and easier to rotate. `GOOGLE_APPLICATION_CREDENTIALS` is accepted as an
+alternative. Both `secrets/` and `play-service-account*.json` are gitignored.
+
+### Per release
+
+```bash
+cd mobile
+
+# 1. Prove the credential and options without changing anything
 node scripts/publish-play.mjs --dry-run
 
-# Upload to internal testing as a draft (review + roll out in the console)
+# 2. Upload to internal testing as a draft (roll out in the console)
 node scripts/publish-play.mjs --track internal
 
-# Or submit straight to production
+# 3. After the listing, data-safety, content-rating and app-access forms are
+#    complete, submit to production
 node scripts/publish-play.mjs --track production --status completed
 ```
 
-Flags: `--aab`, `--track internal|alpha|beta|production`, `--status draft|completed`,
-`--whatsnew`, `--notes`.
+Expected dry-run output ends with `authenticated` and
+`dry run: credentials valid, nothing uploaded`.
 
-> The **first** release must still be created and uploaded **manually** — the
-> Play API only accepts uploads once the package exists on Play.
+Flags: `--aab`, `--track internal|alpha|beta|production`,
+`--status draft|completed`, `--whatsnew`, `--notes`. Defaults: the signed AAB at
+`android/app/build/outputs/bundle/release/app-release.aab`, track `internal`,
+status `draft`.
 
-## Recommended path
-1. Build the `.aab` locally (`cd android && ./gradlew :app:bundleRelease`).
-2. Create the app, enroll in Play App Signing, upload to **Internal testing**, install on your phone, verify login + push.
-3. Fill the store listing (icon + feature graphic are ready in `playstore/`; add screenshots) and the data-safety/content-rating forms.
-4. Promote to **Production** and submit for review.
+### Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| `could not obtain an access token (400): invalid_grant` | Key was deleted/rotated, wrong project, or the machine clock is badly skewed. Create a new key. |
+| `403 ... Google Play Android Developer API has not been used in project ...` | Enable the API in the linked Google Cloud project (Part A, step 3). |
+| `403 ... does not have permission` | The service account is not invited, or the app-level permission is missing (Part B). |
+| `403 ... project ... has not been linked` | Play Console → Setup → API access does not link the Cloud project that owns the service account. |
+| `404` | Wrong package name, or the app/first release does not exist on Play yet. Create the first release manually. |
+| `version code ... has already been used` | Bump `versionCode` in `app/build.gradle.kts` and rebuild. |
+| `APK/AAB ... signed with the wrong key` | The AAB was signed with a different upload key. Restore `android/onoffmypc-release.jks` + `keystore.properties` and rebuild. |
+| `429` / `5xx` | Transient Play API limit or outage; retry after a few minutes. |
+
+Never commit the service-account JSON. If it is exposed, delete the key in
+Google Cloud (the service account and Play permissions stay), create a new key,
+and update the local path.
