@@ -110,12 +110,20 @@ subtrees imported completely.
 
 ## Outstanding work
 
-- [ ] Migrate the release pipelines (see above). Until then, releasing is a
-      manual process on the old repositories or from a local checkout.
-- [ ] Re-add repository secrets to both repositories.
-- [ ] Confirm the `web/` deployment target (the Next.js app currently has no
-      deployment workflow).
-- [x] `web/` uses npm and carries its own `package-lock.json`; the pnpm
-      lockfile and workspace file were removed so there is one package manager.
-- [ ] The old repositories still exist and are still the live deployment
-      sources until the new ones take over. Retire them deliberately.
+- [x] Release pipelines migrated. GitHub is source and tests only; artifacts
+      are built and uploaded by hand to Cloudflare R2 (`release/R2-RELEASES.md`).
+- [x] No repository secrets are needed for CI. Release signing material stays
+      in the local gitignored `.env`.
+- [x] `web/` deploys to Cloudflare Pages project `onoffmypc-web` (npm, static
+      export). `app.onoffmypc.com` is now a custom domain on the same project;
+      `onoffmypc.com` and `www` are unchanged.
+- [x] `web/` uses npm and carries its own `package-lock.json`.
+- [x] The eight old `onoffmypc/*` repositories are retired; only
+      `janasco/onoffmypc` and `janasco/onoffmypc-private` remain.
+- [x] Branch protection on `main` for the public repository (force-push and
+      deletion disabled). The private repository needs GitHub Pro to enable
+      protected branches.
+- [ ] Production deploys are manual; consider a second-person review step in
+      your own runbook.
+- [ ] Delete the unused `onoffmypc-dashboard` Pages project once the app host
+      has been healthy for a few days. It has no custom domains or traffic.
