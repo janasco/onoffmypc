@@ -16,6 +16,9 @@ final class DeviceDetailViewModel: ObservableObject {
     @Published var unlockPrice = 15
     @Published var commandInFlight = false
     @Published var refreshWarning: String?
+    @Published var schedules: [ScheduledCommand] = []
+    @Published var scheduleBusy = false
+    @Published var scheduleMessage: String?
 
     func refreshBilling() async {
         guard let billing = try? await APIClient.shared.billingStatus() else { return }
@@ -68,6 +71,14 @@ final class DeviceDetailViewModel: ObservableObject {
             } catch {
                 partialFailure = true
             }
+            do {
+                schedules = try await APIClient.shared.schedules(deviceId: id)
+            } catch APIError.unauthorized {
+                appState.sessionExpired()
+                return
+            } catch {
+                partialFailure = true
+            }
             refreshWarning = partialFailure ? "Some device information could not be refreshed." : nil
             error = nil
         } catch APIError.unauthorized {
@@ -84,6 +95,38 @@ final class DeviceDetailViewModel: ObservableObject {
         while !Task.isCancelled {
             await refresh(id: id, appState)
             try? await Task.sleep(nanoseconds: 30_000_000_000)
+        }
+    }
+
+    func schedule(_ type: CommandType, at runAt: Date, id: String, _ appState: AppState) async {
+        guard runAt > Date() else {
+            scheduleMessage = "Pick a time in the future."
+            return
+        }
+        scheduleBusy = true
+        defer { scheduleBusy = false }
+        do {
+            let created = try await APIClient.shared.schedule(deviceId: id, type: type, runAt: runAt)
+            schedules = (schedules + [created]).sorted { $0.run_at < $1.run_at }
+            scheduleMessage = "\(type.label) scheduled."
+        } catch APIError.unauthorized {
+            appState.sessionExpired()
+        } catch {
+            scheduleMessage = (error as? APIError)?.errorDescription ?? "Couldn't schedule that command."
+        }
+    }
+
+    func cancelSchedule(_ scheduleId: String, id: String, _ appState: AppState) async {
+        scheduleBusy = true
+        defer { scheduleBusy = false }
+        do {
+            try await APIClient.shared.cancelSchedule(deviceId: id, scheduleId: scheduleId)
+            schedules.removeAll { $0.id == scheduleId }
+            scheduleMessage = "Schedule cancelled."
+        } catch APIError.unauthorized {
+            appState.sessionExpired()
+        } catch {
+            scheduleMessage = (error as? APIError)?.errorDescription ?? "Couldn't cancel that schedule."
         }
     }
 

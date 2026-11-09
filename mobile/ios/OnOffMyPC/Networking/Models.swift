@@ -172,6 +172,21 @@ struct Command: Decodable {
     var rowId: String { id ?? [created_at, type].compactMap { $0 }.joined(separator: "-") }
 }
 
+struct ScheduledCommand: Decodable, Identifiable {
+    let id: String
+    var type: String
+    var run_at: String
+    var expires_at: String?
+    var status: String?
+    var created_at: String?
+}
+
+struct ScheduleRequest: Encodable {
+    let type: String
+    let run_at: String
+    let client_request_id: String
+}
+
 struct SessionInfo: Decodable, Identifiable {
     let id: String
     var created_at: String?

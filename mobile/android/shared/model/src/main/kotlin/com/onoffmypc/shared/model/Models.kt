@@ -216,6 +216,23 @@ data class Command(
 )
 
 @Serializable
+data class ScheduledCommand(
+    val id: String,
+    val type: String,
+    val run_at: String,
+    val expires_at: String? = null,
+    val status: String = "pending",
+    val created_at: String? = null,
+)
+
+@Serializable
+data class ScheduleRequest(
+    val type: String,
+    val run_at: String,
+    @SerialName("client_request_id") val clientRequestId: String? = null,
+)
+
+@Serializable
 data class SessionInfo(
     val id: String,
     val created_at: String? = null,

@@ -8,6 +8,7 @@ import com.onoffmypc.android.data.model.Command
 import com.onoffmypc.android.data.model.CommandType
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.HistoryPoint
+import com.onoffmypc.android.data.model.ScheduledCommand
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.ui.components.commandRequestFeedback
 import com.onoffmypc.android.ui.components.DeviceConnectionState
@@ -33,6 +34,9 @@ data class DeviceDetailUiState(
     val upgradePrompt: Boolean = false,
     val unlockPrice: Int = 15,
     val commandInFlight: Boolean = false,
+    val schedules: List<ScheduledCommand> = emptyList(),
+    val scheduleBusy: Boolean = false,
+    val scheduleMessage: String? = null,
 )
 
 class DeviceDetailViewModel : ViewModel() {
@@ -70,6 +74,7 @@ class DeviceDetailViewModel : ViewModel() {
         val telemetryRes = repo.telemetry(id)
         val historyRes = repo.history(id, 7)
         val commandsRes = repo.commands(id)
+        val schedulesRes = repo.schedules(id)
 
         deviceRes.fold(
             onSuccess = { device ->
@@ -77,7 +82,7 @@ class DeviceDetailViewModel : ViewModel() {
                 val lastSeenAt = status?.last_seen_at ?: device.last_seen_at
                 val latestTelemetry = telemetryRes.getOrNull()?.firstOrNull()
                 val partialFailure = statusRes.isFailure || telemetryRes.isFailure ||
-                    historyRes.isFailure || commandsRes.isFailure
+                    historyRes.isFailure || commandsRes.isFailure || schedulesRes.isFailure
                 val connection = when {
                     status == null -> DeviceConnectionState.UNKNOWN
                     status.online -> DeviceConnectionState.ONLINE
@@ -95,6 +100,7 @@ class DeviceDetailViewModel : ViewModel() {
                         latest = if (telemetryRes.isFailure) it.latest else latestTelemetry,
                         history = historyRes.getOrNull() ?: it.history,
                         commands = commandsRes.getOrNull() ?: it.commands,
+                        schedules = schedulesRes.getOrNull() ?: it.schedules,
                     )
                 }
             },
@@ -102,6 +108,52 @@ class DeviceDetailViewModel : ViewModel() {
                 _state.update { it.copy(loading = false, error = e.message ?: "Failed to load device") }
             },
         )
+    }
+
+    fun scheduleCommand(type: CommandType, runAt: java.time.Instant) {
+        val id = deviceId ?: return
+        _state.update { it.copy(scheduleBusy = true, scheduleMessage = null) }
+        viewModelScope.launch {
+            repo.schedule(id, type, runAt.toString()).fold(
+                onSuccess = { created ->
+                    _state.update { st ->
+                        st.copy(
+                            scheduleBusy = false,
+                            schedules = (st.schedules + created).sortedBy { it.run_at },
+                            scheduleMessage = "${type.label} scheduled for ${created.run_at}.",
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    _state.update {
+                        it.copy(scheduleBusy = false, scheduleMessage = e.message ?: "Couldn't schedule that command.")
+                    }
+                },
+            )
+        }
+    }
+
+    fun cancelSchedule(scheduleId: String) {
+        val id = deviceId ?: return
+        _state.update { it.copy(scheduleBusy = true, scheduleMessage = null) }
+        viewModelScope.launch {
+            repo.cancelSchedule(id, scheduleId).fold(
+                onSuccess = {
+                    _state.update { st ->
+                        st.copy(
+                            scheduleBusy = false,
+                            schedules = st.schedules.filterNot { item -> item.id == scheduleId },
+                            scheduleMessage = "Schedule cancelled.",
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    _state.update {
+                        it.copy(scheduleBusy = false, scheduleMessage = e.message ?: "Couldn't cancel that schedule.")
+                    }
+                },
+            )
+        }
     }
 
     /** Manual pull-to-refresh: re-fetch now and show the refresh indicator. */

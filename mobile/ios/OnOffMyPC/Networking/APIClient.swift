@@ -188,6 +188,23 @@ final class APIClient {
         _ = try await send("POST", "auth/sessions/revoke-others")
     }
 
+    func schedules(deviceId: String) async throws -> [ScheduledCommand] {
+        try decode(try await send("GET", "commands/\(deviceId)/schedule"))
+    }
+
+    func schedule(deviceId: String, type: CommandType, runAt: Date) async throws -> ScheduledCommand {
+        let body = ScheduleRequest(
+            type: type.rawValue,
+            run_at: ISO8601DateFormatter().string(from: runAt),
+            client_request_id: UUID().uuidString
+        )
+        return try decode(try await send("POST", "commands/\(deviceId)/schedule", body: body))
+    }
+
+    func cancelSchedule(deviceId: String, scheduleId: String) async throws {
+        _ = try await send("DELETE", "commands/\(deviceId)/schedule/\(scheduleId)")
+    }
+
     func sendCommand(deviceId: String, type: CommandType) async throws -> CommandResponse {
         // A fresh id per attempt: if the request times out and the user retries,
         // the server replays the same command instead of repeating the physical

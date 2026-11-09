@@ -25,6 +25,8 @@ import com.onoffmypc.android.data.model.PortalResponse
 import com.onoffmypc.android.data.model.PushRegisterRequest
 import com.onoffmypc.android.data.model.OkResponse
 import com.onoffmypc.android.data.model.SessionInfo
+import com.onoffmypc.android.data.model.ScheduledCommand
+import com.onoffmypc.android.data.model.ScheduleRequest
 import com.onoffmypc.android.data.model.RegisterRequest
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.remote.ApiService
@@ -123,6 +125,23 @@ class OnOffRepository(
     suspend fun history(id: String, days: Int = 7): Result<List<HistoryPoint>> = call { api.history(id, days) }
 
     suspend fun commands(id: String): Result<List<Command>> = call { api.commands(id) }
+
+    suspend fun schedules(id: String): Result<List<ScheduledCommand>> = call { api.schedules(id) }
+
+    suspend fun schedule(id: String, type: CommandType, runAtIso: String): Result<ScheduledCommand> =
+        call {
+            api.schedule(
+                id,
+                ScheduleRequest(
+                    type = type.wire,
+                    run_at = runAtIso,
+                    clientRequestId = java.util.UUID.randomUUID().toString(),
+                ),
+            )
+        }
+
+    suspend fun cancelSchedule(id: String, scheduleId: String): Result<OkResponse> =
+        call { api.cancelSchedule(id, scheduleId) }
 
     suspend fun sendCommand(
         id: String,

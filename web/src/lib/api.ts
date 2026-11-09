@@ -131,8 +131,12 @@ export const api = {
     }),
   commands: <T = unknown>(deviceId: string) =>
     apiReq<T>('GET', `/commands/${deviceId}`),
-  schedule: <T = unknown>(deviceId: string, type: string, run_at: string) =>
-    apiReq<T>('POST', `/commands/${deviceId}/schedule`, { type, run_at }),
+  schedule: <T = unknown>(deviceId: string, type: string, run_at: string, clientRequestId?: string) =>
+    apiReq<T>('POST', `/commands/${deviceId}/schedule`, {
+      type,
+      run_at,
+      ...(clientRequestId ? { client_request_id: clientRequestId } : {}),
+    }),
   schedules: <T = unknown>(deviceId: string) =>
     apiReq<T>('GET', `/commands/${deviceId}/schedule`),
   cancelSchedule: <T = unknown>(deviceId: string, id: string) =>

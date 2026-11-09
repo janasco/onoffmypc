@@ -12,6 +12,8 @@ struct DeviceDetailView: View {
     @State private var showReplace = false
     @State private var showBilling = false
     @State private var managementInFlight = false
+    @State private var scheduleType: CommandType = .powerOn
+    @State private var scheduleDate = Date().addingTimeInterval(3600)
 
     var body: some View {
         content
@@ -88,6 +90,7 @@ struct DeviceDetailView: View {
                 controlsSection
                 chartSection
                 historySection
+                scheduleSection
                 manageSection
             }
             .appFormBackground()
@@ -215,6 +218,67 @@ struct DeviceDetailView: View {
         }
         .appListRow()
     }
+
+    private var scheduleSection: some View {
+        Section("Scheduled commands") {
+            if let message = vm.scheduleMessage {
+                Text(message)
+                    .font(.footnote)
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+            if vm.schedules.isEmpty {
+                Text("Nothing scheduled for this device.")
+                    .foregroundStyle(AppColors.textSecondary)
+            } else {
+                ForEach(vm.schedules) { item in
+                    HStack(alignment: .center, spacing: AppSpacing.small) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(commandLabel(item.type))
+                                .font(.subheadline.weight(.semibold))
+                            Text(Self.displayFormatter.string(from: Date.fromISO(item.run_at) ?? Date()))
+                                .font(.caption2)
+                                .foregroundStyle(AppColors.textSecondary)
+                        }
+                        Spacer(minLength: AppSpacing.small)
+                        Button("Cancel") {
+                            Task { await vm.cancelSchedule(item.id, id: device.id, appState) }
+                        }
+                        .buttonStyle(AppSecondaryButtonStyle(fullWidth: false))
+                        .disabled(vm.scheduleBusy)
+                    }
+                }
+            }
+
+            Picker("Command", selection: $scheduleType) {
+                ForEach(CommandType.allCases) { type in
+                    Text(type.label).tag(type)
+                }
+            }
+            DatePicker(
+                "Run at",
+                selection: $scheduleDate,
+                in: Date()...,
+                displayedComponents: [.date, .hourAndMinute]
+            )
+            Button("Schedule command") {
+                Task { await vm.schedule(scheduleType, at: scheduleDate, id: device.id, appState) }
+            }
+            .buttonStyle(AppSecondaryButtonStyle(fullWidth: false))
+            .disabled(vm.scheduleBusy)
+
+            Text("The command is sent when the time arrives. It expires 10 minutes later if the device is offline.")
+                .font(.caption2)
+                .foregroundStyle(AppColors.textSecondary)
+        }
+        .appListRow()
+    }
+
+    private static let displayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
 
     private var manageSection: some View {
         Section("Manage") {

@@ -2,9 +2,20 @@ package com.onoffmypc.android.ui.devices
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import com.onoffmypc.android.data.model.ScheduledCommand
+import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.DatePicker
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Button
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +42,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -131,7 +144,9 @@ fun DeviceDetailScreen(
                     onCommand = vm::sendCommand,
                     onUpdateTelemetrySettings = { cpu, ram, gpu, wifi ->
                         vm.updateTelemetrySettings(cpu, ram, gpu, wifi)
-                    }
+                    },
+                    onSchedule = vm::scheduleCommand,
+                    onCancelSchedule = vm::cancelSchedule,
                 )
             }
         }
@@ -156,6 +171,8 @@ private fun DetailContent(
     onRetry: () -> Unit,
     onCommand: (com.onoffmypc.android.data.model.CommandType) -> Unit,
     onUpdateTelemetrySettings: (Boolean?, Boolean?, Boolean?, Boolean?) -> Unit,
+    onSchedule: (com.onoffmypc.android.data.model.CommandType, java.time.Instant) -> Unit,
+    onCancelSchedule: (String) -> Unit,
 ) {
     val sections = DetailSection.entries
     var selectedIndex by remember { mutableIntStateOf(0) }
@@ -219,7 +236,14 @@ private fun DetailContent(
                         )
                     }
                 }
-                DetailSection.Activity -> ActivitySection(commands = state.commands)
+                DetailSection.Activity -> ActivitySection(
+                    commands = state.commands,
+                    schedules = state.schedules,
+                    scheduleBusy = state.scheduleBusy,
+                    scheduleMessage = state.scheduleMessage,
+                    onSchedule = onSchedule,
+                    onCancelSchedule = onCancelSchedule,
+                )
                 DetailSection.Telemetry -> TelemetrySection(
                     latest = latest,
                     pcOn = latest?.pc_on ?: device.pc_on,
@@ -289,7 +313,14 @@ private fun OverviewSection(
 }
 
 @Composable
-private fun ActivitySection(commands: List<Command>) {
+private fun ActivitySection(
+    commands: List<Command>,
+    schedules: List<ScheduledCommand>,
+    scheduleBusy: Boolean,
+    scheduleMessage: String?,
+    onSchedule: (CommandType, java.time.Instant) -> Unit,
+    onCancelSchedule: (String) -> Unit,
+) {
     Text(
         "Command history",
         style = MaterialTheme.typography.titleSmall,
@@ -304,6 +335,136 @@ private fun ActivitySection(commands: List<Command>) {
         )
     } else {
         commands.forEach { CommandRow(it) }
+    }
+
+    Spacer(Modifier.height(Spacing.lg))
+    var showSchedule by remember { mutableStateOf(false) }
+
+    Text(
+        "Scheduled commands",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(Spacing.sm))
+    if (scheduleMessage != null) {
+        Text(
+            scheduleMessage,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(Spacing.sm))
+    }
+    if (schedules.isEmpty()) {
+        Text(
+            "Nothing scheduled for this device.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+        )
+    } else {
+        schedules.forEach { item ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(item.type.let { wire ->
+                        CommandType.entries.firstOrNull { it.wire == wire }?.label ?: wire
+                    }, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        fmtDateTime(item.run_at),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(onClick = { onCancelSchedule(item.id) }, enabled = !scheduleBusy) {
+                    Text("Cancel")
+                }
+            }
+        }
+    }
+    Spacer(Modifier.height(Spacing.sm))
+    OutlinedButton(
+        onClick = { showSchedule = true },
+        enabled = !scheduleBusy,
+        modifier = Modifier.fillMaxWidth(),
+    ) { Text("Schedule a command") }
+
+    if (showSchedule) {
+        ScheduleCommandDialog(
+            busy = scheduleBusy,
+            onDismiss = { showSchedule = false },
+            onConfirm = { type, instant ->
+                onSchedule(type, instant)
+                showSchedule = false
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ScheduleCommandDialog(
+    busy: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (CommandType, java.time.Instant) -> Unit,
+) {
+    val dateState = rememberDatePickerState(
+        initialSelectedDateMillis = System.currentTimeMillis() + 24 * 3600_000,
+    )
+    val timeState = rememberTimePickerState(initialHour = 9, initialMinute = 0, is24Hour = true)
+    var type by remember { mutableStateOf(CommandType.POWER_ON) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 6.dp,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Spacing.md)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Text("Schedule a command", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(Spacing.sm))
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    CommandType.entries.forEach { candidate ->
+                        FilterChip(
+                            selected = type == candidate,
+                            onClick = { type = candidate },
+                            label = { Text(candidate.label) },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(Spacing.sm))
+                DatePicker(state = dateState, showModeToggle = false)
+                TimePicker(state = timeState)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = onDismiss, enabled = !busy) { Text("Cancel") }
+                    Spacer(Modifier.width(Spacing.sm))
+                    Button(
+                        enabled = !busy && dateState.selectedDateMillis != null,
+                        onClick = {
+                            val millis = dateState.selectedDateMillis ?: return@Button
+                            val date = java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneOffset.UTC)
+                                .toLocalDate()
+                            val instant = date
+                                .atTime(timeState.hour, timeState.minute)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toInstant()
+                            onConfirm(type, instant)
+                        },
+                    ) { Text(if (busy) "Saving…" else "Schedule") }
+                }
+            }
+        }
     }
 }
 

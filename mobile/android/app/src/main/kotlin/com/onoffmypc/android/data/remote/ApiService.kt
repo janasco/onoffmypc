@@ -29,6 +29,8 @@ import com.onoffmypc.android.data.model.PushRegisterRequest
 import com.onoffmypc.android.data.model.RegisterRequest
 import com.onoffmypc.android.data.model.RegisterResponse
 import com.onoffmypc.android.data.model.SessionsResponse
+import com.onoffmypc.android.data.model.ScheduledCommand
+import com.onoffmypc.android.data.model.ScheduleRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -89,6 +91,18 @@ interface ApiService {
 
     @DELETE("auth/sessions/{id}")
     suspend fun revokeSession(@Path("id") id: String): Response<OkResponse>
+
+    @GET("commands/{id}/schedule")
+    suspend fun schedules(@Path("id") id: String): Response<List<ScheduledCommand>>
+
+    @POST("commands/{id}/schedule")
+    suspend fun schedule(@Path("id") id: String, @Body body: ScheduleRequest): Response<ScheduledCommand>
+
+    @DELETE("commands/{id}/schedule/{scheduleId}")
+    suspend fun cancelSchedule(
+        @Path("id") id: String,
+        @Path("scheduleId") scheduleId: String,
+    ): Response<OkResponse>
 
     @POST("auth/sessions/revoke-others")
     suspend fun revokeOtherSessions(): Response<OkResponse>

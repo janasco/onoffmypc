@@ -60,6 +60,15 @@ interface TelemetryPoint {
   rssi?: number | null;
 }
 
+interface ScheduledCommand {
+  id: string;
+  type: string;
+  run_at: string;
+  expires_at: string | null;
+  status: string;
+  created_at?: string;
+}
+
 interface CommandRecord {
   id: string;
   type: string;
@@ -137,6 +146,11 @@ export default function DashboardPage() {
   const [detailCommands, setDetailCommands] = useState<CommandRecord[]>([]);
   const [detailTelemetry, setDetailTelemetry] = useState<TelemetryPoint | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailSchedules, setDetailSchedules] = useState<ScheduledCommand[]>([]);
+  const [scheduleType, setScheduleType] = useState("power_on");
+  const [scheduleAt, setScheduleAt] = useState("");
+  const [scheduleBusy, setScheduleBusy] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
 
   const handleOpenDeviceDetail = async (device: Device) => {
     setDetailDevice(device);
@@ -144,14 +158,19 @@ export default function DashboardPage() {
     setDetailHistory([]);
     setDetailCommands([]);
     setDetailTelemetry(null);
+    setDetailSchedules([]);
+    setScheduleError(null);
+    setScheduleAt("");
     try {
-      const [historyRes, commandsRes, telemetryRes] = await Promise.all([
+      const [historyRes, commandsRes, telemetryRes, schedulesRes] = await Promise.all([
         api.history<TelemetrySample[]>(device.id, 7),
         api.commands<CommandRecord[]>(device.id),
         api.telemetry<TelemetryPoint>(device.id),
+        api.schedules<ScheduledCommand[]>(device.id),
       ]);
       setDetailHistory(historyRes.data || []);
       setDetailCommands(commandsRes.data || []);
+      setDetailSchedules(schedulesRes.data || []);
       if (telemetryRes.data && Array.isArray(telemetryRes.data) && telemetryRes.data.length > 0) {
         setDetailTelemetry(telemetryRes.data[0]);
       }
@@ -160,6 +179,44 @@ export default function DashboardPage() {
     } finally {
       setDetailLoading(false);
     }
+  };
+
+  const handleScheduleCommand = async () => {
+    if (!detailDevice) return;
+    const runAt = new Date(scheduleAt);
+    if (!scheduleAt || Number.isNaN(runAt.getTime())) {
+      setScheduleError("Pick a date and time.");
+      return;
+    }
+    if (runAt.getTime() <= Date.now()) {
+      setScheduleError("Pick a time in the future.");
+      return;
+    }
+    setScheduleBusy(true);
+    setScheduleError(null);
+    const { data, error } = await api.schedule<ScheduledCommand>(
+      detailDevice.id,
+      scheduleType,
+      runAt.toISOString(),
+      crypto.randomUUID(),
+    );
+    if (error) {
+      setScheduleError(error);
+    } else if (data) {
+      setDetailSchedules((prev) => [...prev, data].sort((a, b) => a.run_at.localeCompare(b.run_at)));
+      setScheduleAt("");
+    }
+    setScheduleBusy(false);
+  };
+
+  const handleCancelSchedule = async (id: string) => {
+    if (!detailDevice) return;
+    setScheduleBusy(true);
+    setScheduleError(null);
+    const { error } = await api.cancelSchedule(detailDevice.id, id);
+    if (error) setScheduleError(error);
+    else setDetailSchedules((prev) => prev.filter((item) => item.id !== id));
+    setScheduleBusy(false);
   };
 
   const handleOpenTelemetrySettings = (device: Device) => {
@@ -1115,6 +1172,76 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Scheduled commands */}
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-300 mb-3">Scheduled commands</h3>
+                {scheduleError && (
+                  <div role="alert" className="mb-3 bg-red-950/40 border border-red-900/50 text-red-400 text-xs px-3 py-2 rounded-lg">
+                    {scheduleError}
+                  </div>
+                )}
+
+                {detailSchedules.length === 0 ? (
+                  <div className="text-center py-4 border border-zinc-800 rounded-lg bg-zinc-950/40 text-xs text-zinc-500">
+                    Nothing scheduled for this device.
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-zinc-800 border border-zinc-800 rounded-lg overflow-hidden">
+                    {detailSchedules.map((item) => (
+                      <li key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-zinc-950/20">
+                        <div>
+                          <span className="text-xs font-semibold text-zinc-200">{actionLabel(item.type)}</span>
+                          <span className="text-xs text-zinc-500"> · {new Date(item.run_at).toLocaleString()}</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={scheduleBusy}
+                          onClick={() => handleCancelSchedule(item.id)}
+                          className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                        >
+                          Cancel
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                  <select
+                    aria-label="Scheduled command type"
+                    value={scheduleType}
+                    onChange={(e) => setScheduleType(e.target.value)}
+                    className="bg-zinc-950 border border-zinc-800 rounded-lg h-10 px-3 text-sm text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  >
+                    <option value="power_on">Power On</option>
+                    <option value="power_off">Power Off</option>
+                    <option value="reset">Reset</option>
+                    <option value="sleep">Sleep</option>
+                    <option value="lock">Lock</option>
+                    <option value="logout">Log Out</option>
+                  </select>
+                  <input
+                    type="datetime-local"
+                    aria-label="Scheduled run time"
+                    value={scheduleAt}
+                    onChange={(e) => setScheduleAt(e.target.value)}
+                    className="bg-zinc-950 border border-zinc-800 rounded-lg h-10 px-3 text-sm text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleScheduleCommand}
+                    disabled={scheduleBusy || !scheduleAt}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold h-10"
+                  >
+                    {scheduleBusy ? "Saving…" : "Schedule"}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-zinc-600 mt-2">
+                  The command is sent when the time arrives. It expires 10 minutes later if the device is offline.
+                </p>
               </div>
             </div>
           )}
