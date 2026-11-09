@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { HostRedirect } from "@/components/host-redirect";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
+      {/* app.onoffmypc.com/ used to route to the dashboard/login; preserve it. */}
+      <HostRedirect host="app.onoffmypc.com" to="/dashboard" />
       {/* Navbar */}
       <nav className="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">

@@ -13,13 +13,17 @@ There is no CI/CD: deploying is a local command.
 |---|---|
 | Pages project | `onoffmypc-web` |
 | Production branch | `main` |
-| Domains | `onoffmypc.com`, `www.onoffmypc.com` (www 301s to the apex) |
+| Domains | `onoffmypc.com`, `www.onoffmypc.com` (www 301s to the apex), `app.onoffmypc.com` |
 | Build output | `out/` (from `output: "export"` in `next.config.ts`) |
 
-`app.onoffmypc.com` and `admin.onoffmypc.com` are separate Pages projects
-(`onoffmypc-dashboard`, `onoffmypc-admin`). Moving the dashboard onto this app
-means removing that custom domain from the old project and adding it here — a
-separate decision, not part of a normal deploy.
+`app.onoffmypc.com` is served by this same project. Its home page redirects to
+`/dashboard`, which sends a signed-out visitor to `/login` — the same entry
+behaviour the old `onoffmypc-dashboard` project had. Legacy `.html` paths still
+resolve (Pages 308s them to the clean URL). `admin.onoffmypc.com` remains a
+separate, Access-gated project (`onoffmypc-admin`).
+
+The old `onoffmypc-dashboard` project has no custom domains and no traffic; it
+can be deleted once the app host has been observed healthy for a few days.
 
 ## Credentials
 
