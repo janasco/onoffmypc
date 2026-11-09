@@ -7,6 +7,10 @@ final class AccountViewModel: ObservableObject {
     @Published var error: String?
     @Published var message: String?
     @Published var busy = false
+    @Published var sessions: [SessionInfo] = []
+    @Published var sessionsLoading = true
+    @Published var sessionsError: String?
+    @Published var sessionBusy: String?
 
     func load() async {
         loading = true
@@ -14,6 +18,35 @@ final class AccountViewModel: ObservableObject {
         defer { loading = false }
         do { user = try await APIClient.shared.me() }
         catch { self.error = (error as? APIError)?.errorDescription ?? "Failed to load account." }
+    }
+
+    func loadSessions() async {
+        sessionsError = nil
+        do { sessions = try await APIClient.shared.sessions() }
+        catch { sessionsError = (error as? APIError)?.errorDescription ?? "Couldn't load sessions." }
+        sessionsLoading = false
+    }
+
+    func revokeSession(_ id: String) async {
+        sessionBusy = id
+        defer { sessionBusy = nil }
+        do {
+            try await APIClient.shared.revokeSession(id: id)
+            sessions.removeAll { $0.id == id }
+        } catch {
+            sessionsError = (error as? APIError)?.errorDescription ?? "Couldn't revoke that session."
+        }
+    }
+
+    func revokeOtherSessions() async {
+        sessionBusy = "others"
+        defer { sessionBusy = nil }
+        do {
+            try await APIClient.shared.revokeOtherSessions()
+            sessions = sessions.filter { $0.current == true }
+        } catch {
+            sessionsError = (error as? APIError)?.errorDescription ?? "Couldn't sign out the other sessions."
+        }
     }
 
     private func reload() async { user = try? await APIClient.shared.me() }

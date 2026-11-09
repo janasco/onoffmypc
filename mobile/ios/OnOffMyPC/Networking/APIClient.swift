@@ -175,6 +175,19 @@ final class APIClient {
     }
     func commands(id: String) async throws -> [Command] { try decode(try await send("GET", "commands/\(id)")) }
 
+    func sessions() async throws -> [SessionInfo] {
+        let response: SessionsResponse = try decode(try await send("GET", "auth/sessions"))
+        return response.sessions
+    }
+
+    func revokeSession(id: String) async throws {
+        _ = try await send("DELETE", "auth/sessions/\(id)")
+    }
+
+    func revokeOtherSessions() async throws {
+        _ = try await send("POST", "auth/sessions/revoke-others")
+    }
+
     func sendCommand(deviceId: String, type: CommandType) async throws -> CommandResponse {
         // A fresh id per attempt: if the request times out and the user retries,
         // the server replays the same command instead of repeating the physical

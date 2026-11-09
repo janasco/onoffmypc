@@ -216,6 +216,21 @@ data class Command(
 )
 
 @Serializable
+data class SessionInfo(
+    val id: String,
+    val created_at: String? = null,
+    val last_seen_at: String? = null,
+    val expires_at: String? = null,
+    val ip: String? = null,
+    val user_agent: String? = null,
+    /** True for the session making this request. */
+    val current: Boolean = false,
+)
+
+@Serializable
+data class SessionsResponse(val sessions: List<SessionInfo> = emptyList())
+
+@Serializable
 data class CommandRequest(
     val type: String,
     /** Deduplication key. A retry with the same id replays instead of acting twice. */

@@ -49,7 +49,10 @@ struct AccountView: View {
                 Text("You'll need to sign in again to control your devices.")
             }
         }
-        .task { await vm.load() }
+        .task {
+            await vm.load()
+            await vm.loadSessions()
+        }
         .refreshable { await vm.load() }
         .overlay(alignment: .bottom) { toastView }
         .interactiveDismissDisabled(vm.busy)
@@ -129,6 +132,47 @@ struct AccountView: View {
                 }
                 .buttonStyle(AppSecondaryButtonStyle(fullWidth: false))
                 .disabled(vm.busy)
+            }
+            .appListRow()
+
+            Section("Active sessions") {
+                if vm.sessionsLoading {
+                    Text("Loading sessions…").foregroundStyle(AppColors.textSecondary)
+                } else if let sessionsError = vm.sessionsError {
+                    AppMessageBanner(message: sessionsError, role: .danger, title: "Sessions")
+                } else if vm.sessions.isEmpty {
+                    Text("No active sessions.").foregroundStyle(AppColors.textSecondary)
+                } else {
+                    ForEach(vm.sessions) { session in
+                        HStack(alignment: .center, spacing: AppSpacing.small) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text(describeSessionAgent(session.user_agent))
+                                        .font(.subheadline.weight(.semibold))
+                                    if session.current == true {
+                                        Text("This device")
+                                            .font(.caption2.weight(.bold))
+                                            .foregroundStyle(AppColors.positive)
+                                    }
+                                }
+                                Text("\(session.ip ?? "IP unknown") · active \(relativeSessionTime(session.last_seen_at))")
+                                    .font(.caption2)
+                                    .foregroundStyle(AppColors.textSecondary)
+                            }
+                            Spacer(minLength: AppSpacing.small)
+                            Button(session.current == true ? "Sign out" : "Revoke") {
+                                Task { await vm.revokeSession(session.id) }
+                            }
+                            .buttonStyle(AppSecondaryButtonStyle(fullWidth: false))
+                            .disabled(vm.sessionBusy != nil)
+                        }
+                    }
+                }
+                Button("Sign out other devices") {
+                    Task { await vm.revokeOtherSessions() }
+                }
+                .buttonStyle(AppSecondaryButtonStyle(fullWidth: false))
+                .disabled(vm.sessionBusy != nil || vm.sessions.filter { $0.current != true }.isEmpty)
             }
             .appListRow()
 

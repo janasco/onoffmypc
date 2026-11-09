@@ -172,6 +172,18 @@ struct Command: Decodable {
     var rowId: String { id ?? [created_at, type].compactMap { $0 }.joined(separator: "-") }
 }
 
+struct SessionInfo: Decodable, Identifiable {
+    let id: String
+    var created_at: String?
+    var last_seen_at: String?
+    var expires_at: String?
+    var ip: String?
+    var user_agent: String?
+    var current: Bool?
+}
+
+struct SessionsResponse: Decodable { let sessions: [SessionInfo] }
+
 struct DeviceNameRequest: Encodable { let name: String }
 struct DeletedResponse: Decodable { let deleted: Bool? }
 

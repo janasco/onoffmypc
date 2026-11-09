@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onoffmypc.android.Graph
 import com.onoffmypc.android.data.model.MeResponse
+import com.onoffmypc.android.data.model.SessionInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +18,10 @@ data class AccountUiState(
     val error: String? = null,
     val message: String? = null,
     val busy: Boolean = false,
+    val sessions: List<SessionInfo> = emptyList(),
+    val sessionsLoading: Boolean = true,
+    val sessionsError: String? = null,
+    val sessionBusy: String? = null,
 )
 
 class AccountViewModel : ViewModel() {
@@ -27,6 +32,48 @@ class AccountViewModel : ViewModel() {
 
     init {
         load()
+        loadSessions()
+    }
+
+    fun loadSessions() {
+        viewModelScope.launch {
+            repo.sessions().fold(
+                onSuccess = { list ->
+                    _state.update { it.copy(sessionsLoading = false, sessions = list, sessionsError = null) }
+                },
+                onFailure = { e ->
+                    _state.update { it.copy(sessionsLoading = false, sessionsError = e.message ?: "Couldn't load sessions") }
+                },
+            )
+        }
+    }
+
+    fun revokeSession(id: String) {
+        _state.update { it.copy(sessionBusy = id, sessionsError = null) }
+        viewModelScope.launch {
+            repo.revokeSession(id).fold(
+                onSuccess = {
+                    _state.update { st ->
+                        st.copy(sessionBusy = null, sessions = st.sessions.filterNot { it.id == id })
+                    }
+                },
+                onFailure = { e -> _state.update { it.copy(sessionBusy = null, sessionsError = e.message ?: "Couldn't revoke that session") } },
+            )
+        }
+    }
+
+    fun revokeOtherSessions() {
+        _state.update { it.copy(sessionBusy = "others", sessionsError = null) }
+        viewModelScope.launch {
+            repo.revokeOtherSessions().fold(
+                onSuccess = {
+                    _state.update { st ->
+                        st.copy(sessionBusy = null, sessions = st.sessions.filter { it.current })
+                    }
+                },
+                onFailure = { e -> _state.update { it.copy(sessionBusy = null, sessionsError = e.message ?: "Couldn't sign out the other sessions") } },
+            )
+        }
     }
 
     fun load() {

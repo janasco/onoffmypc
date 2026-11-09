@@ -28,6 +28,7 @@ import com.onoffmypc.android.data.model.OkResponse
 import com.onoffmypc.android.data.model.PushRegisterRequest
 import com.onoffmypc.android.data.model.RegisterRequest
 import com.onoffmypc.android.data.model.RegisterResponse
+import com.onoffmypc.android.data.model.SessionsResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -82,6 +83,15 @@ interface ApiService {
 
     @POST("auth/change-password")
     suspend fun changePassword(@Body body: ChangePasswordRequest): Response<OkResponse>
+
+    @GET("auth/sessions")
+    suspend fun sessions(): Response<SessionsResponse>
+
+    @DELETE("auth/sessions/{id}")
+    suspend fun revokeSession(@Path("id") id: String): Response<OkResponse>
+
+    @POST("auth/sessions/revoke-others")
+    suspend fun revokeOtherSessions(): Response<OkResponse>
 
     @POST("auth/resend-verify")
     suspend fun resendVerify(): Response<OkResponse>

@@ -23,6 +23,8 @@ import com.onoffmypc.android.data.model.NewDevice
 import com.onoffmypc.android.data.model.PairCodeResponse
 import com.onoffmypc.android.data.model.PortalResponse
 import com.onoffmypc.android.data.model.PushRegisterRequest
+import com.onoffmypc.android.data.model.OkResponse
+import com.onoffmypc.android.data.model.SessionInfo
 import com.onoffmypc.android.data.model.RegisterRequest
 import com.onoffmypc.android.data.model.Telemetry
 import com.onoffmypc.android.data.remote.ApiService
@@ -62,6 +64,13 @@ class OnOffRepository(
     }
 
     suspend fun me(): Result<MeResponse> = call { api.me() }
+
+    suspend fun sessions(): Result<List<SessionInfo>> =
+        call { api.sessions() }.map { it.sessions }
+
+    suspend fun revokeSession(id: String): Result<OkResponse> = call { api.revokeSession(id) }
+
+    suspend fun revokeOtherSessions(): Result<OkResponse> = call { api.revokeOtherSessions() }
 
     suspend fun billingStatus() = call { api.billingStatus() }
     suspend fun paymentHistory() = call { api.paymentHistory() }

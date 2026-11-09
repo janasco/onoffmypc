@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
+import { describeUserAgent, formatWhen, type SessionSummary } from "@/lib/sessions";
 
 interface UserProfile {
   email: string;
@@ -34,6 +35,12 @@ export default function AccountPage() {
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSuccess, setPwSuccess] = useState<string | null>(null);
   const [pwLoading, setPwLoading] = useState(false);
+
+  // Active sessions
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
+  const [sessionsBusy, setSessionsBusy] = useState<string | null>(null);
 
   // Countdown timer for deletion. Only the clock tick is state; the displayed
   // string is derived from it.
@@ -64,6 +71,42 @@ export default function AccountPage() {
 
   // Derived from the profile, so the timer and the rendered string always agree.
   const deletionAt = profile?.deletion_at ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await api.sessions<{ sessions: SessionSummary[] }>();
+      if (cancelled) return;
+      if (error) setSessionsError(error);
+      else setSessions(data?.sessions ?? []);
+      setSessionsLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleRevokeSession = async (id: string) => {
+    setSessionsBusy(id);
+    setSessionsError(null);
+    const { error } = await api.revokeSession(id);
+    if (error) {
+      setSessionsError(error);
+    } else {
+      setSessions((prev) => prev.filter((session) => session.id !== id));
+    }
+    setSessionsBusy(null);
+  };
+
+  const handleRevokeOtherSessions = async () => {
+    setSessionsBusy("others");
+    setSessionsError(null);
+    const { error } = await api.revokeOtherSessions();
+    if (error) {
+      setSessionsError(error);
+    } else {
+      setSessions((prev) => prev.filter((session) => session.current));
+    }
+    setSessionsBusy(null);
+  };
 
   useEffect(() => {
     if (!deletionAt) return;
@@ -323,6 +366,77 @@ export default function AccountPage() {
                       {emailLoading ? "Updating…" : "Update email"}
                     </Button>
                   </form>
+                </CardContent>
+              </Card>
+
+              {/* Active sessions */}
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardHeader>
+                  <CardTitle className="text-zinc-100 text-lg font-bold">Active sessions</CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Where your account is signed in. Revoke anything you do not recognise.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  {sessionsError && (
+                    <div role="alert" className="bg-red-950/40 border border-red-900/50 text-red-400 text-sm px-3.5 py-2.5 rounded-lg">
+                      {sessionsError}
+                    </div>
+                  )}
+
+                  {sessionsLoading ? (
+                    <p className="text-sm text-zinc-500">Loading sessions…</p>
+                  ) : sessions.length === 0 ? (
+                    <p className="text-sm text-zinc-500">No active sessions.</p>
+                  ) : (
+                    <ul className="flex flex-col divide-y divide-zinc-800 rounded-lg border border-zinc-800">
+                      {sessions.map((session) => (
+                        <li key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-zinc-200">
+                                {describeUserAgent(session.user_agent)}
+                              </span>
+                              {session.current && (
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-1.5 py-0.5">
+                                  This device
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-zinc-500 mt-0.5">
+                              {session.ip ?? "IP unknown"} · active {formatWhen(session.last_seen_at, now)}
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={sessionsBusy !== null}
+                            onClick={() => handleRevokeSession(session.id)}
+                            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 whitespace-nowrap"
+                          >
+                            {sessionsBusy === session.id
+                              ? "Revoking…"
+                              : session.current ? "Sign out this device" : "Revoke"}
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={sessionsBusy !== null || sessions.length < 2}
+                      onClick={handleRevokeOtherSessions}
+                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                    >
+                      {sessionsBusy === "others" ? "Signing out…" : "Sign out other devices"}
+                    </Button>
+                    <span className="text-xs text-zinc-600">
+                      Revoking takes effect immediately, even for a copied token.
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
 

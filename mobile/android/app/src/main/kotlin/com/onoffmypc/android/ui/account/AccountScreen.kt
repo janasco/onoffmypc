@@ -231,6 +231,62 @@ fun AccountScreen(
                     }
 
                     Spacer(Modifier.height(24.dp))
+                    SectionTitle("Active sessions")
+                    Text(
+                        "Where your account is signed in. Revoke anything you do not recognise.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    val sessionsError = state.sessionsError
+                    when {
+                        state.sessionsLoading -> Text("Loading sessions…", style = MaterialTheme.typography.bodySmall)
+                        sessionsError != null -> Text(
+                            sessionsError,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        state.sessions.isEmpty() -> Text("No active sessions.", style = MaterialTheme.typography.bodySmall)
+                        else -> state.sessions.forEach { session ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        describeSessionAgent(session.user_agent),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                    )
+                                    Text(
+                                        buildString {
+                                            append(session.ip ?: "IP unknown")
+                                            append(" · active ")
+                                            append(relativeTime(session.last_seen_at))
+                                            if (session.current) append(" · this device")
+                                        },
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                TextButton(
+                                    onClick = { vm.revokeSession(session.id) },
+                                    enabled = state.sessionBusy == null,
+                                ) {
+                                    Text(if (state.sessionBusy == session.id) "Revoking…" else if (session.current) "Sign out" else "Revoke")
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { vm.revokeOtherSessions() },
+                        enabled = state.sessionBusy == null && state.sessions.count { !it.current } > 0,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(if (state.sessionBusy == "others") "Signing out…" else "Sign out other devices")
+                    }
+
+                    Spacer(Modifier.height(24.dp))
                     SectionTitle("Danger zone", color = MaterialTheme.colorScheme.error)
                     if (user.deletion_at == null) {
                         Text(
@@ -433,5 +489,43 @@ private fun formatDate(iso: String?): String {
         OffsetDateTime.parse(iso).toLocalDate().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))
     } catch (_: Exception) {
         "—"
+    }
+}
+
+
+/** Recognisable label for a session's User-Agent. */
+internal fun describeSessionAgent(ua: String?): String {
+    if (ua.isNullOrBlank()) return "Unknown device"
+    val s = ua.lowercase()
+    val client = when {
+        s.contains("edg/") -> "Edge"
+        s.contains("chrome/") && !s.contains("chromium") -> "Chrome"
+        s.contains("firefox/") -> "Firefox"
+        s.contains("safari/") && !s.contains("chrome") -> "Safari"
+        s.contains("okhttp") -> "Android app"
+        s.contains("cfnetwork") || s.contains("darwin") -> "iOS app"
+        else -> "Browser"
+    }
+    val os = when {
+        s.contains("android") -> "Android"
+        s.contains("iphone") || s.contains("ipad") -> "iOS"
+        s.contains("windows") -> "Windows"
+        s.contains("mac os") || s.contains("macintosh") -> "macOS"
+        s.contains("linux") -> "Linux"
+        else -> ""
+    }
+    return if (os.isEmpty()) client else "$client on $os"
+}
+
+/** Relative "last active" text; returns "unknown" for missing/invalid input. */
+internal fun relativeTime(iso: String?, now: java.time.Instant = java.time.Instant.now()): String {
+    if (iso == null) return "unknown"
+    val then = try { java.time.Instant.parse(iso) } catch (_: Exception) { return "unknown" }
+    val mins = java.time.Duration.between(then, now).toMinutes().coerceAtLeast(0)
+    return when {
+        mins < 1 -> "just now"
+        mins < 60 -> "$mins min ago"
+        mins < 1440 -> "${mins / 60} h ago"
+        else -> "${mins / 1440} d ago"
     }
 }

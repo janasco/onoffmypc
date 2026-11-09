@@ -83,6 +83,12 @@ export const api = {
     apiReq<T>('POST', '/auth/change-password', { current_password, new_password }),
   changeEmail: <T = unknown>(new_email: string, password: string) =>
     apiReq<T>('POST', '/auth/change-email', { new_email, password }),
+  sessions: <T = unknown>() =>
+    apiReq<T>('GET', '/auth/sessions'),
+  revokeSession: <T = unknown>(id: string) =>
+    apiReq<T>('DELETE', `/auth/sessions/${id}`),
+  revokeOtherSessions: <T = unknown>() =>
+    apiReq<T>('POST', '/auth/sessions/revoke-others'),
   devices: <T = unknown>() =>
     apiReq<T>('GET', '/devices'),
   getDevice: <T = unknown>(id: string) =>
