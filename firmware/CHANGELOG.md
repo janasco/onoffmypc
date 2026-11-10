@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Added
+- **Command protocol v2 (OMP-02):** the device advertises `v:2` with a boot id
+  and last executed sequence in a hello frame, persists `last_seq` and a
+  bounded 8-entry replay ring in NVS, rejects duplicate/reordered frames, and
+  acknowledges with `result/seq/state_before/state_after`. Persistence happens
+  before the ack, so a restart cannot repeat a pulse. Expiry stays server-side
+  by design; v1 frames still execute exactly as before. Bench validation is
+  pending — this is an `rc` build and has not been published.
 - **Provisioning portal hardening:** SSIDs from nearby networks are now
   JSON-escaped and the scan list is capped, so a hostile access-point name can't
   corrupt the setup response or exhaust memory; repeated wrong setup PINs now

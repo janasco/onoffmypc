@@ -174,6 +174,84 @@ void test_telemetry_type_field() {
   TEST_ASSERT_TRUE(doc["room_humidity"].isNull());
 }
 
+// ── Protocol v2 ───────────────────────────────────────────────────────────────
+
+void test_command_parse_v2() {
+  CommandFrame frame;
+  TEST_ASSERT_TRUE(parseCommandFrame(
+    "{\"command_id\":\"abc\",\"type\":\"power_on\",\"v\":2,\"seq\":5}", &frame));
+  TEST_ASSERT_EQUAL_UINT32(2, frame.version);
+  TEST_ASSERT_TRUE(frame.hasSeq);
+  TEST_ASSERT_EQUAL_UINT64(5, frame.seq);
+  TEST_ASSERT_EQUAL_STRING("abc", frame.commandId);
+}
+
+void test_command_parse_v1_defaults() {
+  CommandFrame frame;
+  TEST_ASSERT_TRUE(parseCommandFrame(
+    "{\"command_id\":\"abc\",\"type\":\"power_on\"}", &frame));
+  TEST_ASSERT_EQUAL_UINT32(1, frame.version);
+  TEST_ASSERT_FALSE(frame.hasSeq);
+}
+
+void test_replay_execute_new_seq() {
+  TEST_ASSERT_TRUE(decideReplay(2, true, 6, 5, false) == ReplayDecision::Execute);
+  TEST_ASSERT_TRUE(decideReplay(2, true, 1, 0, false) == ReplayDecision::Execute);
+}
+
+void test_replay_duplicate_id() {
+  TEST_ASSERT_TRUE(decideReplay(2, true, 5, 5, true) == ReplayDecision::Duplicate);
+  TEST_ASSERT_TRUE(decideReplay(2, true, 4, 5, true) == ReplayDecision::Duplicate);
+}
+
+void test_replay_stale_seq() {
+  TEST_ASSERT_TRUE(decideReplay(2, true, 5, 5, false) == ReplayDecision::StaleSeq);
+  TEST_ASSERT_TRUE(decideReplay(2, true, 4, 5, false) == ReplayDecision::StaleSeq);
+}
+
+void test_replay_v1_always_executes() {
+  TEST_ASSERT_TRUE(decideReplay(1, false, 0, 100, true) == ReplayDecision::Execute);
+}
+
+void test_replay_ring_wraps() {
+  ReplayRing ring;
+  replayRingInit(&ring);
+  for (int i = 0; i < 10; i++) {
+    char id[16];
+    snprintf(id, sizeof(id), "id-%d", i);
+    replayRingPush(&ring, id);
+  }
+  TEST_ASSERT_EQUAL_UINT8(8, ring.count);
+  TEST_ASSERT_FALSE(replayRingContains(&ring, "id-0"));
+  TEST_ASSERT_FALSE(replayRingContains(&ring, "id-1"));
+  TEST_ASSERT_TRUE(replayRingContains(&ring, "id-2"));
+  TEST_ASSERT_TRUE(replayRingContains(&ring, "id-9"));
+}
+
+void test_ack_payload_v2() {
+  std::string payload = buildAckPayload("cmd-1", 7, "accepted", nullptr, 0, 1);
+  JsonDocument doc;
+  TEST_ASSERT_TRUE(deserializeJson(doc, payload) == DeserializationError::Ok);
+  TEST_ASSERT_EQUAL_STRING("ack", doc["type"].as<const char*>());
+  TEST_ASSERT_EQUAL_UINT32(2, doc["v"].as<uint32_t>());
+  TEST_ASSERT_EQUAL_STRING("cmd-1", doc["command_id"].as<const char*>());
+  TEST_ASSERT_EQUAL_UINT64(7, doc["seq"].as<uint64_t>());
+  TEST_ASSERT_EQUAL_STRING("accepted", doc["result"].as<const char*>());
+  TEST_ASSERT_EQUAL_INT(0, doc["state_before"].as<int>());
+  TEST_ASSERT_EQUAL_INT(1, doc["state_after"].as<int>());
+  TEST_ASSERT_TRUE(doc["reason"].isNull());
+}
+
+void test_hello_payload() {
+  std::string payload = buildHelloPayload("boot-1", 42);
+  JsonDocument doc;
+  TEST_ASSERT_TRUE(deserializeJson(doc, payload) == DeserializationError::Ok);
+  TEST_ASSERT_EQUAL_STRING("hello", doc["type"].as<const char*>());
+  TEST_ASSERT_EQUAL_UINT32(2, doc["v"].as<uint32_t>());
+  TEST_ASSERT_EQUAL_STRING("boot-1", doc["boot_id"].as<const char*>());
+  TEST_ASSERT_EQUAL_UINT64(42, doc["last_seq"].as<uint64_t>());
+}
+
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 int main() {
@@ -191,6 +269,16 @@ int main() {
   RUN_TEST(test_command_parse_reset);
   RUN_TEST(test_command_parse_bad_json);
   RUN_TEST(test_command_parse_missing_type);
+
+  RUN_TEST(test_command_parse_v2);
+  RUN_TEST(test_command_parse_v1_defaults);
+  RUN_TEST(test_replay_execute_new_seq);
+  RUN_TEST(test_replay_duplicate_id);
+  RUN_TEST(test_replay_stale_seq);
+  RUN_TEST(test_replay_v1_always_executes);
+  RUN_TEST(test_replay_ring_wraps);
+  RUN_TEST(test_ack_payload_v2);
+  RUN_TEST(test_hello_payload);
 
   RUN_TEST(test_valid_mac_uppercase);
   RUN_TEST(test_valid_mac_lowercase);

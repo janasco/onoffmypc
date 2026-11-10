@@ -51,6 +51,97 @@ bool parseCommandPayload(const char* json, char* cmdId, size_t cmdIdSize,
   return true;
 }
 
+bool parseCommandFrame(const char* json, CommandFrame* out) {
+  if (!out) return false;
+  *out = CommandFrame{};
+  JsonDocument doc;
+  if (!json || deserializeJson(doc, json) != DeserializationError::Ok) return false;
+  const char* id = doc["command_id"] | (const char*) nullptr;
+  const char* tp = doc["type"] | (const char*) nullptr;
+  if (!id || !tp) return false;
+  if (strlen(id) >= sizeof(out->commandId) || strlen(tp) >= sizeof(out->type)) return false;
+  strcpy(out->commandId, id);
+  strcpy(out->type, tp);
+
+  uint32_t version = doc["v"] | 1;
+  out->version = version >= 2 ? 2 : 1;
+  JsonVariant seq = doc["seq"];
+  if (seq.is<uint64_t>()) {
+    out->hasSeq = true;
+    out->seq = seq.as<uint64_t>();
+  }
+  const char* exp = doc["expires_at"] | (const char*) nullptr;
+  if (exp) {
+    strncpy(out->expiresAt, exp, sizeof(out->expiresAt) - 1);
+    out->hasExpiresAt = out->expiresAt[0] != '\0';
+  }
+  return true;
+}
+
+ReplayDecision decideReplay(uint32_t version, bool hasSeq, uint64_t seq,
+                            uint64_t lastSeq, bool idInRing) {
+  if (version < 2 || !hasSeq) return ReplayDecision::Execute;
+  if (seq > lastSeq) return ReplayDecision::Execute;
+  return idInRing ? ReplayDecision::Duplicate : ReplayDecision::StaleSeq;
+}
+
+void replayRingInit(ReplayRing* ring) {
+  if (!ring) return;
+  memset(ring, 0, sizeof(*ring));
+}
+
+bool replayRingContains(const ReplayRing* ring, const char* id) {
+  if (!ring || !id) return false;
+  for (size_t i = 0; i < ring->count && i < kReplayRingSize; i++) {
+    if (strncmp(ring->ids[i], id, sizeof(ring->ids[i])) == 0) return true;
+  }
+  return false;
+}
+
+void replayRingPush(ReplayRing* ring, const char* id) {
+  if (!ring || !id) return;
+  size_t slot;
+  if (ring->count < kReplayRingSize) {
+    slot = ring->count;
+    ring->count++;
+  } else {
+    slot = ring->next;
+  }
+  strncpy(ring->ids[slot], id, sizeof(ring->ids[slot]) - 1);
+  ring->ids[slot][sizeof(ring->ids[slot]) - 1] = '\0';
+  ring->next = (uint8_t)((slot + 1) % kReplayRingSize);
+}
+
+std::string buildHelloPayload(const std::string& bootId, uint64_t lastSeq) {
+  JsonDocument doc;
+  doc["type"]     = "hello";
+  doc["v"]        = 2;
+  doc["boot_id"]  = bootId;
+  doc["last_seq"] = lastSeq;
+  JsonArray caps  = doc["capabilities"].to<JsonArray>();
+  caps.add("ack_v2");
+  caps.add("state_sense");
+  std::string out;
+  serializeJson(doc, out);
+  return out;
+}
+
+std::string buildAckPayload(const char* commandId, uint64_t seq, const char* result,
+                            const char* reason, int stateBefore, int stateAfter) {
+  JsonDocument doc;
+  doc["type"]       = "ack";
+  doc["v"]          = 2;
+  doc["command_id"] = commandId;
+  doc["seq"]        = seq;
+  doc["result"]     = result ? result : "accepted";
+  if (reason && reason[0]) doc["reason"] = reason;
+  if (stateBefore >= 0) doc["state_before"] = stateBefore;
+  if (stateAfter  >= 0) doc["state_after"]  = stateAfter;
+  std::string out;
+  serializeJson(doc, out);
+  return out;
+}
+
 std::string buildTelemetryPayload(const std::string& deviceId, bool pcOn,
                                   float temp, float humidity, int rssi,
                                   const std::string& firmwareVersion) {

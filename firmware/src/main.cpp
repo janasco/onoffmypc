@@ -20,7 +20,7 @@
 
 using namespace websockets;
 
-#define FIRMWARE_VERSION "1.3.7"
+#define FIRMWARE_VERSION "1.4.0-rc1"
 
 // ── Pin definitions ───────────────────────────────────────────────────────────
 #define PIN_POWER_SENSE 34
@@ -218,6 +218,11 @@ WiFiUDP          udp;
 
 String cfgSsid, cfgPass, cfgDeviceId, cfgDeviceToken, cfgPcMac, cfgPairCode;
 
+// Protocol v2 replay state (persisted in NVS; per-device monotonic seq + ring).
+ReplayRing replayRing;
+uint64_t   lastExecutedSeq = 0;
+char       bootId[17]      = {0};
+
 enum Mode  { PROVISIONING, NORMAL };
 enum State { WIFI_CONNECTING, WS_CONNECTING, CONNECTED };
 Mode  mode  = NORMAL;
@@ -368,6 +373,38 @@ void clearConfig() {
   prefs.clear();
   prefs.end();
   Serial.println("[nvs] config cleared");
+}
+
+// ── Protocol v2 replay state ──────────────────────────────────────────────────
+
+void loadReplayState() {
+  replayRingInit(&replayRing);
+  prefs.begin("onoffmypc", true);
+  lastExecutedSeq = prefs.getULong64("last_seq", 0);
+  uint32_t count = prefs.getUInt("ring_count", 0);
+  replayRing.count = (uint8_t)(count > kReplayRingSize ? kReplayRingSize : count);
+  replayRing.next  = (uint8_t)(prefs.getUInt("ring_next", 0) % kReplayRingSize);
+  for (size_t i = 0; i < replayRing.count; i++) {
+    String key   = "ring_" + String((unsigned)i);
+    String value = prefs.getString(key.c_str(), "");
+    strncpy(replayRing.ids[i], value.c_str(), sizeof(replayRing.ids[i]) - 1);
+    replayRing.ids[i][sizeof(replayRing.ids[i]) - 1] = '\0';
+  }
+  prefs.end();
+  Serial.printf("[nvs] replay state: last_seq=%llu ring=%u\n",
+                (unsigned long long)lastExecutedSeq, replayRing.count);
+}
+
+void saveReplayState() {
+  prefs.begin("onoffmypc", false);
+  prefs.putULong64("last_seq", lastExecutedSeq);
+  prefs.putUInt("ring_count", replayRing.count);
+  prefs.putUInt("ring_next", replayRing.next);
+  for (size_t i = 0; i < kReplayRingSize; i++) {
+    String key = "ring_" + String((unsigned)i);
+    prefs.putString(key.c_str(), i < replayRing.count ? String(replayRing.ids[i]) : String(""));
+  }
+  prefs.end();
 }
 
 // ── Provisioning helpers ──────────────────────────────────────────────────────
@@ -593,7 +630,7 @@ bool sendWs(const String& msg) {
   return ok;
 }
 
-void sendAck(const String& commandId) {
+void sendLegacyAck(const String& commandId) {
   JsonDocument doc;
   doc["type"]       = "ack";
   doc["command_id"] = commandId;
@@ -602,14 +639,63 @@ void sendAck(const String& commandId) {
   sendWs(msg);
 }
 
-void handleCommand(const String& commandId, const String& type) {
-  Serial.printf("[cmd] %s (%s)\n", type.c_str(), commandId.c_str());
+void sendAck(const CommandFrame& frame, const char* result, const char* reason,
+             int stateBefore, int stateAfter) {
+  if (frame.version < 2 || !frame.hasSeq) {
+    sendLegacyAck(String(frame.commandId));
+    return;
+  }
+  String msg = buildAckPayload(frame.commandId, frame.seq, result, reason,
+                               stateBefore, stateAfter).c_str();
+  sendWs(msg);
+}
+
+void handleCommand(const CommandFrame& frame) {
+  const String commandId(frame.commandId);
+  const String type(frame.type);
+  const bool v2 = frame.version >= 2 && frame.hasSeq;
+  const bool idSeen = replayRingContains(&replayRing, frame.commandId);
+  const ReplayDecision decision = decideReplay(frame.version, frame.hasSeq,
+                                               frame.seq, lastExecutedSeq, idSeen);
+  const int stateBefore = digitalRead(PIN_POWER_SENSE) == HIGH ? 1 : 0;
+
+  if (decision == ReplayDecision::Duplicate) {
+    Serial.printf("[cmd] duplicate %s seq=%llu\n", commandId.c_str(),
+                  (unsigned long long)frame.seq);
+    sendAck(frame, "duplicate", "replay_ring", stateBefore, stateBefore);
+    return;
+  }
+  if (decision == ReplayDecision::StaleSeq) {
+    Serial.printf("[cmd] stale seq=%llu last=%llu\n", (unsigned long long)frame.seq,
+                  (unsigned long long)lastExecutedSeq);
+    sendAck(frame, "rejected", "stale_seq", stateBefore, stateBefore);
+    return;
+  }
+
+  Serial.printf("[cmd] %s (%s) seq=%llu\n", type.c_str(), commandId.c_str(),
+                (unsigned long long)frame.seq);
+
   if      (type == "power_on")        { sendWoL(); }
   else if (type == "power_off")       { pulsePin(PIN_POWER_BTN, 200); }
   else if (type == "power_off_force") { pulsePin(PIN_POWER_BTN, 6000); }
   else if (type == "reset")           { pulsePin(PIN_RESET_BTN, 200); }
-  else { Serial.printf("[cmd] unknown: %s\n", type.c_str()); return; }
-  sendAck(commandId);
+  else {
+    Serial.printf("[cmd] unknown: %s\n", type.c_str());
+    if (v2) sendAck(frame, "rejected", "unknown_type", stateBefore, stateBefore);
+    return;
+  }
+
+  // Persist before the ack: a restart after the pulse must not execute the same
+  // command again on reconnect.
+  if (v2) {
+    lastExecutedSeq = frame.seq;
+    replayRingPush(&replayRing, frame.commandId);
+    saveReplayState();
+  }
+
+  const int stateAfter = digitalRead(PIN_POWER_SENSE) == HIGH ? 1 : 0;
+  sendAck(frame, "accepted", nullptr, stateBefore, stateAfter);
+
   // Reflect the new PC state right away instead of letting the UI wait up to
   // the full telemetry cadence. Reset the periodic phase so the next report
   // isn't a back-to-back duplicate.
@@ -718,11 +804,9 @@ void connectWs() {
   ws.setCACert(ONOFFMYPC_ROOT_CA);
 
   ws.onMessage([](WebsocketsMessage msg) {
-    char commandId[64] = {0};
-    char type[32]      = {0};
-    if (!parseCommandPayload(msg.data().c_str(), commandId, sizeof(commandId),
-                             type, sizeof(type))) return;
-    handleCommand(String(commandId), String(type));
+    CommandFrame frame;
+    if (!parseCommandFrame(msg.data().c_str(), &frame)) return;
+    handleCommand(frame);
   });
 
   ws.onEvent([](WebsocketsEvent event, String) {
@@ -734,6 +818,10 @@ void connectWs() {
       lastWsPongAt = millis();
       lastWsPingAt = millis();
       Serial.println("[ws] connected");
+      String hello = buildHelloPayload(std::string(bootId), lastExecutedSeq).c_str();
+      sendWs(hello);
+      Serial.printf("[ws] hello v2 boot=%s last_seq=%llu\n", bootId,
+                    (unsigned long long)lastExecutedSeq);
     } else if (event == WebsocketsEvent::ConnectionClosed) {
       state = WS_CONNECTING;
       wsDisconnectedAt = millis();
@@ -769,6 +857,10 @@ void setup() {
 
   startWatchdog();
   feedWatchdog();
+
+  snprintf(bootId, sizeof(bootId), "%08lx%08lx",
+           (unsigned long)esp_random(), (unsigned long)esp_random());
+  loadReplayState();
 
   dht.begin();
 
