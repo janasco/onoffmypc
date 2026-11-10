@@ -19,7 +19,9 @@
  * Options:
  *   --aab <path>       default android/app/build/outputs/bundle/release/app-release.aab
  *   --track <name>     internal | alpha | beta | production   (default internal)
- *   --status <s>       draft | completed                      (default draft)
+ *   --status <s>       draft | inProgress | halted | completed (default draft)
+ *   --fraction <n>     staged rollout fraction for inProgress  (default 0.2)
+ *   --countries <csv>  production country codes              (default US)
  *   --whatsnew <path>  default distribution/whatsnew/whatsnew-en-US
  *   --notes <text>     override the "What's new" text
  *   --dry-run          authenticate, print the plan, change nothing
@@ -59,6 +61,8 @@ function parseArgs(argv) {
     status: 'draft',
     whatsnew: 'distribution/whatsnew/whatsnew-en-US',
     notes: null,
+    fraction: 0.2,
+    countries: 'US',
     dryRun: false,
     check: false,
     rollout: false,
@@ -75,6 +79,8 @@ function parseArgs(argv) {
       case '--status': opts.status = argv[++i]; statusSet = true; break
       case '--whatsnew': opts.whatsnew = argv[++i]; break
       case '--notes': opts.notes = argv[++i]; break
+      case '--fraction': opts.fraction = Number(argv[++i]); break
+      case '--countries': opts.countries = argv[++i]; break
       case '--dry-run': opts.dryRun = true; break
       case '--check': opts.check = true; break
       case '--rollout': opts.rollout = true; break
@@ -94,11 +100,21 @@ function parseArgs(argv) {
   if (!['internal', 'alpha', 'beta', 'production'].includes(opts.track)) {
     die(`--track must be internal, alpha, beta or production (got "${opts.track}")`, 1)
   }
-  if (!['draft', 'completed'].includes(opts.status)) {
-    die(`--status must be draft or completed (got "${opts.status}")`, 1)
+  if (!['draft', 'inProgress', 'halted', 'completed'].includes(opts.status)) {
+    die(`--status must be draft, inProgress, halted or completed (got "${opts.status}")`, 1)
+  }
+  if (opts.status === 'inProgress' && !(opts.fraction > 0 && opts.fraction < 1)) {
+    die(`--fraction must be between 0 and 1 for a staged rollout (got "${opts.fraction}")`, 1)
   }
   if (opts.rollout && !statusSet) opts.status = 'completed'
   return opts
+}
+
+function countries(opts) {
+  return String(opts.countries || 'US')
+    .split(',')
+    .map((code) => code.trim().toUpperCase())
+    .filter(Boolean)
 }
 
 function loadCredentials() {
@@ -301,6 +317,9 @@ async function main() {
       name: versionCode,
       versionCodes: [versionCode],
       status: opts.status,
+      ...(opts.status === 'inProgress'
+        ? { userFraction: opts.fraction, countryTargeting: { countries: countries(opts), includeRestOfWorld: true } }
+        : {}),
       ...(notes ? { releaseNotes: [{ language: 'en-US', text: notes }] } : {}),
     }]
 
@@ -346,6 +365,10 @@ async function main() {
     // "Only one completed release is allowed".
     const target = drafts[drafts.length - 1]
     target.status = opts.status
+    if (opts.status === 'inProgress') {
+      target.userFraction = opts.fraction
+      target.countryTargeting = { countries: countries(opts), includeRestOfWorld: true }
+    }
     if (notes) target.releaseNotes = [{ language: 'en-US', text: notes }]
     current.body.releases = opts.status === 'completed' ? [target] : releases
 

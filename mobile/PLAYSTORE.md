@@ -160,7 +160,10 @@ node scripts/publish-play.mjs --rollout
 node scripts/publish-play.mjs --track production --promote 21
 
 # 6. After the listing, data-safety, content-rating and app-access forms are
-#    complete, submit the production draft for review
+#    complete, submit the production draft for review.
+#    The first production release also needs countries selected in the console:
+#    Release -> Production -> Countries/regions. The API cannot set the
+#    app-level list, and a first release cannot be staged.
 node scripts/publish-play.mjs --track production --rollout
 
 # Read-only: every track and its releases
@@ -189,6 +192,9 @@ Flags: `--aab`, `--track internal|alpha|beta|production`,
   **Testing → Internal testing → Testers**.
 - **Data safety**, **content rating**, **target audience**, and **app access**
   are console forms, not API resources.
+- **Production countries/regions** are an app-level setting in the console. The
+  API's per-release `countryTargeting` is only accepted for staged releases,
+  and the first release on a track cannot be staged.
 - **Google Sign-In SHA-1** belongs to the OAuth client in Google Cloud; there
   is no public API for that client configuration. Defaults: the signed AAB at
 `android/app/build/outputs/bundle/release/app-release.aab`, track `internal`,
