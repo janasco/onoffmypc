@@ -390,6 +390,9 @@ async function main() {
         if (label === 'phoneScreenshot') {
           for (const [index, item] of found.entries()) console.log(`   ${index + 1}: ${item.url}`)
         }
+        if (label === 'icon') {
+          for (const item of found) console.log(`   icon: ${item.url}`)
+        }
       }
     } finally {
       await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
