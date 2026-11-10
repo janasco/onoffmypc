@@ -145,19 +145,25 @@ cd mobile
 # 1. Prove the credential and options without changing anything
 node scripts/publish-play.mjs --dry-run
 
-# 2. Upload to internal testing as a draft (roll out in the console)
+# 2. Verify the Cloud project is linked and the account can open a Play edit
+#    (creates and immediately discards an edit; no upload, no release)
+node scripts/publish-play.mjs --check
+
+# 3. Upload to internal testing as a draft (roll out in the console)
 node scripts/publish-play.mjs --track internal
 
-# 3. After the listing, data-safety, content-rating and app-access forms are
+# 4. After the listing, data-safety, content-rating and app-access forms are
 #    complete, submit to production
 node scripts/publish-play.mjs --track production --status completed
 ```
 
 Expected dry-run output ends with `authenticated` and
-`dry run: credentials valid, nothing uploaded`.
+`dry run: credentials valid, nothing uploaded`. `--check` ends with
+`access check passed`; a `403` there means the Play project link or the
+service-account permission is still missing.
 
 Flags: `--aab`, `--track internal|alpha|beta|production`,
-`--status draft|completed`, `--whatsnew`, `--notes`. Defaults: the signed AAB at
+`--status draft|completed`, `--whatsnew`, `--notes`, `--dry-run`, `--check`. Defaults: the signed AAB at
 `android/app/build/outputs/bundle/release/app-release.aab`, track `internal`,
 status `draft`.
 

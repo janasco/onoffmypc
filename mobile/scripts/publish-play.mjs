@@ -11,6 +11,7 @@
  *
  * Usage:
  *   node scripts/publish-play.mjs --dry-run
+ *   node scripts/publish-play.mjs --check
  *   node scripts/publish-play.mjs --track internal
  *   node scripts/publish-play.mjs --track production --status completed
  *
@@ -21,6 +22,8 @@
  *   --whatsnew <path>  default distribution/whatsnew/whatsnew-en-US
  *   --notes <text>     override the "What's new" text
  *   --dry-run          authenticate, print the plan, change nothing
+ *   --check            authenticate and open/discard a Play edit (verifies the
+ *                      project link and Play permission; no upload, no release)
  *
  * Exit codes: 0 ok, 1 usage/config, 2 auth, 3 upload, 4 track/commit.
  */
@@ -48,6 +51,7 @@ function parseArgs(argv) {
     whatsnew: 'distribution/whatsnew/whatsnew-en-US',
     notes: null,
     dryRun: false,
+    check: false,
   }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
@@ -58,6 +62,7 @@ function parseArgs(argv) {
       case '--whatsnew': opts.whatsnew = argv[++i]; break
       case '--notes': opts.notes = argv[++i]; break
       case '--dry-run': opts.dryRun = true; break
+      case '--check': opts.check = true; break
       case '-h': case '--help': {
         const src = readFileSync(new URL(import.meta.url), 'utf8')
         const doc = src.slice(src.indexOf('/**') + 3, src.indexOf('*/'))
@@ -168,25 +173,37 @@ function explain(status, body) {
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
   const aabPath = resolve(opts.aab)
-  if (!existsSync(aabPath)) {
-    die(`AAB not found: ${aabPath}\n  Build it first: cd android && ./gradlew :app:bundleRelease`, 1)
+  if (!opts.check) {
+    if (!existsSync(aabPath)) {
+      die(`AAB not found: ${aabPath}\n  Build it first: cd android && ./gradlew :app:bundleRelease`, 1)
+    }
   }
-  const aab = readFileSync(aabPath)
+  const aab = opts.check ? null : readFileSync(aabPath)
   const notesPath = resolve(opts.whatsnew)
   const notes = opts.notes || (existsSync(notesPath) ? readFileSync(notesPath, 'utf8').trim() : '')
 
   const creds = loadCredentials()
   console.log(`== package ${PACKAGE_NAME}`)
   console.log(`== service account ${creds.client_email}`)
-  console.log(`== AAB ${aabPath} (${(aab.length / 1024 / 1024).toFixed(1)} MB)`)
-  console.log(`== track ${opts.track}, status ${opts.status}`)
-  console.log(`== whatsnew ${notes ? notes.split('\n')[0].slice(0, 70) + (notes.length > 70 ? '…' : '') : '(none)'}`)
+  if (!opts.check) {
+    console.log(`== AAB ${aabPath} (${(aab.length / 1024 / 1024).toFixed(1)} MB)`)
+    console.log(`== track ${opts.track}, status ${opts.status}`)
+    console.log(`== whatsnew ${notes ? notes.split('\n')[0].slice(0, 70) + (notes.length > 70 ? '…' : '') : '(none)'}`)
+  }
 
   const token = await getAccessToken(creds)
   console.log('== authenticated')
 
   if (opts.dryRun) {
     console.log('== dry run: credentials valid, nothing uploaded')
+    return
+  }
+
+  if (opts.check) {
+    const edit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits`, { json: {} })
+    if (!edit.ok) die(`Play access check failed: ${explain(edit.status, edit.body)}`, 3)
+    await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${edit.body.id}`)
+    console.log('== access check passed: edit opened and discarded (no upload, no release)')
     return
   }
 
