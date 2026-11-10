@@ -181,6 +181,10 @@ node scripts/publish-play.mjs --upload-screenshots --replace   # overwrite exist
 node scripts/publish-play.mjs --inspect
 ```
 
+> If **Managed publishing** is enabled, `edits:commit` is retried with
+> `changesNotSentForReview=true`. The edit is saved, but you must send it for
+> review from **Play Console → Publishing overview**.
+
 Expected dry-run output ends with `authenticated` and
 `dry run: credentials valid, nothing uploaded`. `--check` ends with
 `access check passed`; a `403` there means the Play project link or the

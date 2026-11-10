@@ -207,6 +207,26 @@ async function api(token, method, url, { json, body, contentType } = {}) {
   return { ok: res.ok, status: res.status, body: parsed }
 }
 
+/**
+ * Commit an edit. Managed publishing (or an in-flight review) rejects the
+ * normal commit with "Changes cannot be sent for review automatically"; in that
+ * case retry with changesNotSentForReview=true so the edit is saved for manual
+ * publishing in the Play Console.
+ */
+async function commitEdit(token, editId) {
+  let result = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits/${editId}:commit`)
+  if (result.ok) return result
+  const message = String(result.body?.error?.message ?? '')
+  if (/sent for review automatically|changesNotSentForReview/i.test(message)) {
+    result = await api(token, 'POST',
+      `${API}/applications/${PACKAGE_NAME}/edits/${editId}:commit?changesNotSentForReview=true`)
+    if (result.ok) {
+      console.log('== committed without sending for review (publish it from the Play Console)')
+    }
+  }
+  return result
+}
+
 function explain(status, body) {
   const message = body && body.error && body.error.message ? body.error.message : JSON.stringify(body)
   if (status === 401 || status === 403) {
@@ -295,7 +315,7 @@ async function main() {
       console.log(`== uploaded ${file} (${(bytes.length / 1024).toFixed(0)} KB)`)
     }
 
-    const commit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits/${editId}:commit`)
+    const commit = await commitEdit(token, editId)
     if (!commit.ok) die(`commit failed: ${explain(commit.status, commit.body)}`, 4)
     console.log(`== committed ${files.length} phone screenshot(s)`)
     return
@@ -408,7 +428,7 @@ async function main() {
       die(`could not promote versionCode ${versionCode} to ${opts.track}: ${explain(put.status, put.body)}`, 4)
     }
 
-    const commit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits/${editId}:commit`)
+    const commit = await commitEdit(token, editId)
     if (!commit.ok) die(`commit failed: ${explain(commit.status, commit.body)}`, 4)
 
     console.log(`
@@ -504,7 +524,7 @@ async function main() {
   }
   console.log(`== ${opts.track} track set (${opts.status})`)
 
-  const commit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits/${editId}:commit`)
+  const commit = await commitEdit(token, editId)
   if (!commit.ok) die(`commit failed: ${explain(commit.status, commit.body)}`, 4)
 
   console.log(`
