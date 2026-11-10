@@ -229,3 +229,19 @@ status `draft`.
 Never commit the service-account JSON. If it is exposed, delete the key in
 Google Cloud (the service account and Play permissions stay), create a new key,
 and update the local path.
+
+## Post-launch monitoring
+
+```bash
+export PLAY_SERVICE_ACCOUNT_JSON=/opt/repo/onoffmypc-private/secrets/play-service-account.json
+node scripts/play-report.mjs            # last 7 days
+node scripts/play-report.mjs --days 14
+```
+
+Prints daily crash and ANR rates plus the latest reviews. Vitals requires the
+**Google Play Developer Reporting API** enabled in the service account's Cloud
+project:
+
+<https://console.developers.google.com/apis/api/playdeveloperreporting.googleapis.com/overview>
+
+Reviews work with the existing key. The Pre-launch report is console-only.
