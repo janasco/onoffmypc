@@ -13,6 +13,7 @@
  *   node scripts/publish-play.mjs --dry-run
  *   node scripts/publish-play.mjs --check
  *   node scripts/publish-play.mjs --track internal
+ *   node scripts/publish-play.mjs --rollout
  *   node scripts/publish-play.mjs --track production --status completed
  *
  * Options:
@@ -24,13 +25,18 @@
  *   --dry-run          authenticate, print the plan, change nothing
  *   --check            authenticate and open/discard a Play edit (verifies the
  *                      project link and Play permission; no upload, no release)
+ *   --inspect          print the current listing and image counts, change nothing
+ *   --rollout          publish the existing draft on --track (default internal)
+ *                      without re-uploading the bundle; status defaults to
+ *                      completed, override with --status
  *
  * Exit codes: 0 ok, 1 usage/config, 2 auth, 3 upload, 4 track/commit.
  */
 
 import { createSign } from 'node:crypto'
-import { readFileSync, existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const PACKAGE_NAME = 'com.onoffmypc.android'
 const SCOPES = ['https://www.googleapis.com/auth/androidpublisher']
@@ -52,17 +58,22 @@ function parseArgs(argv) {
     notes: null,
     dryRun: false,
     check: false,
+    rollout: false,
+    inspect: false,
   }
+  let statusSet = false
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     switch (a) {
       case '--aab': opts.aab = argv[++i]; break
       case '--track': opts.track = argv[++i]; break
-      case '--status': opts.status = argv[++i]; break
+      case '--status': opts.status = argv[++i]; statusSet = true; break
       case '--whatsnew': opts.whatsnew = argv[++i]; break
       case '--notes': opts.notes = argv[++i]; break
       case '--dry-run': opts.dryRun = true; break
       case '--check': opts.check = true; break
+      case '--rollout': opts.rollout = true; break
+      case '--inspect': opts.inspect = true; break
       case '-h': case '--help': {
         const src = readFileSync(new URL(import.meta.url), 'utf8')
         const doc = src.slice(src.indexOf('/**') + 3, src.indexOf('*/'))
@@ -79,6 +90,7 @@ function parseArgs(argv) {
   if (!['draft', 'completed'].includes(opts.status)) {
     die(`--status must be draft or completed (got "${opts.status}")`, 1)
   }
+  if (opts.rollout && !statusSet) opts.status = 'completed'
   return opts
 }
 
@@ -172,20 +184,19 @@ function explain(status, body) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
+  const needsAab = !opts.check && !opts.inspect
   const aabPath = resolve(opts.aab)
-  if (!opts.check) {
-    if (!existsSync(aabPath)) {
-      die(`AAB not found: ${aabPath}\n  Build it first: cd android && ./gradlew :app:bundleRelease`, 1)
-    }
+  if (needsAab && !existsSync(aabPath)) {
+    die(`AAB not found: ${aabPath}\n  Build it first: cd android && ./gradlew :app:bundleRelease`, 1)
   }
-  const aab = opts.check ? null : readFileSync(aabPath)
+  const aab = needsAab ? readFileSync(aabPath) : null
   const notesPath = resolve(opts.whatsnew)
   const notes = opts.notes || (existsSync(notesPath) ? readFileSync(notesPath, 'utf8').trim() : '')
 
   const creds = loadCredentials()
   console.log(`== package ${PACKAGE_NAME}`)
   console.log(`== service account ${creds.client_email}`)
-  if (!opts.check) {
+  if (needsAab) {
     console.log(`== AAB ${aabPath} (${(aab.length / 1024 / 1024).toFixed(1)} MB)`)
     console.log(`== track ${opts.track}, status ${opts.status}`)
     console.log(`== whatsnew ${notes ? notes.split('\n')[0].slice(0, 70) + (notes.length > 70 ? '…' : '') : '(none)'}`)
@@ -204,6 +215,86 @@ async function main() {
     if (!edit.ok) die(`Play access check failed: ${explain(edit.status, edit.body)}`, 3)
     await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${edit.body.id}`)
     console.log('== access check passed: edit opened and discarded (no upload, no release)')
+    return
+  }
+
+  if (opts.inspect) {
+    const edit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits`, { json: {} })
+    if (!edit.ok) die(`could not open an edit: ${explain(edit.status, edit.body)}`, 4)
+    const editId = edit.body.id
+    const language = 'en-US'
+    try {
+      const listings = await api(token, 'GET', `${API}/applications/${PACKAGE_NAME}/edits/${editId}/listings`)
+      const languages = listings.ok ? (listings.body.listings ?? []).map((item) => item.language) : []
+      console.log(`== listings: ${languages.length ? languages.join(', ') : '(none)'}`)
+
+      const listing = await api(token, 'GET', `${API}/applications/${PACKAGE_NAME}/edits/${editId}/listings/${language}`)
+      if (listing.ok) {
+        console.log(`== ${language} title: ${listing.body.title || '(empty)'}`)
+        console.log(`== ${language} short: ${listing.body.shortDescription || '(empty)'}`)
+        console.log(`== ${language} full:  ${(listing.body.fullDescription || '').length} chars`)
+      } else {
+        console.log(`== ${language} listing: not set (${listing.status})`)
+      }
+
+      for (const [imageType, label] of [
+        ['icon', 'icon'],
+        ['featureGraphic', 'featureGraphic'],
+        ['phoneScreenshot', 'phoneScreenshot'],
+      ]) {
+        const images = await api(token, 'GET',
+          `${API}/applications/${PACKAGE_NAME}/edits/${editId}/listings/${language}/${imageType}`)
+        console.log(`== ${label}: ${images.ok ? (images.body.images ?? []).length : 0} image(s)`)
+      }
+    } finally {
+      await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+    }
+    return
+  }
+
+  if (opts.rollout) {
+    const edit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits`, { json: {} })
+    if (!edit.ok) die(`could not open an edit: ${explain(edit.status, edit.body)}`, 4)
+    const editId = edit.body.id
+
+    const current = await api(token, 'GET', `${API}/applications/${PACKAGE_NAME}/edits/${editId}/tracks/${opts.track}`)
+    if (!current.ok) {
+      await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+      die(`could not read the ${opts.track} track: ${explain(current.status, current.body)}`, 4)
+    }
+
+    const releases = Array.isArray(current.body.releases) ? current.body.releases : []
+    const drafts = releases.filter((release) => release.status === 'draft')
+    if (drafts.length === 0) {
+      await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+      die(`no draft release exists on the ${opts.track} track to roll out`, 4)
+    }
+
+    // A track may hold one completed release plus a newer draft. Completing the
+    // draft replaces the old completed release; sending both is rejected with
+    // "Only one completed release is allowed".
+    const target = drafts[drafts.length - 1]
+    target.status = opts.status
+    if (notes) target.releaseNotes = [{ language: 'en-US', text: notes }]
+    current.body.releases = opts.status === 'completed' ? [target] : releases
+
+    const put = await api(token, 'PUT',
+      `${API}/applications/${PACKAGE_NAME}/edits/${editId}/tracks/${opts.track}`,
+      { json: current.body })
+    if (!put.ok) {
+      await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+      die(`could not update the ${opts.track} track: ${explain(put.status, put.body)}`, 4)
+    }
+
+    const commit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits/${editId}:commit`)
+    if (!commit.ok) die(`commit failed: ${explain(commit.status, commit.body)}`, 4)
+
+    const versions = (target.versionCodes ?? []).join(', ')
+    console.log(`
+== rolled out
+   track:       ${opts.track}
+   status:      ${opts.status}
+   versionCodes: ${versions || '(none)'}`)
     return
   }
 

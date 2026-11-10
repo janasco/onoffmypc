@@ -149,12 +149,18 @@ node scripts/publish-play.mjs --dry-run
 #    (creates and immediately discards an edit; no upload, no release)
 node scripts/publish-play.mjs --check
 
-# 3. Upload to internal testing as a draft (roll out in the console)
+# 3. Upload to internal testing as a draft
 node scripts/publish-play.mjs --track internal
 
-# 4. After the listing, data-safety, content-rating and app-access forms are
+# 4. Publish that draft without re-uploading it (status defaults to completed)
+node scripts/publish-play.mjs --rollout
+
+# 5. After the listing, data-safety, content-rating and app-access forms are
 #    complete, submit to production
 node scripts/publish-play.mjs --track production --status completed
+
+# Read-only: print the current listing and image counts
+node scripts/publish-play.mjs --inspect
 ```
 
 Expected dry-run output ends with `authenticated` and
@@ -163,7 +169,21 @@ Expected dry-run output ends with `authenticated` and
 service-account permission is still missing.
 
 Flags: `--aab`, `--track internal|alpha|beta|production`,
-`--status draft|completed`, `--whatsnew`, `--notes`, `--dry-run`, `--check`. Defaults: the signed AAB at
+`--status draft|completed`, `--whatsnew`, `--notes`, `--dry-run`, `--check`,
+`--rollout`, `--inspect`.
+
+### What the API cannot do
+
+- **Listing graphics** (icon, feature graphic, phone screenshots) are not part
+  of the Android Publisher v3 API. Upload them under **Store listing** in the
+  console. `--inspect` shows which image slots are populated.
+- **Testers**: the API only accepts **Google Groups**. Individual email lists
+  are a console-only feature, so add your own account under
+  **Testing → Internal testing → Testers**.
+- **Data safety**, **content rating**, **target audience**, and **app access**
+  are console forms, not API resources.
+- **Google Sign-In SHA-1** belongs to the OAuth client in Google Cloud; there
+  is no public API for that client configuration. Defaults: the signed AAB at
 `android/app/build/outputs/bundle/release/app-release.aab`, track `internal`,
 status `draft`.
 
