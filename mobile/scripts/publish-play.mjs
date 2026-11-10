@@ -218,6 +218,7 @@ async function commitEdit(token, editId) {
   if (result.ok) return result
   const message = String(result.body?.error?.message ?? '')
   if (/sent for review automatically|changesNotSentForReview/i.test(message)) {
+    console.log(`== automatic review rejected: ${message}`)
     result = await api(token, 'POST',
       `${API}/applications/${PACKAGE_NAME}/edits/${editId}:commit?changesNotSentForReview=true`)
     if (result.ok) {
