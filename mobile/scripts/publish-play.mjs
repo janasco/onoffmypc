@@ -28,7 +28,13 @@
  *   --check            authenticate and open/discard a Play edit (verifies the
  *                      project link and Play permission; no upload, no release)
  *   --tracks           print every track and its releases, change nothing
+ *   --upload-screenshots  upload playstore/screenshots/play/*.png as the
+ *                      listing's phone screenshots (no-op if any exist unless
+ *                      --replace is passed)
  *   --app-sharing      upload the AAB to Internal app sharing and print the link
+ *
+ * Phone screenshots use the plural image type `phoneScreenshots`; the
+ * singular/uppercase spellings are rejected by the API.
  *   --promote <code>   put an already-uploaded versionCode on --track without
  *                      re-uploading (default status draft)
  *   --inspect          print the current listing and image counts, change nothing
@@ -71,6 +77,8 @@ function parseArgs(argv) {
     tracks: false,
     promote: null,
     appSharing: false,
+    uploadScreenshots: false,
+    replace: false,
   }
   let statusSet = false
   for (let i = 0; i < argv.length; i++) {
@@ -90,6 +98,8 @@ function parseArgs(argv) {
       case '--tracks': opts.tracks = true; break
       case '--promote': opts.promote = argv[++i]; break
       case '--app-sharing': opts.appSharing = true; break
+      case '--upload-screenshots': opts.uploadScreenshots = true; break
+      case '--replace': opts.replace = true; break
       case '-h': case '--help': {
         const src = readFileSync(new URL(import.meta.url), 'utf8')
         const doc = src.slice(src.indexOf('/**') + 3, src.indexOf('*/'))
@@ -210,7 +220,7 @@ function explain(status, body) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
-  const needsAab = !opts.check && !opts.inspect && !opts.tracks && !opts.promote
+  const needsAab = !opts.check && !opts.inspect && !opts.tracks && !opts.promote && !opts.uploadScreenshots
   const aabPath = resolve(opts.aab)
   if (needsAab && !existsSync(aabPath)) {
     die(`AAB not found: ${aabPath}\n  Build it first: cd android && ./gradlew :app:bundleRelease`, 1)
@@ -241,6 +251,53 @@ async function main() {
     if (!edit.ok) die(`Play access check failed: ${explain(edit.status, edit.body)}`, 3)
     await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${edit.body.id}`)
     console.log('== access check passed: edit opened and discarded (no upload, no release)')
+    return
+  }
+
+  if (opts.uploadScreenshots) {
+    const dir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'playstore', 'screenshots', 'play')
+    const files = existsSync(dir)
+      ? readdirSync(dir).filter((file) => file.toLowerCase().endsWith('.png')).sort()
+      : []
+    if (files.length === 0) die(`no PNG screenshots in ${dir}`, 1)
+
+    const edit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits`, { json: {} })
+    if (!edit.ok) die(`could not open an edit: ${explain(edit.status, edit.body)}`, 4)
+    const editId = edit.body.id
+
+    const existing = await api(token, 'GET',
+      `${API}/applications/${PACKAGE_NAME}/edits/${editId}/listings/en-US/phoneScreenshots`)
+    const count = existing.ok ? (existing.body.images ?? []).length : 0
+    if (count > 0 && !opts.replace) {
+      await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+      console.log(`== ${count} phone screenshot(s) already present; pass --replace to overwrite`)
+      return
+    }
+    if (count > 0 && opts.replace) {
+      const removed = await api(token, 'DELETE',
+        `${API}/applications/${PACKAGE_NAME}/edits/${editId}/listings/en-US/phoneScreenshots`)
+      if (!removed.ok) {
+        await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+        die(`could not clear existing screenshots: ${explain(removed.status, removed.body)}`, 4)
+      }
+      console.log(`== cleared ${count} existing phone screenshot(s)`)
+    }
+
+    for (const file of files) {
+      const bytes = readFileSync(resolve(dir, file))
+      const upload = await api(token, 'POST',
+        `${UPLOAD_API}/applications/${PACKAGE_NAME}/edits/${editId}/listings/en-US/phoneScreenshots?uploadType=media`,
+        { body: bytes, contentType: 'image/png' })
+      if (!upload.ok) {
+        await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+        die(`screenshot upload failed for ${file}: ${explain(upload.status, upload.body)}`, 3)
+      }
+      console.log(`== uploaded ${file} (${(bytes.length / 1024).toFixed(0)} KB)`)
+    }
+
+    const commit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits/${editId}:commit`)
+    if (!commit.ok) die(`commit failed: ${explain(commit.status, commit.body)}`, 4)
+    console.log(`== committed ${files.length} phone screenshot(s)`)
     return
   }
 
@@ -303,11 +360,15 @@ async function main() {
       for (const [imageType, label] of [
         ['icon', 'icon'],
         ['featureGraphic', 'featureGraphic'],
-        ['phoneScreenshot', 'phoneScreenshot'],
+        ['phoneScreenshots', 'phoneScreenshot'],
       ]) {
         const images = await api(token, 'GET',
           `${API}/applications/${PACKAGE_NAME}/edits/${editId}/listings/${language}/${imageType}`)
-        console.log(`== ${label}: ${images.ok ? (images.body.images ?? []).length : 0} image(s)`)
+        const found = images.ok ? (images.body.images ?? []) : []
+        console.log(`== ${label}: ${found.length} image(s)`)
+        if (label === 'phoneScreenshot') {
+          for (const [index, item] of found.entries()) console.log(`   ${index + 1}: ${item.url}`)
+        }
       }
     } finally {
       await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)

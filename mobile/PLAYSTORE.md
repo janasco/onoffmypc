@@ -172,6 +172,11 @@ node scripts/publish-play.mjs --tracks
 # Internal app sharing: upload the AAB and print a shareable install link
 node scripts/publish-play.mjs --app-sharing
 
+# Upload the generated phone screenshots (playstore/screenshots/play/*.png).
+# The image type must be the plural `phoneScreenshots`.
+node scripts/publish-play.mjs --upload-screenshots
+node scripts/publish-play.mjs --upload-screenshots --replace   # overwrite existing
+
 # Read-only: print the current listing and image counts
 node scripts/publish-play.mjs --inspect
 ```
@@ -184,7 +189,7 @@ service-account permission is still missing.
 Flags: `--aab`, `--track internal|alpha|beta|production`,
 `--status draft|completed`, `--whatsnew`, `--notes`, `--dry-run`, `--check`,
 `--rollout`, `--inspect`, `--tracks`, `--promote <versionCode>`,
-`--app-sharing`.
+`--app-sharing`, `--upload-screenshots`, `--replace`.
 
 ### What the API cannot do
 
