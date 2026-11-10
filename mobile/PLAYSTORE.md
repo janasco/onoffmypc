@@ -155,9 +155,16 @@ node scripts/publish-play.mjs --track internal
 # 4. Publish that draft without re-uploading it (status defaults to completed)
 node scripts/publish-play.mjs --rollout
 
-# 5. After the listing, data-safety, content-rating and app-access forms are
-#    complete, submit to production
-node scripts/publish-play.mjs --track production --status completed
+# 5. Put an already-uploaded versionCode on production without re-uploading
+#    (defaults to a draft; review it in the console)
+node scripts/publish-play.mjs --track production --promote 21
+
+# 6. After the listing, data-safety, content-rating and app-access forms are
+#    complete, submit the production draft for review
+node scripts/publish-play.mjs --track production --rollout
+
+# Read-only: every track and its releases
+node scripts/publish-play.mjs --tracks
 
 # Read-only: print the current listing and image counts
 node scripts/publish-play.mjs --inspect
@@ -170,7 +177,7 @@ service-account permission is still missing.
 
 Flags: `--aab`, `--track internal|alpha|beta|production`,
 `--status draft|completed`, `--whatsnew`, `--notes`, `--dry-run`, `--check`,
-`--rollout`, `--inspect`.
+`--rollout`, `--inspect`, `--tracks`, `--promote <versionCode>`.
 
 ### What the API cannot do
 

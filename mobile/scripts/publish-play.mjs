@@ -25,6 +25,9 @@
  *   --dry-run          authenticate, print the plan, change nothing
  *   --check            authenticate and open/discard a Play edit (verifies the
  *                      project link and Play permission; no upload, no release)
+ *   --tracks           print every track and its releases, change nothing
+ *   --promote <code>   put an already-uploaded versionCode on --track without
+ *                      re-uploading (default status draft)
  *   --inspect          print the current listing and image counts, change nothing
  *   --rollout          publish the existing draft on --track (default internal)
  *                      without re-uploading the bundle; status defaults to
@@ -60,6 +63,8 @@ function parseArgs(argv) {
     check: false,
     rollout: false,
     inspect: false,
+    tracks: false,
+    promote: null,
   }
   let statusSet = false
   for (let i = 0; i < argv.length; i++) {
@@ -74,6 +79,8 @@ function parseArgs(argv) {
       case '--check': opts.check = true; break
       case '--rollout': opts.rollout = true; break
       case '--inspect': opts.inspect = true; break
+      case '--tracks': opts.tracks = true; break
+      case '--promote': opts.promote = argv[++i]; break
       case '-h': case '--help': {
         const src = readFileSync(new URL(import.meta.url), 'utf8')
         const doc = src.slice(src.indexOf('/**') + 3, src.indexOf('*/'))
@@ -184,7 +191,7 @@ function explain(status, body) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
-  const needsAab = !opts.check && !opts.inspect
+  const needsAab = !opts.check && !opts.inspect && !opts.tracks && !opts.promote
   const aabPath = resolve(opts.aab)
   if (needsAab && !existsSync(aabPath)) {
     die(`AAB not found: ${aabPath}\n  Build it first: cd android && ./gradlew :app:bundleRelease`, 1)
@@ -215,6 +222,30 @@ async function main() {
     if (!edit.ok) die(`Play access check failed: ${explain(edit.status, edit.body)}`, 3)
     await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${edit.body.id}`)
     console.log('== access check passed: edit opened and discarded (no upload, no release)')
+    return
+  }
+
+  if (opts.tracks) {
+    const edit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits`, { json: {} })
+    if (!edit.ok) die(`could not open an edit: ${explain(edit.status, edit.body)}`, 4)
+    const editId = edit.body.id
+    try {
+      const result = await api(token, 'GET', `${API}/applications/${PACKAGE_NAME}/edits/${editId}/tracks`)
+      if (!result.ok) die(`could not list tracks: ${explain(result.status, result.body)}`, 4)
+      const tracks = result.body.tracks ?? []
+      if (tracks.length === 0) console.log('== no tracks')
+      for (const track of tracks) {
+        console.log(`== ${track.track}`)
+        const releases = track.releases ?? []
+        if (releases.length === 0) console.log('   (no releases)')
+        for (const release of releases) {
+          const versions = (release.versionCodes ?? []).join(', ') || '(none)'
+          console.log(`   status=${release.status} versionCodes=${versions}${release.name ? ` name=${release.name}` : ''}`)
+        }
+      }
+    } finally {
+      await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+    }
     return
   }
 
@@ -249,6 +280,46 @@ async function main() {
     } finally {
       await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
     }
+    return
+  }
+
+  if (opts.promote) {
+    const versionCode = String(opts.promote)
+    if (!/^[0-9]+$/.test(versionCode)) die(`--promote needs a numeric versionCode (got "${versionCode}")`, 1)
+
+    const edit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits`, { json: {} })
+    if (!edit.ok) die(`could not open an edit: ${explain(edit.status, edit.body)}`, 4)
+    const editId = edit.body.id
+
+    const current = await api(token, 'GET', `${API}/applications/${PACKAGE_NAME}/edits/${editId}/tracks/${opts.track}`)
+    if (!current.ok) {
+      await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+      die(`could not read the ${opts.track} track: ${explain(current.status, current.body)}`, 4)
+    }
+
+    current.body.releases = [{
+      name: versionCode,
+      versionCodes: [versionCode],
+      status: opts.status,
+      ...(notes ? { releaseNotes: [{ language: 'en-US', text: notes }] } : {}),
+    }]
+
+    const put = await api(token, 'PUT',
+      `${API}/applications/${PACKAGE_NAME}/edits/${editId}/tracks/${opts.track}`,
+      { json: current.body })
+    if (!put.ok) {
+      await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+      die(`could not promote versionCode ${versionCode} to ${opts.track}: ${explain(put.status, put.body)}`, 4)
+    }
+
+    const commit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits/${editId}:commit`)
+    if (!commit.ok) die(`commit failed: ${explain(commit.status, commit.body)}`, 4)
+
+    console.log(`
+== promoted
+   versionCode: ${versionCode}
+   track:       ${opts.track}
+   status:      ${opts.status}`)
     return
   }
 
