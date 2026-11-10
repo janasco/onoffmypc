@@ -22,8 +22,8 @@ behaviour the old `onoffmypc-dashboard` project had. Legacy `.html` paths still
 resolve (Pages 308s them to the clean URL). `admin.onoffmypc.com` remains a
 separate, Access-gated project (`onoffmypc-admin`).
 
-The old `onoffmypc-dashboard` project has no custom domains and no traffic; it
-can be deleted once the app host has been observed healthy for a few days.
+The old `onoffmypc-dashboard` project was deleted on 2026-11-10. Do not create
+another project for `app.`; it is a custom domain on `onoffmypc-web`.
 
 ## Credentials
 

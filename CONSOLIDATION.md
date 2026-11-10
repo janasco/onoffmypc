@@ -125,5 +125,5 @@ subtrees imported completely.
       protected branches.
 - [ ] Production deploys are manual; consider a second-person review step in
       your own runbook.
-- [ ] Delete the unused `onoffmypc-dashboard` Pages project once the app host
-      has been healthy for a few days. It has no custom domains or traffic.
+- [x] Deleted the unused `onoffmypc-dashboard` Pages project (2026-11-10). The
+      app host has been served by `onoffmypc-web` since the move.

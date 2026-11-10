@@ -38,9 +38,22 @@ environment (see `release/R2-RELEASES.md`).
 
 ## Cutting a release
 
-1. Bump `versionCode` and `versionName` in `app/build.gradle.kts`.
-2. Add a `CHANGELOG.md` entry.
-3. Build the signed artifacts:
+Run from `mobile/` unless noted.
+
+1. **Bump the version.** The helper increments `versionCode` and sets
+   `versionName`:
+
+   ```bash
+   node scripts/bump-version.mjs 0.4.6
+   ```
+
+   The `versionCode` must be higher than every previous Play upload, even for a
+   rebuild. Edit `android/app/build.gradle.kts` directly if you prefer.
+
+2. Update `distribution/whatsnew/whatsnew-en-US` (≤ 500 characters) and add a
+   `CHANGELOG.md` entry.
+
+3. **Build the signed artifacts:**
 
    ```bash
    cd android
@@ -50,44 +63,80 @@ environment (see `release/R2-RELEASES.md`).
    - APK → `app/build/outputs/apk/release/`
    - AAB → `app/build/outputs/bundle/release/` (for Play)
 
-4. Confirm the APK actually targets the required API level — Google Play
-   rejects updates below it:
+4. **Verify the AAB before uploading:**
 
    ```bash
-   $ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging \
-     app/build/outputs/apk/release/*.apk | grep -E "^package:|targetSdkVersion"
+   # targetSdk must meet Play's current requirement
+   grep -E "targetSdkVersion|versionCode|versionName" \
+     app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml
+
+   # upload certificate must match the Play upload key
+   keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab \
+     | grep SHA256
    ```
 
-5. Upload the APK to R2:
+5. **Upload to Play:**
 
    ```bash
-   VERSION=0.4.4
-   FILE=onoffmypc-android-$VERSION.apk
-   cp android/app/build/outputs/apk/release/*.apk "/tmp/$FILE"
-   npx wrangler@4.112.0 r2 object put \
-     "onoffmypc-releases/releases/android/$VERSION/$FILE" \
-     --file "/tmp/$FILE" \
-     --content-type application/vnd.android.package-archive \
-     --cache-control "public, max-age=31536000, immutable" \
-     --remote
-   sha256sum "/tmp/$FILE"
+   export PLAY_SERVICE_ACCOUNT_JSON=/opt/repo/onoffmypc-private/secrets/play-service-account.json
+
+   node scripts/publish-play.mjs --dry-run     # credentials only
+   node scripts/publish-play.mjs --check       # project link + permission + app exists
+   node scripts/publish-play.mjs --track internal --status completed
+   node scripts/publish-play.mjs --tracks
    ```
 
-6. Update `web/src/lib/releases.ts` with the new version, size, and SHA-256,
-   then deploy the web app. The downloads page reads only that file.
-7. Update `releases/manifest.json` in the bucket (rerun
-   `scripts/migrate-releases-to-r2.sh`, or edit the manifest and re-upload it).
-8. Upload the AAB with the Play API (or by hand in the console):
+   Promote the same versionCode to the other tracks without re-uploading:
 
    ```bash
-   export PLAY_SERVICE_ACCOUNT_JSON=/path/to/play-service-account.json
-   node scripts/publish-play.mjs --track internal --dry-run
-   node scripts/publish-play.mjs --track internal
+   node scripts/publish-play.mjs --track alpha --promote <versionCode> --status completed
+   node scripts/publish-play.mjs --track beta  --promote <versionCode> --status completed
+   node scripts/publish-play.mjs --track production --promote <versionCode> --status completed
    ```
 
-   See `PLAYSTORE.md` for the one-time service-account setup.
+   To publish an existing draft instead, use `--track <name> --rollout`.
+   With **Managed publishing** on, the commit is saved but must be sent from
+   **Play Console → Publishing overview**. The uploader retries with
+   `changesNotSentForReview=true` automatically.
 
-Remove the previous version's prefix once the new one is live:
+6. **Optional direct APK distribution.** Upload the APK to R2 (step 7 below),
+   update `web/src/data/releases.json`, then:
+
+   ```bash
+   cd ../web
+   npm run releases:check          # compares against the live manifest
+   npm run deploy
+   ```
+
+   `releases:check -- --verify` also re-downloads and hashes every artifact.
+
+7. **Screenshots.** If the UI changed, replace
+   `playstore/screenshots/play/*.png` (1080×1920) and run:
+
+   ```bash
+   node scripts/publish-play.mjs --upload-screenshots --replace
+   ```
+
+8. **Post-launch:** check the public page and run
+   `node scripts/play-report.mjs --days 7` for crash/ANR and reviews.
+
+### Uploading the APK to R2 (direct distribution)
+
+```bash
+VERSION=0.4.6
+FILE=onoffmypc-android-$VERSION.apk
+cp android/app/build/outputs/apk/release/*.apk "/tmp/$FILE"
+npx wrangler@4.112.0 r2 object put \
+  "onoffmypc-releases/releases/android/$VERSION/$FILE" \
+  --file "/tmp/$FILE" \
+  --content-type application/vnd.android.package-archive \
+  --cache-control "public, max-age=31536000, immutable" \
+  --remote
+sha256sum "/tmp/$FILE"
+```
+
+Update `web/src/data/releases.json` with the new version, file name, size, and
+SHA-256. Remove the previous version's prefix once the new one is live:
 
 ```bash
 npx wrangler@4.112.0 r2 object delete \
