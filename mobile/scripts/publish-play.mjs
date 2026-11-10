@@ -28,6 +28,7 @@
  *   --check            authenticate and open/discard a Play edit (verifies the
  *                      project link and Play permission; no upload, no release)
  *   --tracks           print every track and its releases, change nothing
+ *   --app-sharing      upload the AAB to Internal app sharing and print the link
  *   --promote <code>   put an already-uploaded versionCode on --track without
  *                      re-uploading (default status draft)
  *   --inspect          print the current listing and image counts, change nothing
@@ -69,6 +70,7 @@ function parseArgs(argv) {
     inspect: false,
     tracks: false,
     promote: null,
+    appSharing: false,
   }
   let statusSet = false
   for (let i = 0; i < argv.length; i++) {
@@ -87,6 +89,7 @@ function parseArgs(argv) {
       case '--inspect': opts.inspect = true; break
       case '--tracks': opts.tracks = true; break
       case '--promote': opts.promote = argv[++i]; break
+      case '--app-sharing': opts.appSharing = true; break
       case '-h': case '--help': {
         const src = readFileSync(new URL(import.meta.url), 'utf8')
         const doc = src.slice(src.indexOf('/**') + 3, src.indexOf('*/'))
@@ -238,6 +241,19 @@ async function main() {
     if (!edit.ok) die(`Play access check failed: ${explain(edit.status, edit.body)}`, 3)
     await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${edit.body.id}`)
     console.log('== access check passed: edit opened and discarded (no upload, no release)')
+    return
+  }
+
+  if (opts.appSharing) {
+    const upload = await api(token, 'POST',
+      `${UPLOAD_API}/applications/internalappsharing/${PACKAGE_NAME}/artifacts/bundle?uploadType=media`,
+      { body: aab, contentType: 'application/octet-stream' })
+    if (!upload.ok) die(`internal app sharing upload failed: ${explain(upload.status, upload.body)}`, 3)
+    console.log(`
+== internal app sharing
+   url:    ${upload.body.downloadUrl}
+   sha256: ${upload.body.sha256}
+   cert:   ${upload.body.certificateFingerprint}`)
     return
   }
 
