@@ -120,6 +120,18 @@ export default function DownloadsPage() {
             title="Android App"
             description="Manage and monitor your computers on the go with real-time status updates and native controls."
           />
+          <p className="text-xs text-zinc-500 px-1 -mt-3">
+            Also available on{" "}
+            <a
+              href="https://play.google.com/store/apps/details?id=com.onoffmypc.android"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:underline"
+            >
+              Google Play
+            </a>
+            . The APK above is for direct install and sideloading.
+          </p>
 
           <Card className="bg-zinc-900/40 border-zinc-800/80">
             <CardHeader>
