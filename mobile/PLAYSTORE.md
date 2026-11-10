@@ -238,7 +238,9 @@ node scripts/play-report.mjs            # last 7 days
 node scripts/play-report.mjs --days 14
 ```
 
-Prints daily crash and ANR rates plus the latest reviews. Vitals requires the
+Prints daily crash and ANR rates plus the latest reviews. Daily data stops at
+yesterday (Play lags one day); pass `--timezone America/Manila` if you prefer a
+different reporting zone. Vitals requires the
 **Google Play Developer Reporting API** enabled in the service account's Cloud
 project:
 

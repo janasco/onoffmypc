@@ -79,7 +79,7 @@ async function req(t, method, url, json) {
 function dateParts(d) {
   return {
     year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate(),
-    hours: 0, minutes: 0, seconds: 0, nanos: 0, timeZone: { id: 'UTC' },
+    hours: 0, minutes: 0, seconds: 0, nanos: 0, timeZone: { id: timezone },
   }
 }
 
@@ -88,9 +88,17 @@ const daysIndex = args.indexOf('--days')
 const days = daysIndex >= 0 ? Number(args[daysIndex + 1]) : 7
 if (!Number.isFinite(days) || days < 1 || days > 90) die('--days must be between 1 and 90', 1)
 
+const tzIndex = args.indexOf('--timezone')
+const timezone = tzIndex >= 0 ? args[tzIndex + 1] : 'America/Los_Angeles'
+if (!timezone) die('--timezone needs an IANA id such as America/Los_Angeles', 1)
+
 const creds = loadCredentials()
 const reportToken = await token(creds, 'https://www.googleapis.com/auth/playdeveloperreporting')
-const end = new Date()
+// Daily vitals lag by one day; the API rejects an end date past the latest
+// complete day, so stop at yesterday (UTC date fields are interpreted in the
+// selected timezone).
+const now = new Date()
+const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1))
 const start = new Date(end.getTime() - days * 86400_000)
 const timelineSpec = { aggregationPeriod: 'DAILY', startTime: dateParts(start), endTime: dateParts(end) }
 
@@ -110,9 +118,12 @@ for (const [kind, metrics] of [
   }
   const available = (meta.body.metrics ?? []).map((m) => m.name)
   const chosen = metrics.filter((m) => available.includes(m))
+  // The metric-set metadata currently lists no metric names, so use the
+  // documented names when it is empty.
+  const requested = chosen.length ? chosen : available.length ? available.slice(0, 2) : metrics
   const query = await req(reportToken, 'POST', `${REPORTING}/apps/${PACKAGE_NAME}/${kind}MetricSet:query`, {
     timelineSpec,
-    metrics: chosen.length ? chosen : available.slice(0, 2),
+    metrics: requested,
   })
   if (query.status !== 200) {
     console.log(`query failed (${query.status}): ${JSON.stringify(query.body).slice(0, 300)}`)
