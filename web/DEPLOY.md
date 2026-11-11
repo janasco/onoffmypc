@@ -82,3 +82,37 @@ previous commit with `npm run deploy`.
   works. Set
   `NODE_OPTIONS=--network-family-autoselection-attempt-timeout=5000`.
   That is environment-specific and not committed.
+
+## Google sign-in (web)
+
+The login and register pages use Google Identity Services with the **OnOffMyPC
+Web** OAuth client:
+
+`156303072600-50a2rt2j0gnb81nr093bi7jkcgln5rlq.apps.googleusercontent.com`
+
+The browser sends the Google ID token to `POST /auth/google`; the API verifies
+the audience against `GOOGLE_CLIENT_IDS` and sets the normal HttpOnly session
+cookie. No client secret or token is stored in the browser.
+
+### Google Cloud Console
+
+1. APIs & Services → Credentials → **OnOffMyPC Web** (OAuth client, type Web
+   application).
+2. Under **Authorized JavaScript origins**, add every origin that serves the
+   app:
+   - `https://onoffmypc.com`
+   - `https://www.onoffmypc.com`
+   - `https://app.onoffmypc.com`
+   - `http://localhost:3000` (local development)
+3. No redirect URI is used by the Google Identity Services popup flow.
+4. OAuth consent screen: ensure it is configured. While it is in **Testing**,
+   only added test users can sign in; publish it for public use.
+5. Keep `GOOGLE_CLIENT_IDS` on the Worker in sync. It already contains the Web
+   and iOS client IDs.
+
+If the button shows "did not initialize" or the console reports
+`origin_mismatch`, the origin is missing from step 2. If Google rejects the
+account, check the API error and the consent-screen test-user list.
+
+`NEXT_PUBLIC_GOOGLE_CLIENT_ID` overrides the built-in Web client ID at build
+time (it is a public value).

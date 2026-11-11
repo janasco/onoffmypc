@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { GoogleSignInButton } from "@/components/google-sign-in-button";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -41,10 +42,6 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSocialAuth = (provider: string) => {
-    console.log(`OAuth registration initiated for provider: ${provider}`);
-    window.location.href = `https://api.onoffmypc.com/auth/${provider}`;
-  };
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center p-4 selection:bg-emerald-500/30 selection:text-emerald-400">
@@ -119,30 +116,10 @@ export default function RegisterPage() {
             </div>
 
             <div className="flex flex-col gap-2.5">
-              <Button
-                variant="outline"
-                onClick={() => handleSocialAuth("google")}
-                className="w-full border-zinc-800 text-zinc-300 hover:bg-zinc-950 hover:text-zinc-100 h-10 flex gap-2 justify-center items-center font-medium"
-              >
-                <span className="text-lg">Google</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleSocialAuth("apple")}
-                className="w-full border-zinc-800 text-zinc-300 hover:bg-zinc-950 hover:text-zinc-100 h-10 flex gap-2 justify-center items-center font-medium"
-              >
-                <span className="text-lg">Apple</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleSocialAuth("microsoft")}
-                className="w-full border-zinc-800 text-zinc-300 hover:bg-zinc-950 hover:text-zinc-100 h-10 flex gap-2 justify-center items-center font-medium"
-              >
-                <span className="text-lg">Microsoft</span>
-              </Button>
+              <GoogleSignInButton nextPath={nextPath} />
             </div>
           </CardContent>
-          <CardFooter className="justify-center border-t border-zinc-800/60 pt-6">
+          <CardFooter className="justify-center border-t border-zinc-800/60 pt-6 bg-zinc-900/40">
             <p className="text-sm text-zinc-400">
               Already have an account?{" "}
               <Link href={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login"} className="text-emerald-500 hover:text-emerald-400 font-semibold transition-colors">

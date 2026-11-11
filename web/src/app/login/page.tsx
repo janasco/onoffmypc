@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { GoogleSignInButton } from "@/components/google-sign-in-button";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,12 +41,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleSocialAuth = (provider: string) => {
-    // Social login flows: Redirect to identity providers or open MSAL/Google overlays
-    console.log(`OAuth login initiated for provider: ${provider}`);
-    // Redirect to API OIDC endpoints (which is what Apple/Microsoft redirect flows do)
-    window.location.href = `https://api.onoffmypc.com/auth/${provider}`;
-  };
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center p-4 selection:bg-emerald-500/30 selection:text-emerald-400">
@@ -114,30 +109,10 @@ export default function LoginPage() {
             </div>
 
             <div className="flex flex-col gap-2.5">
-              <Button
-                variant="outline"
-                onClick={() => handleSocialAuth("google")}
-                className="w-full border-zinc-800 text-zinc-300 hover:bg-zinc-950 hover:text-zinc-100 h-10 flex gap-2 justify-center items-center font-medium"
-              >
-                <span className="text-lg">Google</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleSocialAuth("apple")}
-                className="w-full border-zinc-800 text-zinc-300 hover:bg-zinc-950 hover:text-zinc-100 h-10 flex gap-2 justify-center items-center font-medium"
-              >
-                <span className="text-lg">Apple</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleSocialAuth("microsoft")}
-                className="w-full border-zinc-800 text-zinc-300 hover:bg-zinc-950 hover:text-zinc-100 h-10 flex gap-2 justify-center items-center font-medium"
-              >
-                <span className="text-lg">Microsoft</span>
-              </Button>
+              <GoogleSignInButton nextPath={nextPath} />
             </div>
           </CardContent>
-          <CardFooter className="justify-center border-t border-zinc-800/60 pt-6">
+          <CardFooter className="justify-center border-t border-zinc-800/60 pt-6 bg-zinc-900/40">
             <p className="text-sm text-zinc-400">
               Don&apos;t have an account?{" "}
               <Link href={nextPath ? `/register?next=${encodeURIComponent(nextPath)}` : "/register"} className="text-emerald-500 hover:text-emerald-400 font-semibold transition-colors">
