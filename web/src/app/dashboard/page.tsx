@@ -78,6 +78,10 @@ interface CommandRecord {
   created_at: string;
   delivered_at?: string | null;
   expires_at?: string | null;
+  ack_result?: string | null;
+  ack_reason?: string | null;
+  state_confirmed_at?: string | null;
+  seq?: number | null;
 }
 
 /**
@@ -1140,7 +1144,19 @@ export default function DashboardPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {detailCommands.map((cmd) => (
+                          {detailCommands.map((cmd) => {
+                          const progress = commandProgress(cmd);
+                          const toneClass =
+                            progress.tone === "success"
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : progress.tone === "info"
+                              ? "bg-sky-500/10 text-sky-400"
+                              : progress.tone === "warning"
+                              ? "bg-amber-500/10 text-amber-400"
+                              : progress.tone === "danger"
+                              ? "bg-red-500/10 text-red-400"
+                              : "bg-zinc-500/10 text-zinc-400";
+                          return (
                             <tr key={cmd.id} className="border-b border-zinc-800/60 hover:bg-zinc-800/10">
                               <td className="p-2.5 font-semibold text-zinc-200">
                                  {cmd.type === "power_on" ? "Power On" :
@@ -1155,18 +1171,16 @@ export default function DashboardPage() {
                                 {new Date(cmd.created_at).toLocaleString()}
                               </td>
                               <td className="p-2.5">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                  cmd.status === "delivered" || cmd.delivered
-                                    ? "bg-emerald-500/10 text-emerald-400"
-                                    : cmd.status === "pending"
-                                    ? "bg-amber-500/10 text-amber-400"
-                                    : "bg-red-500/10 text-red-400"
-                                }`}>
-                                  {cmd.status === "delivered" || cmd.delivered ? "Delivered" : cmd.status}
+                                <span
+                                  className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${toneClass}`}
+                                  title={progress.detail}
+                                >
+                                  {progress.shortLabel}
                                 </span>
                               </td>
                             </tr>
-                          ))}
+                          );
+                        })}
                         </tbody>
                       </table>
                     </div>

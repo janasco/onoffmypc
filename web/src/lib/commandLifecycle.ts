@@ -7,9 +7,8 @@
  *                   (or expired / failed_ambiguous)
  *
  * A socket write is NOT proof the PC changed state, and an acknowledgement is
- * NOT a confirmed state change. Only a `confirmed` stage would justify showing
- * success, and the backend does not emit that yet — so nothing here is green
- * except confirmation.
+ * NOT a confirmed state change. Only the `confirmed` stage (telemetry
+ * correlated with the command by the server) justifies success.
  */
 
 export type CommandStage =
@@ -20,6 +19,8 @@ export type CommandStage =
   | 'expired'
   | 'uncertain'
   | 'confirmed'
+  | 'rejected'
+  | 'duplicate'
   | 'unknown'
 
 export type CommandTone = 'neutral' | 'info' | 'warning' | 'danger' | 'success'
@@ -28,6 +29,8 @@ export interface CommandProgress {
   stage: CommandStage
   /** Short label for a chip/badge. */
   label: string
+  /** Compact label for dense tables. */
+  shortLabel: string
   /** One sentence the user can act on. */
   detail: string
   tone: CommandTone
@@ -41,52 +44,77 @@ export interface CommandLike {
   delivered?: boolean
   expires_at?: string | null
   created_at?: string | null
+  ack_result?: string | null
+  ack_reason?: string | null
+  state_confirmed_at?: string | null
 }
 
 const DESCRIBE: Record<CommandStage, Omit<CommandProgress, 'stage'>> = {
   queued: {
+    shortLabel: 'Queued',
     label: 'Queued',
     detail: 'The device is offline. This will be sent when it reconnects, and expires if it does not.',
     tone: 'neutral',
     terminal: false,
   },
   sending: {
+    shortLabel: 'Sending',
     label: 'Sending',
     detail: 'Handing the request to the device connection.',
     tone: 'info',
     terminal: false,
   },
   sent: {
+    shortLabel: 'Sent',
     label: 'Sent — awaiting acknowledgement',
     detail: 'Written to the device connection. The device has not confirmed receipt yet.',
     tone: 'info',
     terminal: false,
   },
   acknowledged: {
+    shortLabel: 'Acked',
     label: 'Device acknowledged',
     detail: 'The device confirmed it received the command. This does not confirm the PC changed state.',
     tone: 'info',
     terminal: true,
   },
   expired: {
+    shortLabel: 'Expired',
     label: 'Expired',
     detail: 'The device never acknowledged before the deadline. No further attempt was made.',
     tone: 'warning',
     terminal: true,
   },
   uncertain: {
+    shortLabel: 'Uncertain',
     label: 'Delivery uncertain',
     detail: 'The connection failed mid-send. The command may or may not have reached the device — check its state before retrying.',
     tone: 'danger',
     terminal: true,
   },
   confirmed: {
+    shortLabel: 'Confirmed',
     label: 'PC state confirmed',
     detail: 'Telemetry confirms the PC reached the requested state.',
     tone: 'success',
     terminal: true,
   },
+  rejected: {
+    shortLabel: 'Rejected',
+    label: 'Device rejected',
+    detail: 'The device refused the command. Check the device and PC state before retrying.',
+    tone: 'danger',
+    terminal: true,
+  },
+  duplicate: {
+    shortLabel: 'Already applied',
+    label: 'Already applied',
+    detail: 'The device had already applied this command; it was not executed again.',
+    tone: 'info',
+    terminal: true,
+  },
   unknown: {
+    shortLabel: 'Unknown',
     label: 'Status unknown',
     detail: 'No delivery information is available for this command.',
     tone: 'neutral',
@@ -100,10 +128,17 @@ export function commandProgress(command: CommandLike, now: number = Date.now()):
   const expiresAt = command.expires_at ? Date.parse(command.expires_at) : NaN
   const deadlinePassed = Number.isFinite(expiresAt) && expiresAt <= now
 
+  const ackResult = (command.ack_result ?? '').toLowerCase()
   let stage: CommandStage
-  if (status === 'expired' || delivery === 'expired') {
+  if (command.state_confirmed_at) {
+    stage = 'confirmed'
+  } else if (ackResult === 'rejected') {
+    stage = 'rejected'
+  } else if (ackResult === 'duplicate') {
+    stage = 'duplicate'
+  } else if (ackResult === 'expired' || status === 'expired' || delivery === 'expired') {
     stage = 'expired'
-  } else if (status === 'delivered' || delivery === 'acknowledged') {
+  } else if (ackResult === 'accepted' || status === 'delivered' || delivery === 'acknowledged') {
     stage = 'acknowledged'
   } else if (delivery === 'failed_ambiguous') {
     stage = 'uncertain'
@@ -123,7 +158,12 @@ export function commandProgress(command: CommandLike, now: number = Date.now()):
     stage = 'unknown'
   }
 
-  return { stage, ...DESCRIBE[stage] }
+  const progress = { stage, ...DESCRIBE[stage] }
+  const reason = (command.ack_reason ?? '').trim()
+  if (stage === 'rejected' && reason) {
+    progress.detail = `The device rejected the command (${reason}). Check the device before retrying.`
+  }
+  return progress
 }
 
 /** The immediate result of POST /commands/:id, before any polling. */

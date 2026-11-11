@@ -83,3 +83,56 @@ test('only the confirmed stage uses the success tone', () => {
     assert.notEqual(commandProgress(s, NOW).tone, 'success', JSON.stringify(s))
   }
 })
+
+test('server-side state confirmation is the only success stage', () => {
+  const p = commandProgress(
+    {
+      status: 'delivered',
+      delivery_state: 'acknowledged',
+      ack_result: 'accepted',
+      state_confirmed_at: '2026-03-01T11:59:00.000Z',
+    },
+    NOW,
+  )
+  assert.equal(p.stage, 'confirmed')
+  assert.equal(p.tone, 'success')
+  assert.equal(p.shortLabel, 'Confirmed')
+})
+
+test('a rejected v2 ack is terminal and dangerous', () => {
+  const p = commandProgress(
+    { status: 'failed', delivery_state: 'terminal', ack_result: 'rejected', ack_reason: 'stale_seq' },
+    NOW,
+  )
+  assert.equal(p.stage, 'rejected')
+  assert.equal(p.tone, 'danger')
+  assert.equal(p.terminal, true)
+  assert.match(p.detail, /stale_seq/)
+})
+
+test('a duplicate v2 ack is informational and terminal', () => {
+  const p = commandProgress(
+    { status: 'delivered', delivery_state: 'acknowledged', ack_result: 'duplicate' },
+    NOW,
+  )
+  assert.equal(p.stage, 'duplicate')
+  assert.equal(p.tone, 'info')
+  assert.equal(p.terminal, true)
+})
+
+test('a v2 expired ack maps to expired even without status expired', () => {
+  const p = commandProgress(
+    { status: 'sent', delivery_state: 'socket_written', ack_result: 'expired' },
+    NOW,
+  )
+  assert.equal(p.stage, 'expired')
+})
+
+test('an accepted v2 ack is acknowledged, not confirmed', () => {
+  const p = commandProgress(
+    { status: 'delivered', delivery_state: 'acknowledged', ack_result: 'accepted' },
+    NOW,
+  )
+  assert.equal(p.stage, 'acknowledged')
+  assert.notEqual(p.tone, 'success')
+})
