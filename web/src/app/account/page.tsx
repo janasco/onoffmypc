@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
+import { AppHeader } from "@/components/app-header";
 import { describeUserAgent, formatWhen, type SessionSummary } from "@/lib/sessions";
 
 interface UserProfile {
@@ -231,30 +231,14 @@ export default function AccountPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
-      {/* Header */}
-      <header className="border-b border-zinc-900 bg-zinc-950">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-            <span className="text-emerald-500">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 3v9" />
-                <path d="M8.5 6.5a6.5 6.5 0 1 0 7 0" />
-              </svg>
-            </span>
-            <span className="font-semibold text-lg text-zinc-100">OnOffMyPC</span>
-          </Link>
+      <AppHeader email={profile?.email} />
 
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-zinc-100">
-                ← Dashboard
-              </Button>
-            </Link>
-          </div>
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Account</h1>
+          <p className="mt-1 text-sm text-zinc-400">Profile, security, and active sessions.</p>
         </div>
-      </header>
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
         {/* Deletion Countdown Banner */}
         {profile?.deletion_at && (
           <div className="bg-red-950/80 border border-red-900/50 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -309,11 +293,32 @@ export default function AccountPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button onClick={handleExportData} className="w-full bg-zinc-850 hover:bg-zinc-800 text-zinc-100 text-sm">
+                  <Button onClick={handleExportData} className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100 text-sm">
                     Download my data
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Danger Zone */}
+              {!profile?.deletion_at && (
+                <Card className="border-red-900/30 bg-zinc-900 p-4">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-semibold text-zinc-200 text-sm">Delete account</span>
+                      <span className="text-xs text-zinc-500">
+                        Permanently delete your profile and telemetry logs.
+                      </span>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setDeleteOpen(true)}
+                      className="h-10 w-full font-bold"
+                    >
+                      Delete account
+                    </Button>
+                  </div>
+                </Card>
+              )}
             </div>
 
             {/* Forms section */}
@@ -503,20 +508,6 @@ export default function AccountPage() {
                 </CardContent>
               </Card>
 
-              {/* Danger Zone */}
-              {!profile?.deletion_at && (
-                <Card className="bg-zinc-900 border-red-900/30 p-4">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-semibold text-zinc-200 text-sm">Delete account</span>
-                      <span className="text-xs text-zinc-500">Permanently delete your profile and telemetry logs</span>
-                    </div>
-                    <Button variant="destructive" onClick={() => setDeleteOpen(true)} className="h-10 px-6 font-bold">
-                      Delete account
-                    </Button>
-                  </div>
-                </Card>
-              )}
             </div>
           </div>
         )}

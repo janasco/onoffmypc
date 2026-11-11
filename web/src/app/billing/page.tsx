@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/api";
+import { AppHeader } from "@/components/app-header";
 
 interface BillingDevice {
   id: string;
@@ -89,28 +89,7 @@ export default function BillingPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
-      {/* Header */}
-      <header className="border-b border-zinc-900 bg-zinc-950">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-            <span className="text-emerald-500">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 3v9" />
-                <path d="M8.5 6.5a6.5 6.5 0 1 0 7 0" />
-              </svg>
-            </span>
-            <span className="font-semibold text-lg text-zinc-100">OnOffMyPC</span>
-          </Link>
-
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-zinc-100">
-                ← Dashboard
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -118,7 +97,7 @@ export default function BillingPage() {
             <h1 className="text-2xl font-bold text-zinc-100">Billing & subscriptions</h1>
             <p className="text-sm text-zinc-400 mt-1">Manage power control unlocks, invoices, and billing history</p>
           </div>
-          <Button onClick={handleOpenPortal} className="bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-850 h-10 px-5 self-start">
+          <Button onClick={handleOpenPortal} className="bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800 h-10 px-5 self-start">
             Manage receipts
           </Button>
         </div>
@@ -141,7 +120,7 @@ export default function BillingPage() {
                 ) : (
                   <div className="flex flex-col gap-3">
                     {devices.map((d) => (
-                      <div key={d.id} className="flex justify-between items-center p-4 bg-zinc-950/65 rounded-xl border border-zinc-850">
+                      <div key={d.id} className="flex justify-between items-center p-4 bg-zinc-950/65 rounded-xl border border-zinc-800">
                         <div className="flex flex-col gap-0.5">
                           <span className="font-semibold text-zinc-200 text-sm">{d.name}</span>
                           <span className="text-[10px] text-zinc-500 font-mono">ID: {d.id}</span>
@@ -190,7 +169,7 @@ export default function BillingPage() {
                     </TableHeader>
                     <TableBody>
                       {history.map((h) => (
-                        <TableRow key={h.id} className="border-zinc-800 hover:bg-zinc-850/30">
+                        <TableRow key={h.id} className="border-zinc-800 hover:bg-zinc-800/30">
                           <TableCell className="text-sm">
                             {new Date(h.created_at).toLocaleDateString()}
                           </TableCell>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { HostRedirect } from "@/components/host-redirect";
+import { PublicHeader } from "@/components/public-header";
 
 export default function Home() {
   return (
@@ -9,29 +10,7 @@ export default function Home() {
       {/* app.onoffmypc.com/ used to route to the dashboard/login; preserve it. */}
       <HostRedirect host="app.onoffmypc.com" to="/dashboard" />
       {/* Navbar */}
-      <nav className="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-lg hover:opacity-90 transition-opacity">
-            <span className="text-emerald-500">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 3v9" />
-                <path d="M8.5 6.5a6.5 6.5 0 1 0 7 0" />
-              </svg>
-            </span>
-            OnOffMyPC
-          </Link>
-          <div className="flex items-center gap-6 text-sm font-medium">
-            <Link href="#how" className="text-zinc-400 hover:text-zinc-100 transition-colors">How it works</Link>
-            <Link href="/setup" className="text-zinc-400 hover:text-zinc-100 transition-colors">Setup</Link>
-            <Link href="/login" className="text-zinc-400 hover:text-zinc-100 transition-colors">Log in</Link>
-            <Link href="/register">
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicHeader active="home" />
 
       {/* Hero Section */}
       <header className="relative py-24 px-4 overflow-hidden border-b border-zinc-900 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(16,185,129,0.12),transparent_60%)]">
@@ -70,7 +49,7 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardHeader>
-              <div className="text-4xl font-extrabold text-emerald-500/20 mb-2">01</div>
+              <div className="text-4xl font-extrabold text-emerald-500/40 mb-2">01</div>
               <CardTitle className="text-zinc-100">Flash your ESP32</CardTitle>
               <CardDescription className="text-zinc-400">
                 Use the browser flasher on the setup page — Chrome or Edge, one click, no toolchain.
@@ -79,7 +58,7 @@ export default function Home() {
           </Card>
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardHeader>
-              <div className="text-4xl font-extrabold text-emerald-500/20 mb-2">02</div>
+              <div className="text-4xl font-extrabold text-emerald-500/40 mb-2">02</div>
               <CardTitle className="text-zinc-100">Pair with a code</CardTitle>
               <CardDescription className="text-zinc-400">
                 Create a device in the dashboard, enter the short pairing code on the board, and you’re linked.
@@ -88,7 +67,7 @@ export default function Home() {
           </Card>
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardHeader>
-              <div className="text-4xl font-extrabold text-emerald-500/20 mb-2">03</div>
+              <div className="text-4xl font-extrabold text-emerald-500/40 mb-2">03</div>
               <CardTitle className="text-zinc-100">Power from anywhere</CardTitle>
               <CardDescription className="text-zinc-400">
                 Send on, off, reset, or force-off. Live status and room sensors follow within seconds.

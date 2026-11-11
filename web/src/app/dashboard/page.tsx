@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api";
+import { AppHeader } from "@/components/app-header";
 import { getPlatformInfo } from "@/lib/platform";
 import { toChartPoints, type TelemetrySample } from "@/lib/telemetry";
 import { commandProgress, progressFromSendResult } from "@/lib/commandLifecycle";
@@ -274,11 +275,6 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const handleLogout = async () => {
-    await api.logout();
-    router.push("/login");
-  };
-
   const handleAddDevice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDeviceName) return;
@@ -472,7 +468,7 @@ export default function DashboardPage() {
           <div className={`text-center py-2.5 px-4 text-sm font-medium border-b flex justify-between items-center transition-all ${
             notification.type === 'success' ? 'bg-emerald-950/85 text-emerald-400 border-emerald-900/50' : 
             notification.type === 'error' ? 'bg-red-950/85 text-red-400 border-red-900/50' :
-            'bg-zinc-900/90 text-zinc-300 border-zinc-850'
+            'bg-zinc-900/90 text-zinc-300 border-zinc-800'
           }`}>
             <span className="mx-auto">{notification.message}</span>
             <button
@@ -487,41 +483,38 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Header */}
-      <header className="border-b border-zinc-900 bg-zinc-950">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-emerald-500">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 3v9" />
-                <path d="M8.5 6.5a6.5 6.5 0 1 0 7 0" />
-              </svg>
-            </span>
-            <span className="font-semibold text-lg text-zinc-100">OnOffMyPC</span>
-          </div>
+      <AppHeader email={account?.email} />
 
-          <div className="flex items-center gap-4">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Devices</h1>
+            <p className="mt-1 text-sm text-zinc-400">Manage your PCs and ESP32 gateways.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {devices.length > 0 && (
+              <Button
+                variant={bulkMode ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setBulkMode(!bulkMode);
+                  setSelectedIds([]);
+                }}
+                className={bulkMode ? "" : "border-zinc-700 text-zinc-300 hover:bg-zinc-900"}
+              >
+                {bulkMode ? "Exit bulk actions" : "Bulk actions"}
+              </Button>
+            )}
             <Button
-              variant="outline"
               size="sm"
               onClick={() => setAddOpen(true)}
-              className="border-zinc-800 text-zinc-300 hover:bg-zinc-900"
+              className="bg-emerald-600 text-white hover:bg-emerald-500"
             >
               + Add device
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="text-zinc-400 hover:text-zinc-100"
-            >
-              Log out
-            </Button>
           </div>
         </div>
-      </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
         {/* Onboarding Guide */}
         {devices.length === 0 && !onboardingDismissed && (
           <Card className="bg-zinc-900 border-zinc-800">
@@ -580,41 +573,21 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        {/* Fleet Widget */}
-        <div className="grid grid-cols-3 gap-6">
-          <Card className="bg-zinc-900 border-zinc-800 p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Total Devices</span>
-            <span className="text-3xl font-black text-zinc-100 mt-2">{devices.length}</span>
-          </Card>
-          <Card className="bg-zinc-900 border-zinc-800 p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Online PCs</span>
-            <span className="text-3xl font-black text-emerald-400 mt-2">{onlineCount}</span>
-          </Card>
-          <Card className="bg-zinc-900 border-zinc-800 p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Offline PCs</span>
-            <span className="text-3xl font-black text-zinc-400 mt-2">{offlineCount}</span>
-          </Card>
+        {/* Fleet summary */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Devices", value: devices.length, tone: "text-zinc-100" },
+            { label: "Online", value: onlineCount, tone: "text-emerald-400" },
+            { label: "Offline", value: offlineCount, tone: "text-zinc-400" },
+          ].map((stat) => (
+            <Card key={stat.label} className="border-zinc-800 bg-zinc-900/60 p-4">
+              <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+                {stat.label}
+              </span>
+              <span className={`mt-1 block text-2xl font-bold ${stat.tone}`}>{stat.value}</span>
+            </Card>
+          ))}
         </div>
-
-        {/* Bulk Commands Switch */}
-        {devices.length > 0 && (
-          <div className="flex justify-between items-center bg-zinc-900/50 border border-zinc-850 p-4 rounded-xl">
-            <div className="flex flex-col gap-0.5">
-              <span className="font-semibold text-zinc-200 text-sm">Bulk operation mode</span>
-              <span className="text-xs text-zinc-500">Perform power actions on multiple devices at once</span>
-            </div>
-            <Button
-              variant={bulkMode ? "secondary" : "outline"}
-              onClick={() => {
-                setBulkMode(!bulkMode);
-                setSelectedIds([]);
-              }}
-              className="border-zinc-800 text-zinc-300"
-            >
-              {bulkMode ? "Exit Bulk Mode" : "Enter Bulk Mode"}
-            </Button>
-          </div>
-        )}
 
         {/* Devices list */}
         {loading ? (
@@ -624,7 +597,7 @@ export default function DashboardPage() {
             No devices configured yet. Click &quot;+ Add device&quot; to get started.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
             {devices.map((d) => {
               const pc = describePcState(d.pc_on, d.telemetry_at);
               const connection = describeConnection(d.last_seen_at);
@@ -637,7 +610,7 @@ export default function DashboardPage() {
                 : null;
               const busy = Boolean(commandInFlight[d.id]);
               return (
-              <Card key={d.id} className="bg-zinc-900 border-zinc-800 flex flex-col justify-between hover:border-zinc-700 transition-colors">
+              <Card key={d.id} className="flex flex-col border-zinc-800 bg-zinc-900/60 transition-colors hover:border-zinc-700">
                 <div
                   role="button"
                   tabIndex={0}
@@ -649,7 +622,7 @@ export default function DashboardPage() {
                       handleOpenDeviceDetail(d);
                     }
                   }}
-                  className="cursor-pointer group flex-1 rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  className="group cursor-pointer rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                   <CardHeader className="pb-4">
                     <div className="flex justify-between items-start gap-4">
@@ -674,7 +647,9 @@ export default function DashboardPage() {
                             </span>
                             <span className="text-zinc-600"> · {pc.ageLabel}</span>
                           </CardDescription>
-                          <span className="text-[10px] text-zinc-600 font-mono">ID: {d.id}</span>
+                          <span className="text-[10px] text-zinc-600">
+                            {d.firmware_version ? `Firmware ${d.firmware_version}` : "Firmware unknown"}
+                          </span>
                         </div>
                       </div>
 
@@ -714,7 +689,7 @@ export default function DashboardPage() {
                   <CardContent className="pb-4">
                     {/* Telemetry Progress Bars */}
                     {(d.cpu_load !== null || d.gpu_temp !== null || d.ram_used_mb !== null) && (
-                      <div className="flex flex-col gap-3 p-3 bg-zinc-950/60 rounded-lg border border-zinc-850">
+                      <div className="flex flex-col gap-3 p-3 bg-zinc-950/60 rounded-lg border border-zinc-800">
                         {d.cpu_load !== null && (
                           <div className="flex flex-col gap-1">
                             <div className="flex justify-between text-xs text-zinc-400">
@@ -733,10 +708,17 @@ export default function DashboardPage() {
                               <span>{Math.round(d.gpu_temp)}°C</span>
                             </div>
                             <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-red-500 h-full" style={{ width: `${d.gpu_temp}%` }} />
+                              <div className="bg-sky-500 h-full" style={{ width: `${d.gpu_temp}%` }} />
                             </div>
                           </div>
                         )}
+                      </div>
+                    )}
+                    {d.cpu_load === null && d.gpu_temp === null && d.ram_used_mb === null && (
+                      <div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-950/40 px-3 py-4 text-xs text-zinc-500">
+                        {d.last_seen_at
+                          ? `No live telemetry — last seen ${connection.ageLabel}.`
+                          : "No telemetry yet."}
                       </div>
                     )}
                   </CardContent>
@@ -758,11 +740,11 @@ export default function DashboardPage() {
                         </Button>
                         <Button
                           size="sm"
-                          variant="secondary"
+                          variant="outline"
                           disabled={busy}
                           aria-label={`Sleep ${d.name}`}
                           onClick={() => handlePowerAction(d, "sleep")}
-                          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 min-h-[44px]"
+                          className="min-h-[44px] border-zinc-700 text-zinc-200 hover:bg-zinc-800"
                         >
                           Sleep
                         </Button>
@@ -774,7 +756,7 @@ export default function DashboardPage() {
                               disabled={busy}
                               aria-label={`Lock ${d.name}`}
                               onClick={() => handlePowerAction(d, "lock")}
-                              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 min-h-[44px]"
+                              className="min-h-[44px] border-zinc-700 text-zinc-200 hover:bg-zinc-800"
                             >
                               Lock
                             </Button>
@@ -784,7 +766,7 @@ export default function DashboardPage() {
                               disabled={busy}
                               aria-label={`Log Out ${d.name}`}
                               onClick={() => handlePowerAction(d, "logout")}
-                              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 min-h-[44px]"
+                              className="min-h-[44px] border-zinc-700 text-zinc-200 hover:bg-zinc-800"
                             >
                               Log Out
                             </Button>
@@ -792,31 +774,31 @@ export default function DashboardPage() {
                         )}
                         <Button
                           size="sm"
-                          variant="secondary"
+                          variant="outline"
                           disabled={busy}
                           aria-label={`Power Off ${d.name}`}
                           onClick={() => handlePowerAction(d, "power_off")}
-                          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 min-h-[44px]"
+                          className="min-h-[44px] border-zinc-700 text-zinc-200 hover:bg-zinc-800"
                         >
                           Off
                         </Button>
                         <Button
                           size="sm"
-                          variant="destructive"
+                          variant="outline"
                           disabled={busy}
                           aria-label={`Force Off ${d.name}`}
                           onClick={() => handlePowerAction(d, "power_off_force")}
-                          className="min-h-[44px]"
+                          className="min-h-[44px] border-red-900/60 text-red-400 hover:bg-red-950/40"
                         >
                           Force Off
                         </Button>
                         <Button
                           size="sm"
-                          variant="destructive"
+                          variant="outline"
                           disabled={busy}
                           aria-label={`Reset ${d.name}`}
                           onClick={() => handlePowerAction(d, "reset")}
-                          className="min-h-[44px]"
+                          className="min-h-[44px] border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                         >
                           Reset
                         </Button>
@@ -964,7 +946,7 @@ export default function DashboardPage() {
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-4">
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-850 hover:bg-zinc-950 transition-colors">
+            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-800 hover:bg-zinc-950 transition-colors">
               <input
                 type="checkbox"
                 checked={telemetryCpu}
@@ -977,7 +959,7 @@ export default function DashboardPage() {
               </div>
             </label>
 
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-850 hover:bg-zinc-950 transition-colors">
+            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-800 hover:bg-zinc-950 transition-colors">
               <input
                 type="checkbox"
                 checked={telemetryRam}
@@ -990,7 +972,7 @@ export default function DashboardPage() {
               </div>
             </label>
 
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-850 hover:bg-zinc-950 transition-colors">
+            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-800 hover:bg-zinc-950 transition-colors">
               <input
                 type="checkbox"
                 checked={telemetryGpu}
@@ -1003,7 +985,7 @@ export default function DashboardPage() {
               </div>
             </label>
 
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-850 hover:bg-zinc-950 transition-colors">
+            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-800 hover:bg-zinc-950 transition-colors">
               <input
                 type="checkbox"
                 checked={telemetryWifi}

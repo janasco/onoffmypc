@@ -1,29 +1,12 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FirmwareFlasher } from "@/components/firmware-flasher";
+import { PublicHeader } from "@/components/public-header";
 
 export default function FlashPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col">
-      <nav className="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-lg hover:opacity-90 transition-opacity">
-            <span className="text-emerald-500">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 3v9" />
-                <path d="M8.5 6.5a6.5 6.5 0 1 0 7 0" />
-              </svg>
-            </span>
-            OnOffMyPC
-          </Link>
-          <div className="flex items-center gap-6 text-sm font-medium">
-            <Link href="/setup" className="text-zinc-400 hover:text-zinc-100 transition-colors">Setup</Link>
-            <Link href="/flash" className="text-emerald-400 font-semibold">Flash</Link>
-            <Link href="/downloads" className="text-zinc-400 hover:text-zinc-100 transition-colors">Downloads</Link>
-            <Link href="/login" className="text-zinc-400 hover:text-zinc-100 transition-colors">Log in</Link>
-          </div>
-        </div>
-      </nav>
+      <PublicHeader active="flash" />
 
       <main className="flex-1 max-w-3xl mx-auto px-4 py-12 w-full">
         <div className="mb-8">

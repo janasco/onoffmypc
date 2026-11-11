@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FirmwareFlasher } from "@/components/firmware-flasher";
+import { PublicHeader } from "@/components/public-header";
 
 /**
  * Minimal Web Serial surface used by this page. Only Chromium exposes
@@ -136,30 +137,7 @@ export default function SetupPage() {
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
 
       {/* Navbar */}
-      <nav className="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-lg hover:opacity-90 transition-opacity">
-            <span className="text-emerald-500">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 3v9" />
-                <path d="M8.5 6.5a6.5 6.5 0 1 0 7 0" />
-              </svg>
-            </span>
-            OnOffMyPC
-          </Link>
-          <div className="flex items-center gap-6 text-sm font-medium">
-            <Link href="/" className="text-zinc-400 hover:text-zinc-100 transition-colors">Home</Link>
-            <Link href="/setup" className="text-emerald-400 font-semibold">Setup</Link>
-            <Link href="/flash" className="text-zinc-400 hover:text-zinc-100 transition-colors">Flash</Link>
-            <Link href="/login" className="text-zinc-400 hover:text-zinc-100 transition-colors">Log in</Link>
-            <Link href="/register">
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicHeader active="setup" />
 
       {/* Main Content */}
       <main className="flex-1 max-w-4xl mx-auto px-4 py-12 w-full">
@@ -186,7 +164,7 @@ export default function SetupPage() {
             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center font-bold text-emerald-400 text-sm">
               1
             </div>
-            <div className="flex-1 pt-1">
+            <div className="flex-1 min-w-0 pt-1">
               <h3 className="text-lg font-bold text-zinc-100">Create your account</h3>
               <p className="text-zinc-400 text-sm mt-1">
                 Register a new profile at{" "}
@@ -203,7 +181,7 @@ export default function SetupPage() {
             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center font-bold text-emerald-400 text-sm">
               2
             </div>
-            <div className="flex-1 pt-1">
+            <div className="flex-1 min-w-0 pt-1">
               <h3 className="text-lg font-bold text-zinc-100">Add a device in the dashboard</h3>
               <p className="text-zinc-400 text-sm mt-1">
                 Access your dashboard at{" "}
@@ -211,7 +189,7 @@ export default function SetupPage() {
                   app.onoffmypc.com
                 </Link>
                 , click <strong>Add Device</strong>, and assign it a descriptive name. Note down the short{" "}
-                <code className="bg-zinc-900 border border-zinc-850 px-1.5 py-0.5 rounded text-zinc-200 text-xs font-semibold">
+                <code className="bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded text-zinc-200 text-xs font-semibold">
                   pairing code
                 </code>{" "}
                 (e.g., <code>7QK2-9F3D</code>) displayed on-screen. This single-use code expires after 15 minutes, but you can always refresh or request a new one inside the device settings.
@@ -224,7 +202,7 @@ export default function SetupPage() {
             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center font-bold text-emerald-400 text-sm">
               3
             </div>
-            <div className="flex-1 pt-1">
+            <div className="flex-1 min-w-0 pt-1">
               <h3 className="text-lg font-bold text-zinc-100">Identify your PC MAC Address</h3>
               <p className="text-zinc-400 text-sm mt-1">
                 Wake-on-LAN packets target your motherboard adapter&apos;s physical MAC address.
@@ -251,7 +229,7 @@ export default function SetupPage() {
             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center font-bold text-emerald-400 text-sm">
               4
             </div>
-            <div className="flex-1 pt-1">
+            <div className="flex-1 min-w-0 pt-1">
               <h3 className="text-lg font-bold text-zinc-100">Flash your board</h3>
               <p className="text-zinc-400 text-sm mt-1">
                 Plug your ESP32 module into your desktop using a USB data cable. On compatible browsers, flash the firmware directly by clicking below.
@@ -261,14 +239,14 @@ export default function SetupPage() {
                 <FirmwareFlasher />
               </div>
 
-              <div className="bg-zinc-900/30 border border-zinc-850 p-3 rounded-lg text-xs leading-relaxed text-zinc-400">
+              <div className="bg-zinc-900/30 border border-zinc-800 p-3 rounded-lg text-xs leading-relaxed text-zinc-400">
                 <span className="font-semibold text-zinc-300 block mb-1">Manual Flash Option:</span>
                 Download the binary payload from the{" "}
                 <a href="/firmware/onoffmypc-firmware-1.3.7.bin" className="text-emerald-400 underline">
                   firmware binary
                 </a>{" "}
                 and use the Espressif CLI tools:
-                <pre className="bg-zinc-950 text-zinc-300 p-2 rounded mt-1.5 overflow-x-auto font-mono text-[10px]">
+                <pre className="mt-1.5 max-w-full whitespace-pre-wrap break-all rounded bg-zinc-950 p-2 font-mono text-[10px] text-zinc-300">
                   esptool.py --chip esp32 write_flash 0x0 onoffmypc-firmware-latest.bin
                 </pre>
               </div>
@@ -280,7 +258,7 @@ export default function SetupPage() {
             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center font-bold text-emerald-400 text-sm">
               5
             </div>
-            <div className="flex-1 pt-1">
+            <div className="flex-1 min-w-0 pt-1">
               <h3 className="text-lg font-bold text-zinc-100">Connect to setup Wi-Fi</h3>
               <p className="text-zinc-400 text-sm mt-1">
                 Upon rebooting, the board creates a temporary hot-spot named <strong>OnOffMyPC-XXXXXX</strong>. Join this network using a phone or laptop.
@@ -332,7 +310,7 @@ export default function SetupPage() {
                 {port && (
                   <pre
                     ref={logEndRef}
-                    className="p-4 bg-zinc-950 font-mono text-[11px] text-emerald-500/90 h-[220px] overflow-y-auto whitespace-pre-wrap scrollbar-thin"
+                    className="h-[220px] max-w-full overflow-y-auto whitespace-pre-wrap rounded bg-zinc-950 p-4 font-mono text-[11px] text-emerald-500/90 scrollbar-thin"
                   >
                     {logs || "Waiting for serial feed... Press the RESET button on your ESP32 board."}
                   </pre>
@@ -354,15 +332,15 @@ export default function SetupPage() {
             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center font-bold text-emerald-400 text-sm">
               6
             </div>
-            <div className="flex-1 pt-1">
+            <div className="flex-1 min-w-0 pt-1">
               <h3 className="text-lg font-bold text-zinc-100">Hardware Wiring Pinout</h3>
               <p className="text-zinc-400 text-sm mt-1">
                 Disconnect the device from power and connect it to your motherboard headers using this guide:
               </p>
 
               {/* Pinout Table */}
-              <div className="mt-3 border border-zinc-800 rounded-lg overflow-hidden bg-zinc-950/20">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="mt-3 overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-950/20">
+                <table className="w-full text-left border-collapse text-[11px] sm:text-xs">
                   <thead>
                     <tr className="border-b border-zinc-800 bg-zinc-900/50 text-zinc-400">
                       <th className="p-3 font-semibold">ESP32 Pin</th>
@@ -371,27 +349,27 @@ export default function SetupPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-zinc-850/60 hover:bg-zinc-800/10">
+                    <tr className="border-b border-zinc-800/60 hover:bg-zinc-800/10">
                       <td className="p-3 font-mono font-semibold text-emerald-400">GPIO 26</td>
                       <td className="p-3 text-zinc-200">PWR_BTN Header</td>
                       <td className="p-3 text-zinc-400">Pulses power lines. Hold for 6s to trigger Force Off.</td>
                     </tr>
-                    <tr className="border-b border-zinc-850/60 hover:bg-zinc-800/10">
+                    <tr className="border-b border-zinc-800/60 hover:bg-zinc-800/10">
                       <td className="p-3 font-mono font-semibold text-emerald-400">GPIO 27</td>
                       <td className="p-3 text-zinc-200">RESET Header</td>
                       <td className="p-3 text-zinc-400">Pulses system lines to reset the PC.</td>
                     </tr>
-                    <tr className="border-b border-zinc-850/60 hover:bg-zinc-800/10">
+                    <tr className="border-b border-zinc-800/60 hover:bg-zinc-800/10">
                       <td className="p-3 font-mono font-semibold text-emerald-400">GPIO 34</td>
                       <td className="p-3 text-zinc-200">Power-LED (+) Header</td>
                       <td className="p-3 text-zinc-400">Senses whether the computer is powered on (input-only).</td>
                     </tr>
-                    <tr className="border-b border-zinc-850/60 hover:bg-zinc-800/10">
+                    <tr className="border-b border-zinc-800/60 hover:bg-zinc-800/10">
                       <td className="p-3 font-mono font-semibold text-emerald-400">GPIO 4</td>
                       <td className="p-3 text-zinc-200">DHT22 Data Line</td>
                       <td className="p-3 text-zinc-400">Reads room temperature and humidity (optional).</td>
                     </tr>
-                    <tr className="border-b border-zinc-850/60 hover:bg-zinc-800/10">
+                    <tr className="border-b border-zinc-800/60 hover:bg-zinc-800/10">
                       <td className="p-3 font-mono font-semibold text-zinc-500">GND</td>
                       <td className="p-3 text-zinc-200">Ground Pins</td>
                       <td className="p-3 text-zinc-400">Common Ground (Shared). Required.</td>
@@ -400,7 +378,7 @@ export default function SetupPage() {
                 </table>
               </div>
 
-              <div className="mt-3 text-xs leading-relaxed text-zinc-400 bg-zinc-900/20 border border-zinc-850 p-3 rounded-lg">
+              <div className="mt-3 text-xs leading-relaxed text-zinc-400 bg-zinc-900/20 border border-zinc-800 p-3 rounded-lg">
                 <strong className="text-zinc-300">Important safety tip:</strong> Use a simple opto-isolator or transistor between the GPIOs and motherboard power/reset headers instead of a raw direct connection to avoid electrical surges or damaging maternal controllers.
               </div>
             </div>
