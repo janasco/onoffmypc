@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nextPath, setNextPath] = useState<string | null>(null);
+
+  // Only relative paths, so ?next= cannot become an open redirect.
+  useEffect(() => {
+    const value = new URLSearchParams(window.location.search).get("next");
+    // The query string is client-only; reading it in an effect avoids a
+    // hydration mismatch on the statically exported page.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (value && value.startsWith("/") && !value.startsWith("//")) setNextPath(value);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +36,7 @@ export default function LoginPage() {
     if (apiError) {
       setError(apiError === "unauthorized" ? "Invalid email or password." : apiError);
     } else if (data) {
-      router.push("/dashboard");
+      router.push(nextPath ?? "/dashboard");
     }
   };
 
@@ -130,7 +140,7 @@ export default function LoginPage() {
           <CardFooter className="justify-center border-t border-zinc-800/60 pt-6">
             <p className="text-sm text-zinc-400">
               Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-emerald-500 hover:text-emerald-400 font-semibold transition-colors">
+              <Link href={nextPath ? `/register?next=${encodeURIComponent(nextPath)}` : "/register"} className="text-emerald-500 hover:text-emerald-400 font-semibold transition-colors">
                 Sign up
               </Link>
             </p>

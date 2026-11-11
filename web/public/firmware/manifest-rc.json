@@ -1,0 +1,13 @@
+{
+  "name": "OnOffMyPC Gateway (beta)",
+  "version": "1.4.0-rc1",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        { "path": "onoffmypc-firmware-1.4.0-rc1.bin", "offset": 0 }
+      ]
+    }
+  ]
+}

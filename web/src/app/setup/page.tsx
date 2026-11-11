@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Script from "next/script";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { FirmwareFlasher } from "@/components/firmware-flasher";
 
 /**
  * Minimal Web Serial surface used by this page. Only Chromium exposes
@@ -134,7 +134,6 @@ export default function SetupPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
-      <Script type="module" src="/vendor/esp-web-tools/install-button.js" strategy="lazyOnload" />
 
       {/* Navbar */}
       <nav className="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur sticky top-0 z-50">
@@ -151,6 +150,7 @@ export default function SetupPage() {
           <div className="flex items-center gap-6 text-sm font-medium">
             <Link href="/" className="text-zinc-400 hover:text-zinc-100 transition-colors">Home</Link>
             <Link href="/setup" className="text-emerald-400 font-semibold">Setup</Link>
+            <Link href="/flash" className="text-zinc-400 hover:text-zinc-100 transition-colors">Flash</Link>
             <Link href="/login" className="text-zinc-400 hover:text-zinc-100 transition-colors">Log in</Link>
             <Link href="/register">
               <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
@@ -257,27 +257,14 @@ export default function SetupPage() {
                 Plug your ESP32 module into your desktop using a USB data cable. On compatible browsers, flash the firmware directly by clicking below.
               </p>
 
-              {/* Install Button Wrapper */}
               <div className="my-4">
-                {/* @ts-expect-error custom element provided by the vendored ESP Web Tools bundle */}
-                <esp-web-install-button manifest="/firmware/manifest.json">
-                  <Button slot="activate" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 px-5 cursor-pointer">
-                    ⚡ One-Click Flash
-                  </Button>
-                  <span slot="unsupported" className="text-xs text-amber-500 block mt-2">
-                    ⚠️ Your browser does not support Web Serial tools. Use Chrome or Edge on desktop, or flash manually.
-                  </span>
-                  <span slot="not-allowed" className="text-xs text-amber-500 block mt-2">
-                    ⚠️ Flashing requires an active secure (HTTPS) connection.
-                  </span>
-                {/* @ts-expect-error closing tag of the custom element above */}
-                </esp-web-install-button>
+                <FirmwareFlasher />
               </div>
 
               <div className="bg-zinc-900/30 border border-zinc-850 p-3 rounded-lg text-xs leading-relaxed text-zinc-400">
                 <span className="font-semibold text-zinc-300 block mb-1">Manual Flash Option:</span>
                 Download the binary payload from the{" "}
-                <a href="/firmware/onoffmypc-firmware-1.3.6.bin" className="text-emerald-400 underline">
+                <a href="/firmware/onoffmypc-firmware-1.3.7.bin" className="text-emerald-400 underline">
                   firmware binary
                 </a>{" "}
                 and use the Espressif CLI tools:

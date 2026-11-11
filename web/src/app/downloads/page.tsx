@@ -143,11 +143,20 @@ export default function DownloadsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link href="/setup">
-                <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-200 hover:bg-zinc-800">
-                  Go to the setup guide →
-                </Button>
-              </Link>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/flash"
+                  className="inline-flex h-8 items-center justify-center rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-500"
+                >
+                  Flash a gateway →
+                </Link>
+                <Link
+                  href="/setup"
+                  className="inline-flex h-8 items-center justify-center rounded-lg border border-zinc-700 px-3 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-800"
+                >
+                  Setup guide
+                </Link>
+              </div>
             </CardContent>
           </Card>
 
