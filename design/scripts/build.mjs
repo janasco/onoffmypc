@@ -12,16 +12,22 @@ const paths = {
   states: resolve(root, "states/presentation.json"),
   content: resolve(root, "content/en.json"),
   mark: resolve(root, "assets/brand/onoffmypc-mark.svg"),
+  signatureMark: resolve(root, "assets/brand/onoffmypc-mark-signature.svg"),
+  printMark: resolve(root, "assets/brand/onoffmypc-mark-print.svg"),
+  bareMark: resolve(root, "assets/brand/onoffmypc-mark-bare.svg"),
   icons: resolve(root, "assets/icons/onoff-icons.svg"),
 };
 
 const readJson = async (path) => JSON.parse(await readFile(path, "utf8"));
-const [pkg, source, states, content, mark, icons] = await Promise.all([
+const [pkg, source, states, content, mark, signatureMark, printMark, bareMark, icons] = await Promise.all([
   readJson(paths.package),
   readJson(paths.tokens),
   readJson(paths.states),
   readJson(paths.content),
   readFile(paths.mark, "utf8"),
+  readFile(paths.signatureMark, "utf8"),
+  readFile(paths.printMark, "utf8"),
+  readFile(paths.bareMark, "utf8"),
   readFile(paths.icons, "utf8"),
 ]);
 
@@ -496,6 +502,9 @@ const outputs = new Map([
   ["dist/firmware/onoff_design_tokens.h", firmwareHeader],
   ["dist/email/onoffEmailTokens.ts", emailTokens],
   ["dist/assets/onoffmypc-mark.svg", mark],
+  ["dist/assets/onoffmypc-mark-signature.svg", signatureMark],
+  ["dist/assets/onoffmypc-mark-print.svg", printMark],
+  ["dist/assets/onoffmypc-mark-bare.svg", bareMark],
   ["dist/assets/onoff-icons.svg", icons],
 ]);
 

@@ -1,17 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
   <title id="title">OnOffMyPC</title>
-  <defs>
-    <radialGradient id="knob" cx="40%" cy="34%" r="72%">
-      <stop offset="0%" stop-color="#7d7d7d"/>
-      <stop offset="55%" stop-color="#333333"/>
-      <stop offset="100%" stop-color="#111111"/>
-    </radialGradient>
-  </defs>
-  <rect width="64" height="64" rx="14" fill="#e9e6e3"/>
-  <rect x="30" y="19.5" width="21" height="9" rx="4.5" fill="#111111"/>
-  <circle cx="23" cy="24" r="9.5" fill="#111111"/>
-  <circle cx="23" cy="24" r="6" fill="url(#knob)"/>
-  <rect x="13" y="35.5" width="21" height="9" rx="4.5" fill="#111111"/>
-  <circle cx="41" cy="40" r="9.5" fill="#111111"/>
-  <circle cx="41" cy="40" r="6" fill="url(#knob)"/>
+  <rect width="64" height="64" rx="15" fill="#E9E6E3"/>
+  <rect x="4" y="21" width="56" height="26" rx="13" fill="#111312"/>
+  <circle cx="47" cy="34" r="10.5" fill="#2563EB"/>
+  <path d="M49.65 29.76 A5 5 0 1 1 44.35 29.76" fill="none" stroke="#E9E6E3" stroke-width="2.2" stroke-linecap="round"/>
+  <rect x="45.9" y="26.1" width="2.2" height="7.4" rx="1.1" fill="#E9E6E3"/>
 </svg>

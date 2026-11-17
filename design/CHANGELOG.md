@@ -8,6 +8,9 @@
   states.
 - Added generated web, Compose, SwiftUI, firmware, and email artifacts.
 - Added the source brand mark, initial icon sprite, and accessibility rules.
+- Replaced the initial two-switch mark with the unified Toggle mark and its
+  Signature, Signal, print, and bare variants; updated the web consumers and
+  favicons to the new mark.
 - Added validated, path-safe consumer check and synchronization tooling with
   temporary-workspace tests.
 - Added firmware link, focus-ring, and positive-container theme semantics.

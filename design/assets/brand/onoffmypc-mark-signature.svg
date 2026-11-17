@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">OnOffMyPC</title>
+  <rect width="64" height="64" rx="15" fill="#E9E6E3"/>
+  <rect x="4" y="21" width="56" height="26" rx="13" fill="#111312"/>
+  <circle cx="47" cy="34" r="10.5" fill="#E9E6E3"/>
+  <path d="M49.65 29.76 A5 5 0 1 1 44.35 29.76" fill="none" stroke="#111312" stroke-width="2.2" stroke-linecap="round"/>
+  <rect x="45.9" y="26.1" width="2.2" height="7.4" rx="1.1" fill="#111312"/>
+</svg>

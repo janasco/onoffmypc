@@ -27,7 +27,10 @@ test("Power On is a blue request while observed PC on remains positive", async (
   assert.equal(states.pc.on.tone, "positive");
   assert.equal(states.command.confirmed.tone, "positive");
   assert.deepEqual(consumers.artifacts["dist/assets/onoffmypc-mark.svg"], [
-    "onoffmypc-web/favicon.svg",
-    "onoffmypc-web/app/favicon.svg",
+    "web/src/app/icon.svg",
+    "web/public/brand/onoffmypc-mark.svg",
+  ]);
+  assert.deepEqual(consumers.artifacts["dist/assets/onoffmypc-mark-signature.svg"], [
+    "web/public/brand/onoffmypc-mark-signature.svg",
   ]);
 });

@@ -13,8 +13,11 @@
       "onoffmypc-web/admin/css/onoffmypc-states.css"
     ],
     "dist/assets/onoffmypc-mark.svg": [
-      "onoffmypc-web/favicon.svg",
-      "onoffmypc-web/app/favicon.svg"
+      "web/src/app/icon.svg",
+      "web/public/brand/onoffmypc-mark.svg"
+    ],
+    "dist/assets/onoffmypc-mark-signature.svg": [
+      "web/public/brand/onoffmypc-mark-signature.svg"
     ],
     "dist/compose/OnOffTokens.kt": [
       "onoffmypc-mobile/android/app/src/main/kotlin/com/onoffmypc/design/generated/OnOffTokens.kt"

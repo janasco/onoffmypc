@@ -6,7 +6,10 @@
     "tokens": "47a9fb61ef067eacbdb29345429ba4f668a3d88121ed1e5a71dace1e170bb1de",
     "states": "5c02d9d3709eb8b031657d66b6a8e4d111f61a745083e952dfbb4a4db157742f",
     "content": "f2222e3b0b95be1486fd0a021677083f2768c82afac54d45c4450cb9f453fdec",
-    "mark": "829b0ffa997d9e0d63b8a3291426bb52349869f526735698c339c26a4a65f507",
+    "mark": "f6ae6908f2bb01ce59785cb0ee16d9a8c0129a84788de08f9f3e7e5cd2f7d84e",
+    "signatureMark": "d164ccbb27f3c88881f4c192bc2d720274dae904ee94766acdeb5453eec9296a",
+    "printMark": "01169e243bd636c6eee134f5c5079a909b74497e5607fc05d5c92870dc328b57",
+    "bareMark": "adef22a4061526300572eedd8dd67120792faa7190d7148222e7c10cab02e195",
     "icons": "707ba1b800b27cb7fcf8fd07a25d076164c7ffeef88ed2842dace82230e6f56f"
   },
   "artifacts": {
@@ -21,7 +24,10 @@
     "swift/OnOffStates.swift": "a188970ce230a8e4715e158c067d923e9c32ba71f3fc1b6fcc99afc2eebd10a1",
     "firmware/onoff_design_tokens.h": "bdb1ed73950f6e6bac7e441bd3ce8f34b4358756a774e98c14060fb2f5e5bb10",
     "email/onoffEmailTokens.ts": "c22ef5a7d406548d3eb70bf5e639e059f89212eb9451de349662125aacc6f58c",
-    "assets/onoffmypc-mark.svg": "829b0ffa997d9e0d63b8a3291426bb52349869f526735698c339c26a4a65f507",
+    "assets/onoffmypc-mark.svg": "f6ae6908f2bb01ce59785cb0ee16d9a8c0129a84788de08f9f3e7e5cd2f7d84e",
+    "assets/onoffmypc-mark-signature.svg": "d164ccbb27f3c88881f4c192bc2d720274dae904ee94766acdeb5453eec9296a",
+    "assets/onoffmypc-mark-print.svg": "01169e243bd636c6eee134f5c5079a909b74497e5607fc05d5c92870dc328b57",
+    "assets/onoffmypc-mark-bare.svg": "adef22a4061526300572eedd8dd67120792faa7190d7148222e7c10cab02e195",
     "assets/onoff-icons.svg": "707ba1b800b27cb7fcf8fd07a25d076164c7ffeef88ed2842dace82230e6f56f"
   }
 }
