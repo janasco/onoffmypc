@@ -27,11 +27,53 @@ existing keystore), and Google re-signs it with the app signing key it holds.
 - If you ever lose the upload key, Google can reset it; if Google holds the app signing key, your users are never stranded.
 - **FCM still works** regardless of re-signing because delivery uses the FCM HTTP
   v1 service account. **Google Sign-In does require certificate registration.**
-  Register the upload/release certificate SHA-1 for direct APK and internal AAB
-  testing. After Play App Signing is enabled, also register Google's app-signing
-  certificate SHA-1, then download a refreshed `google-services.json` and test
-  the signed build. The currently tracked file must not be treated as proof that
-  these OAuth identities are configured.
+  Register the upload/release certificate SHA-1 for direct APK testing, and
+  Google's app-signing certificate SHA-1 for Play-installed builds.
+
+### Google Sign-In after Play App Signing
+
+Google Sign-In validates the **installed APK's** signing certificate. A build
+from Play is signed by Google's app-signing key, not our upload key, so the
+upload SHA-1 alone is not enough.
+
+Symptom: `[16] Account reauth failed` from Credential Manager, even after
+uninstalling/reinstalling from Play. Logcat shows the real cause:
+
+```
+Auth: not registered to use OAuth2.0 ... confirm the package name and SHA-1
+Auth.Api.Credentials: [8] Unknown error [status=UNREGISTERED_ON_API_CONSOLE]
+Auth.Api.Credentials: [16] Account reauth failed.
+```
+
+Fix:
+
+1. **Play Console → Test and release → App integrity → App signing key
+   certificate** and copy the **SHA-1**. If "Quantum-ready"/hybrid signing is
+   enabled, also download **certificates.zip** and use the **deployment
+   certificate** SHA-1 (`openssl x509 -inform DER -in deployment_cert.der
+   -noout -fingerprint -sha1`).
+2. **Google Cloud Console → APIs & Services → Credentials → OnOffMyPC Android**
+   (client ID `156303072600-vtq2…`) → **SHA-1 certificate fingerprint** → add it.
+   Keep the upload SHA-1 (`CF:BE:CF:E0:…:F4`) for local release APKs.
+3. **Firebase → Project settings → Your apps → com.onoffmypc.android → Add
+   fingerprint** → the same SHA-1. This creates the Android OAuth client.
+4. If the OAuth consent screen is in **Testing**, add the Google account under
+   **Audience → Test users**.
+5. Wait a few minutes, reinstall/retry. No app rebuild is required.
+
+The Android OAuth client, not `google-services.json`, is what Credential Manager
+checks. Adding the fingerprint is the fix; refreshing the JSON is optional for
+Firebase-only services.
+
+For an APK already installed on a device, read the certificate directly:
+
+```bash
+adb shell pm path com.onoffmypc.android
+adb pull <path> /tmp/play-base.apk
+$ANDROID_HOME/build-tools/36.0.0/apksigner verify --print-certs /tmp/play-base.apk
+```
+
+The `Signer #1 certificate SHA-1 digest` is the value to register.
 
 ## First release (done once, manually in Play Console)
 The first submission can't be fully automated — you set up the listing + policies:
