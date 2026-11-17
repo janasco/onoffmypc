@@ -68,8 +68,8 @@ android {
         applicationId = "com.onoffmypc.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 22
-        versionName = "0.4.5"
+        versionCode = 23
+        versionName = "0.4.6"
         vectorDrawables { useSupportLibrary = true }
 
         // Google Sign-In server (Web) client ID used to request an ID token.
@@ -101,10 +101,12 @@ android {
         release {
             // Sign only when a keystore was configured; otherwise stay unsigned.
             signingConfig = signingConfigs.getByName("release").takeIf { it.storeFile != null }
-            // R8 disabled for the first release to avoid mis-stripping the
-            // reflection-based networking stack; enable with the keep rules in
-            // proguard-rules.pro once verified on a device.
-            isMinifyEnabled = false
+            // R8 is required for Play's DEX optimization threshold (>=25%
+            // optimization, shrinking, and obfuscation for apps over 10 MB DEX)
+            // and reduces size/startup. Keep rules live in proguard-rules.pro;
+            // exercise a minified release build on a device before promoting.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

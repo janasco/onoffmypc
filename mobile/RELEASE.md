@@ -99,7 +99,14 @@ Run from `mobile/` unless noted.
    **Play Console → Publishing overview**. The uploader retries with
    `changesNotSentForReview=true` automatically.
 
-6. **Optional direct APK distribution.** Upload the APK to R2 (step 7 below),
+6. **Check Play's DEX metrics.** R8 is enabled for release builds
+   (`isMinifyEnabled`/`isShrinkResources`). Play requires 25% optimization,
+   shrinking, and obfuscation when the bundle contains more than 10 MB of
+   uncompressed DEX. After uploading, open **Test and release → App bundle
+   explorer**, select the new bundle, and check the DEX percentages. This app's
+   DEX is ~3.6 MB after R8, below the enforcement floor, but keep it optimized.
+
+7. **Optional direct APK distribution.** Upload the APK to R2 (step 7 below),
    update `web/src/data/releases.json`, then:
 
    ```bash
@@ -110,14 +117,14 @@ Run from `mobile/` unless noted.
 
    `releases:check -- --verify` also re-downloads and hashes every artifact.
 
-7. **Screenshots.** If the UI changed, replace
+8. **Screenshots.** If the UI changed, replace
    `playstore/screenshots/play/*.png` (1080×1920) and run:
 
    ```bash
    node scripts/publish-play.mjs --upload-screenshots --replace
    ```
 
-8. **Post-launch:** check the public page and run
+9. **Post-launch:** check the public page and run
    `node scripts/play-report.mjs --days 7` for crash/ANR and reviews.
 
 ### Uploading the APK to R2 (direct distribution)
