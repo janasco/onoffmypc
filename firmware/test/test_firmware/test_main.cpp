@@ -252,6 +252,18 @@ void test_hello_payload() {
   TEST_ASSERT_EQUAL_UINT64(42, doc["last_seq"].as<uint64_t>());
 }
 
+void test_telemetry_network_info() {
+  std::string msg = buildTelemetryPayload(
+    "device-1", true, 22.5f, 55.0f, -65, "1.4.0-rc1-esp32",
+    "192.168.1.50", "AA:BB:CC:DD:EE:FF", "onoffmypc-gateway");
+  JsonDocument doc;
+  TEST_ASSERT_TRUE(deserializeJson(doc, msg) == DeserializationError::Ok);
+  TEST_ASSERT_EQUAL_STRING("esp32", doc["platform"].as<const char*>());
+  TEST_ASSERT_EQUAL_STRING("192.168.1.50", doc["local_ip"].as<const char*>());
+  TEST_ASSERT_EQUAL_STRING("AA:BB:CC:DD:EE:FF", doc["mac_address"].as<const char*>());
+  TEST_ASSERT_EQUAL_STRING("onoffmypc-gateway", doc["hostname"].as<const char*>());
+}
+
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 int main() {
@@ -296,6 +308,7 @@ int main() {
   RUN_TEST(test_telemetry_pc_off);
   RUN_TEST(test_telemetry_has_temp_humidity);
   RUN_TEST(test_telemetry_type_field);
+  RUN_TEST(test_telemetry_network_info);
 
   return UNITY_END();
 }

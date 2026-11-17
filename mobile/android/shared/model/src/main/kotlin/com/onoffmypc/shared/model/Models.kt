@@ -137,6 +137,12 @@ data class Device(
     val pc_on: Int? = null,
     val last_seen_at: String? = null,
     val firmware_version: String? = null,
+    /** Normalized reported platform: windows | linux | macos | esp32 | esp8266. */
+    val platform: String? = null,
+    val hostname: String? = null,
+    val local_ip: String? = null,
+    val mac_address: String? = null,
+    val created_at: String? = null,
     val cpu_load: Double? = null,
     val ram_used_mb: Double? = null,
     val ram_total_mb: Double? = null,

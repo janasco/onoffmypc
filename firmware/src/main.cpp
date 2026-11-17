@@ -717,8 +717,12 @@ void sendTelemetry() {
   String fw = String(FIRMWARE_VERSION) + "-esp32";
 #endif
 
+  String localIp  = WiFi.localIP().toString();
+  String mac      = WiFi.macAddress();
+  String hostname = "onoffmypc-gateway";
   String msg = buildTelemetryPayload(cfgDeviceId.c_str(), pcOn, temp, humidity,
-                                     rssi, fw.c_str()).c_str();
+                                     rssi, fw.c_str(), localIp.c_str(), mac.c_str(),
+                                     hostname.c_str()).c_str();
   sendWs(msg);
   Serial.printf("[tel] pc=%s temp=%.1f hum=%.1f rssi=%d\n",
     pcOn ? "ON" : "off", temp, humidity, rssi);

@@ -144,13 +144,20 @@ std::string buildAckPayload(const char* commandId, uint64_t seq, const char* res
 
 std::string buildTelemetryPayload(const std::string& deviceId, bool pcOn,
                                   float temp, float humidity, int rssi,
-                                  const std::string& firmwareVersion) {
+                                  const std::string& firmwareVersion,
+                                  const std::string& localIp,
+                                  const std::string& macAddress,
+                                  const std::string& hostname) {
   JsonDocument doc;
   doc["type"]             = "telemetry";
   doc["device_id"]        = deviceId;
   doc["pc_on"]            = pcOn;
   doc["rssi"]             = rssi;
   doc["firmware_version"] = firmwareVersion;
+  doc["platform"]         = firmwareVersion.find("esp8266") != std::string::npos ? "esp8266" : "esp32";
+  if (!localIp.empty())    doc["local_ip"]    = localIp;
+  if (!macAddress.empty()) doc["mac_address"] = macAddress;
+  if (!hostname.empty())   doc["hostname"]    = hostname;
   char buf[16];
   if (!std::isnan(temp)) {
     snprintf(buf, sizeof(buf), "%.1f", temp);

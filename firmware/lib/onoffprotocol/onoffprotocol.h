@@ -70,7 +70,10 @@ std::string buildAckPayload(const char* commandId, uint64_t seq, const char* res
 // mirroring the server's "no sensor" reporting contract.
 std::string buildTelemetryPayload(const std::string& deviceId, bool pcOn,
                                   float temp, float humidity, int rssi,
-                                  const std::string& firmwareVersion);
+                                  const std::string& firmwareVersion,
+                                  const std::string& localIp = "",
+                                  const std::string& macAddress = "",
+                                  const std::string& hostname = "");
 
 // Escape a string for safe embedding inside a JSON string literal (quotes,
 // backslashes, and all C0 control characters). Used for Wi-Fi SSIDs, which are
