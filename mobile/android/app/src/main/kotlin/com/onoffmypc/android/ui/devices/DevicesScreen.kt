@@ -28,7 +28,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -65,6 +69,7 @@ import com.onoffmypc.android.ui.designsystem.EmptyState
 import com.onoffmypc.android.ui.designsystem.ErrorState
 import com.onoffmypc.android.ui.designsystem.LoadingState
 import com.onoffmypc.android.ui.designsystem.Spacing
+import com.onoffmypc.android.ui.designsystem.StatusBadge
 import com.onoffmypc.android.ui.designsystem.StatusRole
 import com.onoffmypc.android.ui.designsystem.statusPalette
 import androidx.compose.foundation.BorderStroke
@@ -86,6 +91,7 @@ import android.content.Intent
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -293,17 +299,13 @@ fun DevicesScreen(
                                     }
                                 } else {
                                     items(state.devices, key = { it.id }) { device ->
-                                        DeviceCard(
+                                        DeviceRow(
                                             device = device,
-                                            commandInFlight = device.id in state.commandInFlightDeviceIds,
                                             selectMode = state.selectMode,
                                             selected = device.id in state.selectedDeviceIds,
                                             now = now,
-                                            onSelectedChange = { selected ->
-                                                vm.toggleDeviceSelected(device.id)
-                                            },
+                                            onSelectedChange = { vm.toggleDeviceSelected(device.id) },
                                             onOpen = { onOpen(device) },
-                                            onCommand = { type -> vm.sendCommand(device, type) },
                                             onRename = { renaming = device },
                                             onDelete = { deleting = device },
                                             onReplace = { replacing = device },
@@ -443,15 +445,13 @@ fun DevicesScreen(
 }
 
 @Composable
-private fun DeviceCard(
+private fun DeviceRow(
     device: Device,
-    commandInFlight: Boolean,
     selectMode: Boolean,
     selected: Boolean,
     now: java.time.Instant,
     onSelectedChange: (Boolean) -> Unit,
     onOpen: () -> Unit,
-    onCommand: (CommandType) -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onReplace: () -> Unit,
@@ -461,9 +461,10 @@ private fun DeviceCard(
         lastSeenAt = device.last_seen_at,
         pcOn = device.pc_on,
         telemetryAt = device.telemetry_at,
-        onlineLabel = "Recently online",
+        onlineLabel = "Online",
         now = now,
     )
+    val platform = resolveDevicePlatform(device)
     var menuOpen by remember { mutableStateOf(false) }
 
     Card(
@@ -477,7 +478,10 @@ private fun DeviceCard(
                         onValueChange = onSelectedChange,
                     )
                 } else {
-                    Modifier
+                    Modifier.clickable(
+                        onClickLabel = "Open ${device.name}",
+                        onClick = onOpen,
+                    )
                 }
             ),
         colors = CardDefaults.cardColors(
@@ -489,124 +493,70 @@ private fun DeviceCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (selectMode) {
-                    Checkbox(
-                        checked = selected,
-                        onCheckedChange = onSelectedChange,
-                        modifier = Modifier.padding(end = Spacing.xs)
-                    )
-                }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = Spacing.md, end = Spacing.xs, top = Spacing.sm, bottom = Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (selectMode) {
+                Checkbox(checked = selected, onCheckedChange = null)
+                Spacer(Modifier.width(Spacing.xs))
+            }
+            PlatformBadge(platform = platform, size = 42.dp)
+            Spacer(Modifier.width(Spacing.smMd))
+            Column(Modifier.weight(1f)) {
                 Text(
                     text = device.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                if (!selectMode) {
-                    Box {
-                        TextButton(
-                            onClick = { menuOpen = true },
-                            modifier = Modifier
-                                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-                                .semantics {
-                                    contentDescription = "Device actions for ${device.name}"
-                                },
-                        ) { Text("⋮") }
-                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            DropdownMenuItem(
-                                text = { Text("Get pairing code") },
-                                onClick = { menuOpen = false; onGetPairCode() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Rename") },
-                                onClick = { menuOpen = false; onRename() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Replace token") },
-                                onClick = { menuOpen = false; onReplace() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
-                                onClick = { menuOpen = false; onDelete() },
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(Spacing.xs))
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                DeviceStatusSummary(
-                    presentation = status,
-                    modifier = Modifier.padding(Spacing.smMd),
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "${platform.label} · ${status.lastContactLabel}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            val cpuLoad = device.cpu_load
-            if (cpuLoad != null) {
-                Spacer(Modifier.height(Spacing.md))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
-                ) {
-                    val cpuFraction = (cpuLoad.toFloat() / 100f).coerceIn(0f, 1f)
-                    StatBar(
-                        label = "CPU LOAD",
-                        value = "${cpuLoad.toInt()}%",
-                        fraction = cpuFraction,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    val gpuTemp = device.gpu_temp
-                    if (gpuTemp != null) {
-                        val gpuFraction = (gpuTemp.toFloat() / 100f).coerceIn(0f, 1f)
-                        StatBar(
-                            label = "GPU TEMP",
-                            value = "${gpuTemp.toInt()}°C",
-                            fraction = gpuFraction,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    val ramUsed = device.ram_used_mb
-                    val ramTotal = device.ram_total_mb
-                    if (ramUsed != null && ramTotal != null && ramTotal > 0) {
-                        val ramUsedGb = ramUsed / 1024.0
-                        val ramTotalGb = ramTotal / 1024.0
-                        val ramFraction = (ramUsed.toFloat() / ramTotal.toFloat()).coerceIn(0f, 1f)
-                        StatBar(
-                            label = "RAM USAGE",
-                            value = "${(ramUsedGb * 10).toInt() / 10.0}G / ${ramTotalGb.toInt()}G",
-                            fraction = ramFraction,
-                            color = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
+            Spacer(Modifier.width(Spacing.xs))
+            StatusBadge(label = status.connectionLabel, role = status.connectionRole)
             if (!selectMode) {
-                Spacer(Modifier.height(12.dp))
-                PowerControls(
-                    deviceName = device.name,
-                    commandInFlight = commandInFlight,
-                    onCommand = onCommand,
-                    supportsDesktopActions = device.firmware_version
-                        ?.contains("desktop-agent", ignoreCase = true) == true,
-                )
-                Spacer(Modifier.height(4.dp))
-                TextButton(
-                    onClick = onOpen,
-                    modifier = Modifier.semantics {
-                        contentDescription = "View details for ${device.name}"
-                    },
-                ) { Text("View details →") }
+                Box {
+                    IconButton(
+                        onClick = { menuOpen = true },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .semantics { contentDescription = "Device actions for ${device.name}" },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.MoreVert,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Get pairing code") },
+                            onClick = { menuOpen = false; onGetPairCode() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Rename") },
+                            onClick = { menuOpen = false; onRename() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Replace token") },
+                            onClick = { menuOpen = false; onReplace() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                            onClick = { menuOpen = false; onDelete() },
+                        )
+                    }
+                }
             }
         }
     }

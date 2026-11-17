@@ -34,6 +34,7 @@ data class DeviceDetailUiState(
     val upgradePrompt: Boolean = false,
     val unlockPrice: Int = 15,
     val commandInFlight: Boolean = false,
+    val deleting: Boolean = false,
     val schedules: List<ScheduledCommand> = emptyList(),
     val scheduleBusy: Boolean = false,
     val scheduleMessage: String? = null,
@@ -210,6 +211,28 @@ class DeviceDetailViewModel : ViewModel() {
                 onFailure = { error ->
                     _state.update { it.copy(message = error.message ?: "Failed to update telemetry settings.") }
                 }
+            )
+        }
+    }
+
+    fun deleteDevice(onDeleted: () -> Unit) {
+        val id = deviceId ?: return
+        if (_state.value.deleting) return
+        _state.update { it.copy(deleting = true) }
+        viewModelScope.launch {
+            repo.deleteDevice(id).fold(
+                onSuccess = {
+                    _state.update { it.copy(deleting = false) }
+                    onDeleted()
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            deleting = false,
+                            message = error.message ?: "Couldn't delete this device.",
+                        )
+                    }
+                },
             )
         }
     }

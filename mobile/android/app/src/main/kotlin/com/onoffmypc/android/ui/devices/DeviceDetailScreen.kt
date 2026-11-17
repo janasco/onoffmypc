@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
@@ -55,11 +56,16 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -70,6 +76,7 @@ import com.onoffmypc.android.ui.components.PowerControls
 import com.onoffmypc.android.ui.components.commandStatusLabel
 import com.onoffmypc.android.ui.components.commandStatusRole
 import com.onoffmypc.android.ui.components.DeviceStatusSummary
+import com.onoffmypc.android.ui.components.DeviceStatusPresentation
 import com.onoffmypc.android.ui.components.deviceStatusPresentation
 import com.onoffmypc.android.ui.designsystem.ErrorState
 import com.onoffmypc.android.ui.designsystem.LoadingState
@@ -81,7 +88,6 @@ import java.time.format.DateTimeFormatter
 
 private enum class DetailSection(val title: String) {
     Overview("Overview"),
-    Power("Power"),
     Activity("Activity"),
     Telemetry("Telemetry"),
     Settings("Settings"),
@@ -93,10 +99,12 @@ fun DeviceDetailScreen(
     deviceId: String,
     onBack: () -> Unit,
     onUpgrade: () -> Unit = {},
+    onDeleted: () -> Unit = {},
     vm: DeviceDetailViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    var showDelete by remember { mutableStateOf(false) }
 
     LaunchedEffect(deviceId) { vm.start(deviceId) }
     LaunchedEffect(state.message) {
@@ -147,6 +155,7 @@ fun DeviceDetailScreen(
                     },
                     onSchedule = vm::scheduleCommand,
                     onCancelSchedule = vm::cancelSchedule,
+                    onDelete = { showDelete = true },
                 )
             }
         }
@@ -163,16 +172,30 @@ fun DeviceDetailScreen(
             dismissButton = { TextButton(onClick = { vm.consumeUpgradePrompt() }) { Text("Not now") } },
         )
     }
+
+    if (showDelete) {
+        state.device?.let { device ->
+            DeleteDeviceDialog(
+                device = device,
+                onDismiss = { showDelete = false },
+                onConfirm = {
+                    showDelete = false
+                    vm.deleteDevice(onDeleted)
+                },
+            )
+        }
+    }
 }
 
 @Composable
 private fun DetailContent(
     state: DeviceDetailUiState,
     onRetry: () -> Unit,
-    onCommand: (com.onoffmypc.android.data.model.CommandType) -> Unit,
+    onCommand: (CommandType) -> Unit,
     onUpdateTelemetrySettings: (Boolean?, Boolean?, Boolean?, Boolean?) -> Unit,
-    onSchedule: (com.onoffmypc.android.data.model.CommandType, java.time.Instant) -> Unit,
+    onSchedule: (CommandType, java.time.Instant) -> Unit,
     onCancelSchedule: (String) -> Unit,
+    onDelete: () -> Unit,
 ) {
     val sections = DetailSection.entries
     var selectedIndex by remember { mutableIntStateOf(0) }
@@ -206,36 +229,14 @@ private fun DetailContent(
         ) {
             when (sections[selectedIndex]) {
                 DetailSection.Overview -> OverviewSection(
+                    device = device,
                     status = status,
-                    firmware = device.firmware_version,
+                    commandInFlight = state.commandInFlight,
+                    onCommand = onCommand,
                     softError = state.error != null,
                     onRetry = onRetry,
+                    onDelete = onDelete,
                 )
-                DetailSection.Power -> Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                ) {
-                    Column(Modifier.padding(Spacing.md)) {
-                        Text("Power controls", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.height(Spacing.xs))
-                        Text(
-                            "Requests are sent to the device; acknowledgement does not confirm the PC's final state.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        Spacer(Modifier.height(Spacing.md))
-                        PowerControls(
-                            deviceName = device.name,
-                            commandInFlight = state.commandInFlight,
-                            onCommand = onCommand,
-                            supportsDesktopActions = device.firmware_version
-                                ?.contains("desktop-agent", ignoreCase = true) == true,
-                        )
-                    }
-                }
                 DetailSection.Activity -> ActivitySection(
                     commands = state.commands,
                     schedules = state.schedules,
@@ -262,11 +263,16 @@ private fun DetailContent(
 
 @Composable
 private fun OverviewSection(
-    status: com.onoffmypc.android.ui.components.DeviceStatusPresentation,
-    firmware: String?,
+    device: Device,
+    status: DeviceStatusPresentation,
+    commandInFlight: Boolean,
+    onCommand: (CommandType) -> Unit,
     softError: Boolean,
     onRetry: () -> Unit,
+    onDelete: () -> Unit,
 ) {
+    val platform = resolveDevicePlatform(device)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -275,19 +281,147 @@ private fun OverviewSection(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(Modifier.padding(Spacing.md)) {
-            Text("Device status", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                PlatformBadge(platform = platform, size = 54.dp)
+                Spacer(Modifier.width(Spacing.smMd))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = device.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "${platform.label} · ${status.lastContactLabel}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(Modifier.width(Spacing.xs))
+                StatusBadge(label = status.connectionLabel, role = status.connectionRole)
+            }
             Spacer(Modifier.height(Spacing.sm))
-            DeviceStatusSummary(status)
-            firmware?.let {
-                Spacer(Modifier.height(Spacing.xs))
-                Text(
-                    "Firmware $it",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelMedium,
-                )
+            Text(
+                text = status.pcStateLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+
+    Spacer(Modifier.height(Spacing.smMd))
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.padding(Spacing.md)) {
+            Text("Power controls", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(Spacing.xs))
+            Text(
+                "Requests are sent to the device; acknowledgement does not confirm the PC's final state.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(Modifier.height(Spacing.md))
+            PowerControls(
+                deviceName = device.name,
+                commandInFlight = commandInFlight,
+                onCommand = onCommand,
+                supportsDesktopActions = device.firmware_version
+                    ?.contains("desktop-agent", ignoreCase = true) == true,
+            )
+        }
+    }
+
+    Spacer(Modifier.height(Spacing.md))
+    SectionHeading("Connection")
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm)) {
+            DetailInfoRow(
+                "Mode",
+                when {
+                    platform.isGateway -> "Gateway"
+                    platform.os == DeviceOs.UNKNOWN -> "Unknown"
+                    else -> "Desktop agent"
+                },
+            )
+            DetailInfoRow("Platform", platform.label)
+            DetailInfoRow("Version", platform.version ?: "Not reported")
+            DetailInfoRow("Cloud relay", "api.onoffmypc.com:443", monospace = true)
+            DetailInfoRow("Local IP", device.local_ip ?: "Not reported", monospace = true)
+            DetailInfoRow("MAC address", device.mac_address ?: "Not reported", monospace = true)
+            DetailInfoRow("Hostname", device.hostname ?: "Not reported")
+        }
+    }
+
+    Spacer(Modifier.height(Spacing.md))
+    SectionHeading("Technical")
+    SelectionContainer {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) {
+            Column(Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm)) {
+                DetailInfoRow("Device ID", device.id, monospace = true)
+                DetailInfoRow("Created", formatTimestamp(device.created_at))
+                DetailInfoRow("Last contact", lastContactValue(status.lastContactLabel))
+                DetailInfoRow("Telemetry", formatTimestamp(device.telemetry_at))
+                DetailInfoRow("PC state", status.pcStateLabel)
             }
         }
     }
+
+    Spacer(Modifier.height(Spacing.md))
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.padding(Spacing.md)) {
+            Text(
+                "Delete device",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+            Spacer(Modifier.height(Spacing.xs))
+            Text(
+                "Remove this device and its access. This cannot be undone.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(Modifier.height(Spacing.md))
+            OutlinedButton(
+                onClick = onDelete,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error,
+                ),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.5f),
+                ),
+            ) { Text("Delete device") }
+        }
+    }
+
     if (softError) {
         Spacer(Modifier.height(Spacing.smMd))
         Card(
@@ -298,7 +432,7 @@ private fun OverviewSection(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 12.dp),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
@@ -309,6 +443,62 @@ private fun OverviewSection(
                 TextButton(onClick = onRetry) { Text("Retry") }
             }
         }
+    }
+}
+
+@Composable
+private fun SectionHeading(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(Spacing.sm))
+}
+
+@Composable
+private fun DetailInfoRow(
+    label: String,
+    value: String,
+    monospace: Boolean = false,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = Spacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.smMd),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(104.dp),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontFamily = if (monospace) FontFamily.Monospace else null,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+private fun lastContactValue(label: String): String = when {
+    label == "No device contact yet" -> "Never"
+    label.startsWith("Last contact ") ->
+        label.removePrefix("Last contact ").replaceFirstChar { it.uppercase() }
+    else -> label
+}
+
+private fun formatTimestamp(value: String?): String {
+    if (value == null) return "Not reported"
+    return try {
+        OffsetDateTime.parse(value)
+            .format(DateTimeFormatter.ofPattern("MMM d, yyyy · HH:mm"))
+    } catch (_: Exception) {
+        value
     }
 }
 
@@ -660,7 +850,7 @@ private fun SettingsSection(
     }
     Spacer(Modifier.height(Spacing.sm))
     Text(
-        "Rename, replace token, and delete are available from the device card on the Devices list.",
+        "Rename, pairing code, and token replacement are available from the device card menu. Delete is available on the Overview tab.",
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         style = MaterialTheme.typography.bodySmall,
     )

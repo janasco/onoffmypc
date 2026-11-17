@@ -118,6 +118,7 @@ fun AppNav() {
                     deviceId = deviceId,
                     onBack = { navController.popBackStack() },
                     onUpgrade = { navController.navigate(billingRoute(deviceId)) },
+                    onDeleted = { navController.popBackStack() },
                 )
             }
         }
