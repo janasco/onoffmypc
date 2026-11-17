@@ -235,13 +235,22 @@ service-account permission is still missing.
 Flags: `--aab`, `--track internal|alpha|beta|production`,
 `--status draft|completed`, `--whatsnew`, `--notes`, `--dry-run`, `--check`,
 `--rollout`, `--inspect`, `--tracks`, `--promote <versionCode>`,
-`--app-sharing`, `--upload-screenshots`, `--replace`.
+`--app-sharing`, `--upload-listing`, `--upload-screenshots`, `--replace`.
+
+### Store listing artwork
+
+- `node scripts/publish-play.mjs --upload-listing` replaces the en-US app icon
+  (`playstore/icon-512.png`, 512×512) and feature graphic
+  (`playstore/feature-graphic-1024x500.png`, 1024×500). It validates the PNG
+  dimensions before opening a Play edit and commits both changes atomically.
+- `node scripts/publish-play.mjs --upload-screenshots --replace` replaces the
+  phone screenshots from `playstore/screenshots/play/`.
+- `--inspect` prints the current artwork URLs and image counts.
+- **Listing text** (title, short description, full description) is not written
+  by this tool; edit it in the Play Console.
 
 ### What the API cannot do
 
-- **Listing graphics** (icon, feature graphic, phone screenshots) are not part
-  of the Android Publisher v3 API. Upload them under **Store listing** in the
-  console. `--inspect` shows which image slots are populated.
 - **Testers**: the API only accepts **Google Groups**. Individual email lists
   are a console-only feature, so add your own account under
   **Testing → Internal testing → Testers**.

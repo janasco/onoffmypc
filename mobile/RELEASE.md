@@ -117,14 +117,25 @@ Run from `mobile/` unless noted.
 
    `releases:check -- --verify` also re-downloads and hashes every artifact.
 
-8. **Screenshots.** If the UI changed, replace
+8. **Store listing artwork.** If `playstore/icon-512.png` or
+   `playstore/feature-graphic-1024x500.png` changed, upload both and commit the
+   listing edit:
+
+   ```bash
+   node scripts/publish-play.mjs --upload-listing
+   ```
+
+   The tool validates the PNG dimensions, replaces the existing icon and
+   feature graphic, and commits atomically.
+
+9. **Screenshots.** If the UI changed, replace
    `playstore/screenshots/play/*.png` (1080×1920) and run:
 
    ```bash
    node scripts/publish-play.mjs --upload-screenshots --replace
    ```
 
-9. **Post-launch:** check the public page and run
+10. **Post-launch:** check the public page and run
    `node scripts/play-report.mjs --days 7` for crash/ANR and reviews.
 
 ### Uploading the APK to R2 (direct distribution)

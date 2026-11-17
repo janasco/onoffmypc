@@ -28,6 +28,8 @@
  *   --check            authenticate and open/discard a Play edit (verifies the
  *                      project link and Play permission; no upload, no release)
  *   --tracks           print every track and its releases, change nothing
+ *   --upload-listing   replace the listing icon (512×512) and feature graphic
+ *                      (1024×500) from playstore/
  *   --upload-screenshots  upload playstore/screenshots/play/*.png as the
  *                      listing's phone screenshots (no-op if any exist unless
  *                      --replace is passed)
@@ -78,6 +80,7 @@ function parseArgs(argv) {
     promote: null,
     appSharing: false,
     uploadScreenshots: false,
+    uploadListing: false,
     replace: false,
   }
   let statusSet = false
@@ -98,6 +101,7 @@ function parseArgs(argv) {
       case '--tracks': opts.tracks = true; break
       case '--promote': opts.promote = argv[++i]; break
       case '--app-sharing': opts.appSharing = true; break
+      case '--upload-listing': opts.uploadListing = true; break
       case '--upload-screenshots': opts.uploadScreenshots = true; break
       case '--replace': opts.replace = true; break
       case '-h': case '--help': {
@@ -239,9 +243,16 @@ function explain(status, body) {
   return message
 }
 
+function pngSize(buffer) {
+  if (buffer.length < 24 || buffer.readUInt32BE(0) !== 0x89504e47) {
+    return null
+  }
+  return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) }
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
-  const needsAab = !opts.check && !opts.inspect && !opts.tracks && !opts.promote && !opts.uploadScreenshots
+  const needsAab = !opts.check && !opts.inspect && !opts.tracks && !opts.promote && !opts.uploadScreenshots && !opts.uploadListing
   const aabPath = resolve(opts.aab)
   if (needsAab && !existsSync(aabPath)) {
     die(`AAB not found: ${aabPath}\n  Build it first: cd android && ./gradlew :app:bundleRelease`, 1)
@@ -272,6 +283,52 @@ async function main() {
     if (!edit.ok) die(`Play access check failed: ${explain(edit.status, edit.body)}`, 3)
     await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${edit.body.id}`)
     console.log('== access check passed: edit opened and discarded (no upload, no release)')
+    return
+  }
+
+  if (opts.uploadListing) {
+    const dir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'playstore')
+    const images = [
+      { type: 'icon', file: 'icon-512.png', width: 512, height: 512 },
+      { type: 'featureGraphic', file: 'feature-graphic-1024x500.png', width: 1024, height: 500 },
+    ].map((item) => {
+      const path = resolve(dir, item.file)
+      if (!existsSync(path)) die(`listing image not found: ${path}`, 1)
+      const bytes = readFileSync(path)
+      const size = pngSize(bytes)
+      if (!size || size.width !== item.width || size.height !== item.height) {
+        die(`${item.file} must be ${item.width}x${item.height} PNG (got ${size ? `${size.width}x${size.height}` : 'not a PNG'})`, 1)
+      }
+      return { ...item, path, bytes }
+    })
+
+    const edit = await api(token, 'POST', `${API}/applications/${PACKAGE_NAME}/edits`, { json: {} })
+    if (!edit.ok) die(`could not open an edit: ${explain(edit.status, edit.body)}`, 4)
+    const editId = edit.body.id
+
+    for (const image of images) {
+      const removed = await api(token, 'DELETE',
+        `${API}/applications/${PACKAGE_NAME}/edits/${editId}/listings/en-US/${image.type}`)
+      if (!removed.ok && removed.status !== 404) {
+        await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+        die(`could not clear ${image.type}: ${explain(removed.status, removed.body)}`, 4)
+      }
+      const upload = await api(token, 'POST',
+        `${UPLOAD_API}/applications/${PACKAGE_NAME}/edits/${editId}/listings/en-US/${image.type}?uploadType=media`,
+        { body: image.bytes, contentType: 'image/png' })
+      if (!upload.ok) {
+        await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+        die(`${image.type} upload failed: ${explain(upload.status, upload.body)}`, 3)
+      }
+      console.log(`== uploaded ${image.file} as ${image.type} (${image.width}x${image.height})`)
+    }
+
+    const commit = await commitEdit(token, editId)
+    if (!commit.ok) {
+      await api(token, 'DELETE', `${API}/applications/${PACKAGE_NAME}/edits/${editId}`)
+      die(`listing commit failed: ${explain(commit.status, commit.body)}`, 4)
+    }
+    console.log('== committed store listing icon and feature graphic')
     return
   }
 
@@ -387,11 +444,15 @@ async function main() {
           `${API}/applications/${PACKAGE_NAME}/edits/${editId}/listings/${language}/${imageType}`)
         const found = images.ok ? (images.body.images ?? []) : []
         console.log(`== ${label}: ${found.length} image(s)`)
+        if (!images.ok) console.log(`   status ${images.status}: ${JSON.stringify(images.body)}`)
         if (label === 'phoneScreenshot') {
           for (const [index, item] of found.entries()) console.log(`   ${index + 1}: ${item.url}`)
         }
         if (label === 'icon') {
           for (const item of found) console.log(`   icon: ${item.url}`)
+        }
+        if (label === 'featureGraphic') {
+          for (const item of found) console.log(`   feature: ${item.url}`)
         }
       }
     } finally {
