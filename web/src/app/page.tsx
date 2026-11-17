@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { HostRedirect } from "@/components/host-redirect";
 import { PublicHeader } from "@/components/public-header";
+import { BrandLockup } from "@/components/brand-lockup";
 
 export default function Home() {
   return (
@@ -160,13 +161,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 text-sm">
           <div className="flex flex-col gap-3">
             <Link href="/" className="flex items-center gap-2 font-semibold text-lg">
-              <span className="text-emerald-500">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M12 3v9" />
-                  <path d="M8.5 6.5a6.5 6.5 0 1 0 7 0" />
-                </svg>
-              </span>
-              OnOffMyPC
+              <BrandLockup size={18} />
             </Link>
             <p className="text-zinc-500 leading-relaxed text-xs">
               Remote power control and out-of-band management for your desktop PC.

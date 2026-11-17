@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { CreditCard, LogOut, Monitor, UserRound } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { BrandLockup } from "@/components/brand-lockup";
 
 const NAV = [
   { href: "/dashboard", label: "Devices", icon: Monitor },
@@ -18,22 +19,7 @@ function Logo() {
       href="/dashboard"
       className="flex items-center gap-2 font-semibold text-lg tracking-tight hover:opacity-90"
     >
-      <span className="text-emerald-500">
-        <svg
-          viewBox="0 0 24 24"
-          width="22"
-          height="22"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          aria-hidden="true"
-        >
-          <path d="M12 3v9" />
-          <path d="M8.5 6.5a6.5 6.5 0 1 0 7 0" />
-        </svg>
-      </span>
-      <span>OnOffMyPC</span>
+      <BrandLockup size={22} />
     </Link>
   );
 }

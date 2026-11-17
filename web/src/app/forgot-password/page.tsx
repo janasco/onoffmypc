@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { BrandLockup } from "@/components/brand-lockup";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -32,13 +33,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center p-4 selection:bg-emerald-500/30 selection:text-emerald-400">
       <div className="w-full max-w-sm flex flex-col gap-6">
         <Link href="/" className="flex items-center gap-2 font-semibold text-lg hover:opacity-90 transition-opacity self-center text-zinc-100">
-          <span className="text-emerald-500">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M12 3v9" />
-              <path d="M8.5 6.5a6.5 6.5 0 1 0 7 0" />
-            </svg>
-          </span>
-          OnOffMyPC
+          <BrandLockup size={22} />
         </Link>
 
         <Card className="bg-zinc-900 border-zinc-800">

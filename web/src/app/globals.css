@@ -146,3 +146,15 @@
     scroll-behavior: auto !important;
   }
 }
+
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-wordmark {
+  font-family: var(--font-sora), "Avenir Next", system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}

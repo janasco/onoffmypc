@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { BrandLockup } from "@/components/brand-lockup";
 
 export default function PrivacyPolicyPage() {
   return (
@@ -10,13 +11,7 @@ export default function PrivacyPolicyPage() {
       <nav className="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-semibold text-lg hover:opacity-90 transition-opacity">
-            <span className="text-emerald-500">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 3v9" />
-                <path d="M8.5 6.5a6.5 6.5 0 1 0 7 0" />
-              </svg>
-            </span>
-            OnOffMyPC
+            <BrandLockup size={22} />
           </Link>
           <div className="flex items-center gap-6 text-sm font-medium">
             <Link href="/" className="text-zinc-400 hover:text-zinc-100 transition-colors">Home</Link>
@@ -115,13 +110,7 @@ export default function PrivacyPolicyPage() {
         <div className="max-w-6xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="flex flex-col gap-3">
             <span className="flex items-center gap-2 font-bold text-lg text-zinc-100">
-              <span className="text-emerald-500">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M12 3v9" />
-                  <path d="M8.5 6.5a6.5 6.5 0 1 0 7 0" />
-                </svg>
-              </span>
-              OnOffMyPC
+              <BrandLockup size={20} />
             </span>
             <p className="text-zinc-500 text-xs leading-relaxed">
               Open-source, self-hosted, and cloud-enabled remote power controls for your workstation PCs.
