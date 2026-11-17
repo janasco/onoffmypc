@@ -68,8 +68,8 @@ android {
         applicationId = "com.onoffmypc.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 25
-        versionName = "0.4.8"
+        versionCode = 26
+        versionName = "0.4.9"
         vectorDrawables { useSupportLibrary = true }
 
         // Google Sign-In server (Web) client ID used to request an ID token.

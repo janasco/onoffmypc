@@ -44,7 +44,7 @@ Run from `mobile/` unless noted.
    `versionName`:
 
    ```bash
-   node scripts/bump-version.mjs 0.4.8
+   node scripts/bump-version.mjs 0.4.9
    ```
 
    The `versionCode` must be higher than every previous Play upload, even for a
@@ -130,7 +130,7 @@ Run from `mobile/` unless noted.
 ### Uploading the APK to R2 (direct distribution)
 
 ```bash
-VERSION=0.4.8
+VERSION=0.4.9
 FILE=onoffmypc-android-$VERSION.apk
 cp android/app/build/outputs/apk/release/*.apk "/tmp/$FILE"
 npx wrangler@4.112.0 r2 object put \
