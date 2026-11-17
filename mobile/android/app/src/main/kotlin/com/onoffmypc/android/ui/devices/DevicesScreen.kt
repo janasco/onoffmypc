@@ -506,13 +506,52 @@ private fun DeviceRow(
             PlatformBadge(platform = platform, size = 42.dp)
             Spacer(Modifier.width(Spacing.smMd))
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = device.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = device.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.width(Spacing.xs))
+                    StatusBadge(label = status.connectionLabel, role = status.connectionRole)
+                    if (!selectMode) {
+                        Box {
+                            IconButton(
+                                onClick = { menuOpen = true },
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .semantics { contentDescription = "Device actions for ${device.name}" },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.MoreVert,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("Get pairing code") },
+                                    onClick = { menuOpen = false; onGetPairCode() },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Rename") },
+                                    onClick = { menuOpen = false; onRename() },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Replace token") },
+                                    onClick = { menuOpen = false; onReplace() },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                    onClick = { menuOpen = false; onDelete() },
+                                )
+                            }
+                        }
+                    }
+                }
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = "${platform.label} · ${status.lastContactLabel}",
@@ -521,42 +560,6 @@ private fun DeviceRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-            }
-            Spacer(Modifier.width(Spacing.xs))
-            StatusBadge(label = status.connectionLabel, role = status.connectionRole)
-            if (!selectMode) {
-                Box {
-                    IconButton(
-                        onClick = { menuOpen = true },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .semantics { contentDescription = "Device actions for ${device.name}" },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.MoreVert,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Get pairing code") },
-                            onClick = { menuOpen = false; onGetPairCode() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Rename") },
-                            onClick = { menuOpen = false; onRename() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Replace token") },
-                            onClick = { menuOpen = false; onReplace() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
-                            onClick = { menuOpen = false; onDelete() },
-                        )
-                    }
-                }
             }
         }
     }

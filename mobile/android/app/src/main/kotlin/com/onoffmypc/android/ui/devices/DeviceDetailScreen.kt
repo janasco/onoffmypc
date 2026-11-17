@@ -284,27 +284,26 @@ private fun OverviewSection(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 PlatformBadge(platform = platform, size = 54.dp)
                 Spacer(Modifier.width(Spacing.smMd))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = device.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = "${platform.label} · ${status.lastContactLabel}",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Text(
+                    text = device.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Spacer(Modifier.width(Spacing.xs))
                 StatusBadge(label = status.connectionLabel, role = status.connectionRole)
             }
-            Spacer(Modifier.height(Spacing.sm))
+            Spacer(Modifier.height(Spacing.xs))
+            Text(
+                text = "${platform.label} · ${status.lastContactLabel}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = status.pcStateLabel,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
