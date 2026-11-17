@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --canvas: #0c100e;
+    --surface: #141a16;
+    --subtle: #1a221d;
+    --strong: #222b25;
+    --border: #2a342e;
+    --border-strong: #3a463e;
+    --text: #eef2ee;
+    --muted: #91a094;
+    --blue: #3b82f6;
+    --blue-ink: #061225;
+    --blue-soft: #93c5fd;
+    --green: #4ade80;
+    --green-bg: #123b25;
+    --red: #fca5a5;
+    --red-bg: #451a1a;
+    --amber: #fbbf24;
+    --amber-bg: #3b2a0a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #000; font-family: Roboto, system-ui, sans-serif; color: var(--text); }
+  .shot { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #060a08; }
+  .bg { position: absolute; inset: 0; background:
+    radial-gradient(ellipse 70% 48% at 18% 8%, rgba(16, 185, 129, .30), transparent 62%),
+    radial-gradient(ellipse 55% 38% at 88% 30%, rgba(16, 185, 129, .12), transparent 65%),
+    linear-gradient(180deg, #07100c 0%, #060a08 48%, #040706 100%);
+  }
+  .grain { position: absolute; inset: 0; opacity: .08; background-image: radial-gradient(rgba(255,255,255,.35) .6px, transparent .6px); background-size: 4px 4px; }
+  .marketing { position: absolute; top: 248px; left: 80px; right: 80px; text-align: center; z-index: 2; }
+  .eyebrow { color: var(--green); font-size: 26px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; }
+  h1 { margin: 24px 0 0; font-family: Sora, sans-serif; font-size: 96px; font-weight: 600; line-height: .98; letter-spacing: -.055em; color: #f4f7f4; }
+  .phone { position: absolute; z-index: 3; top: 704px; left: 170px; width: 740px; height: 1320px; padding: 12px; border: 2px solid var(--border); border-radius: 72px; background: linear-gradient(180deg, #1a221d, #0a0d0b); box-shadow: 0 46px 110px rgba(0,0,0,.72), 0 0 90px rgba(16,185,129,.13); }
+  .screen { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 60px; background: var(--canvas); }
+  .notch { position: absolute; z-index: 8; top: 16px; left: 50%; width: 104px; height: 26px; transform: translateX(-50%); border-radius: 999px; background: #050806; }
+  .statusbar { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 8px 34px 0; color: var(--muted); font-size: 18px; font-weight: 500; }
+  .appbar { display: flex; align-items: center; gap: 16px; height: 106px; padding: 8px 24px; border-bottom: 1px solid var(--border); }
+  .logo { width: 58px; height: 58px; flex: none; }
+  .appbar .name { font-size: 31px; font-weight: 500; letter-spacing: -.02em; }
+  .appbar .actions { display: flex; align-items: center; gap: 22px; margin-left: auto; color: var(--muted); font-size: 23px; }
+  .appbar .select { font-size: 23px; }
+  .appbar .menu { color: var(--text); font-size: 28px; line-height: 1; }
+  .back { color: var(--muted); font-size: 36px; line-height: 1; margin-right: 4px; }
+  .content { padding: 22px 24px 0; }
+  .card { border: 1px solid var(--border); border-radius: 22px; background: var(--surface); }
+  .fleet { padding: 20px 22px 22px; margin-bottom: 16px; }
+  .fleet .label { color: var(--muted); font-size: 21px; font-weight: 500; }
+  .fleet .summary { display: flex; align-items: center; gap: 16px; margin-top: 13px; }
+  .total { font-size: 42px; font-weight: 700; line-height: 1; }
+  .total-label { margin-left: -8px; color: var(--muted); font-size: 19px; }
+  .pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 7px 13px; font-size: 20px; font-weight: 500; white-space: nowrap; }
+  .online { color: var(--green); background: var(--green-bg); }
+  .offline { color: var(--red); background: var(--red-bg); }
+  .device { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; padding: 16px 18px; }
+  .os { display: flex; width: 76px; height: 76px; flex: none; align-items: center; justify-content: center; border-radius: 19px; background: var(--subtle); }
+  .device-info { min-width: 0; flex: 1; }
+  .device-name { font-size: 29px; font-weight: 500; line-height: 1.1; }
+  .device-sub { margin-top: 5px; overflow: hidden; color: var(--muted); font-size: 21px; text-overflow: ellipsis; white-space: nowrap; }
+  .dots { margin-left: 2px; color: var(--muted); font-size: 26px; letter-spacing: 2px; writing-mode: vertical-rl; line-height: .7; }
+  .fab { position: absolute; right: 24px; bottom: 112px; display: flex; align-items: center; gap: 12px; border-radius: 999px; background: var(--blue); color: var(--blue-ink); padding: 18px 28px; font-size: 23px; font-weight: 600; box-shadow: 0 12px 30px rgba(0,0,0,.35); }
+  .tabs { display: flex; gap: 30px; height: 72px; padding: 0 24px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 22px; font-weight: 500; }
+  .tab { display: flex; align-items: center; border-bottom: 3px solid transparent; }
+  .tab.active { color: var(--blue-soft); border-bottom-color: var(--blue); }
+  .hero { display: flex; align-items: center; gap: 17px; padding: 19px 21px; margin-bottom: 16px; }
+  .hero .os { width: 92px; height: 92px; border-radius: 23px; }
+  .hero-info { min-width: 0; flex: 1; }
+  .hero-name { font-size: 35px; font-weight: 500; letter-spacing: -.02em; line-height: 1.05; }
+  .hero-sub { margin-top: 6px; color: var(--muted); font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pc-state { margin-top: 7px; color: var(--muted); font-size: 21px; }
+  .section-title { margin: 18px 0 9px; color: var(--muted); font-size: 22px; font-weight: 500; }
+  .power { padding: 18px 20px 20px; margin-bottom: 14px; }
+  .power h2 { margin: 0; font-size: 28px; font-weight: 500; letter-spacing: -.015em; }
+  .power p { margin: 7px 0 16px; color: var(--muted); font-size: 20px; line-height: 1.3; }
+  .power-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .power-btn { display: flex; height: 78px; align-items: center; justify-content: center; border-radius: 16px; font-size: 24px; font-weight: 600; }
+  .power-on { background: var(--blue); color: var(--blue-ink); }
+  .power-off { background: #dc2626; color: #fff; }
+  .force { background: #f59e0b; color: #000; }
+  .reset { border: 1px solid var(--border-strong); color: var(--text); }
+  .connection { padding: 13px 19px; }
+  .conn-row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 9px 0; border-bottom: 1px solid rgba(42,52,46,.55); font-size: 20px; }
+  .conn-row:last-child { border-bottom: 0; }
+  .conn-label { color: var(--muted); }
+  .conn-value { overflow: hidden; color: var(--text); font-family: Roboto, sans-serif; text-align: right; white-space: nowrap; text-overflow: ellipsis; }
+  .mono { font-family: "Roboto Mono", ui-monospace, monospace; font-size: 18px; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat { padding: 17px 18px; }
+  .stat .label { color: var(--muted); font-size: 19px; }
+  .stat .value { margin-top: 8px; font-size: 34px; font-weight: 500; letter-spacing: -.03em; }
+  .stat .value.green { color: var(--green); }
+  .latest { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding: 16px 18px; }
+  .latest .label { color: var(--muted); font-size: 19px; }
+  .latest .value { font-size: 23px; }
+  .hardware { margin-top: 18px; }
+  .hardware-card { padding: 15px 18px; }
+  .hw-row { display: grid; grid-template-columns: 150px 1fr 58px; gap: 12px; align-items: center; padding: 7px 0; font-size: 19px; color: var(--muted); }
+  .hw-value { color: var(--text); text-align: right; }
+  .bar { height: 8px; overflow: hidden; border-radius: 99px; background: var(--strong); }
+  .bar span { display: block; height: 100%; border-radius: 99px; background: var(--blue); }
+  .chart { margin-top: 18px; }
+  .chart-card { padding: 16px 18px 12px; }
+  .chart-card .chart-title { color: var(--muted); font-size: 21px; }
+  .chart svg { display: block; width: 100%; height: auto; margin-top: 8px; }
+  .chart-label { fill: var(--muted); font-family: Roboto, sans-serif; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<section class="shot" id="shot-1">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="marketing">
+    <div class="eyebrow">Remote power</div>
+    <h1>Your PC.<br>From anywhere.</h1>
+  </div>
+  <div class="phone">
+    <div class="screen">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>5G&nbsp;&nbsp;100%</span></div>
+      <div class="appbar">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+          <rect width="64" height="64" rx="15" fill="#e9e6e3"/>
+          <rect x="4" y="21" width="56" height="26" rx="13" fill="#111312"/>
+          <circle cx="47" cy="34" r="10.5" fill="#e9e6e3"/>
+          <path d="M49.65 29.76 A5 5 0 1 1 44.35 29.76" fill="none" stroke="#111312" stroke-width="2.2" stroke-linecap="round"/>
+          <rect x="45.9" y="26.1" width="2.2" height="7.4" rx="1.1" fill="#111312"/>
+        </svg>
+        <span class="name">OnOffMyPC</span>
+        <span class="actions"><span class="select">Select</span><span class="menu">☰</span></span>
+      </div>
+      <div class="content">
+        <div class="card fleet">
+          <div class="label">Fleet</div>
+          <div class="summary"><span class="total">4</span><span class="total-label">devices</span><span class="pill online">2 online</span><span class="pill offline">2 offline</span></div>
+        </div>
+        <div class="card device">
+          <span class="os">
+            <svg width="40" height="40" viewBox="0 0 24 24" aria-hidden="true"><g fill="#91a094"><rect x="3" y="3" width="8" height="8" rx="1.2"/><rect x="13" y="3" width="8" height="8" rx="1.2"/><rect x="3" y="13" width="8" height="8" rx="1.2"/><rect x="13" y="13" width="8" height="8" rx="1.2"/></g></svg>
+          </span>
+          <div class="device-info"><div class="device-name">Studio PC</div><div class="device-sub">Windows · Last contact just now</div></div>
+          <span class="pill online">Online</span><span class="dots">⋮</span>
+        </div>
+        <div class="card device">
+          <span class="os">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#91a094" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10l3 2-3 2M12.5 14h4.5"/></svg>
+          </span>
+          <div class="device-info"><div class="device-name">Home Server</div><div class="device-sub">Linux · Last contact 2h ago</div></div>
+          <span class="pill offline">Offline</span><span class="dots">⋮</span>
+        </div>
+        <div class="card device">
+          <span class="os">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#91a094" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="11" rx="2"/><path d="M2 19h20M9 16h6"/></svg>
+          </span>
+          <div class="device-info"><div class="device-name">Mac mini</div><div class="device-sub">macOS · Last contact just now</div></div>
+          <span class="pill online">Online</span><span class="dots">⋮</span>
+        </div>
+        <div class="card device">
+          <span class="os">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#91a094" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/></svg>
+          </span>
+          <div class="device-info"><div class="device-name">Workshop PC</div><div class="device-sub">ESP32 gateway · Last contact 12m ago</div></div>
+          <span class="pill offline">Offline</span><span class="dots">⋮</span>
+        </div>
+        <div class="fab">+ Add device</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="shot" id="shot-2">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="marketing">
+    <div class="eyebrow">One tap</div>
+    <h1>Power on.<br>Before you arrive.</h1>
+  </div>
+  <div class="phone">
+    <div class="screen">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>5G&nbsp;&nbsp;100%</span></div>
+      <div class="appbar"><span class="back">←</span><span class="name">Studio PC</span></div>
+      <div class="tabs"><span class="tab active">Overview</span><span class="tab">Activity</span><span class="tab">Telemetry</span><span class="tab">Settings</span></div>
+      <div class="content">
+        <div class="card hero">
+          <span class="os">
+            <svg width="48" height="48" viewBox="0 0 24 24" aria-hidden="true"><g fill="#91a094"><rect x="3" y="3" width="8" height="8" rx="1.2"/><rect x="13" y="3" width="8" height="8" rx="1.2"/><rect x="3" y="13" width="8" height="8" rx="1.2"/><rect x="13" y="13" width="8" height="8" rx="1.2"/></g></svg>
+          </span>
+          <div class="hero-info"><div class="hero-name">Studio PC</div><div class="hero-sub">Windows · Last contact just now</div><div class="pc-state">PC is on</div></div>
+          <span class="pill online">Online</span>
+        </div>
+        <div class="card power">
+          <h2>Power controls</h2>
+          <p>Requests are sent to the device; acknowledgement does not confirm the PC's final state.</p>
+          <div class="power-grid"><div class="power-btn power-on">Power On</div><div class="power-btn power-off">Power Off</div><div class="power-btn force">Force Off</div><div class="power-btn reset">Reset</div></div>
+        </div>
+        <div class="section-title">Connection</div>
+        <div class="card connection">
+          <div class="conn-row"><span class="conn-label">Mode</span><span class="conn-value">Desktop agent</span></div>
+          <div class="conn-row"><span class="conn-label">Platform</span><span class="conn-value">Windows</span></div>
+          <div class="conn-row"><span class="conn-label">Version</span><span class="conn-value">0.1.4</span></div>
+          <div class="conn-row"><span class="conn-label">Cloud relay</span><span class="conn-value mono">api.onoffmypc.com:443</span></div>
+          <div class="conn-row"><span class="conn-label">Local IP</span><span class="conn-value mono">192.168.1.20</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="shot" id="shot-3">
+  <div class="bg"></div><div class="grain"></div>
+  <div class="marketing">
+    <div class="eyebrow">Live telemetry</div>
+    <h1>Every reading.<br>At a glance.</h1>
+  </div>
+  <div class="phone">
+    <div class="screen">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>5G&nbsp;&nbsp;100%</span></div>
+      <div class="appbar"><span class="back">←</span><span class="name">Studio PC</span></div>
+      <div class="tabs"><span class="tab">Overview</span><span class="tab">Activity</span><span class="tab active">Telemetry</span><span class="tab">Settings</span></div>
+      <div class="content">
+        <div class="stat-grid">
+          <div class="card stat"><div class="label">PC State</div><div class="value green">On</div></div>
+          <div class="card stat"><div class="label">Temperature</div><div class="value">22.4°C</div></div>
+          <div class="card stat"><div class="label">Humidity</div><div class="value">41%</div></div>
+          <div class="card stat"><div class="label">Signal</div><div class="value">-58 dBm</div></div>
+        </div>
+        <div class="card latest"><span class="label">Latest Telemetry</span><span class="value">Just now</span></div>
+        <div class="hardware">
+          <div class="section-title">PC hardware telemetry</div>
+          <div class="card hardware-card">
+            <div class="hw-row"><span>CPU Load</span><span class="bar"><span style="width:18%"></span></span><span class="hw-value">18%</span></div>
+            <div class="hw-row"><span>GPU Temp</span><span class="bar"><span style="width:42%;background:#fca5a5"></span></span><span class="hw-value">42°C</span></div>
+            <div class="hw-row"><span>RAM Usage</span><span class="bar"><span style="width:44%;background:#93c5fd"></span></span><span class="hw-value">14.2/32G</span></div>
+          </div>
+        </div>
+        <div class="chart">
+          <div class="card chart-card">
+            <div class="chart-title">Temperature — last 7 days</div>
+            <svg viewBox="0 0 640 240" role="img" aria-label="Seven day temperature chart">
+              <g stroke="#2a342e" stroke-width="1"><line x1="18" y1="40" x2="622" y2="40"/><line x1="18" y1="100" x2="622" y2="100"/><line x1="18" y1="160" x2="622" y2="160"/></g>
+              <path d="M18 172 L116 142 L214 150 L312 104 L410 122 L508 78 L606 92 L606 206 L18 206 Z" fill="rgba(59,130,246,.10)"/>
+              <path d="M18 172 L116 142 L214 150 L312 104 L410 122 L508 78 L606 92" fill="none" stroke="#3b82f6" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+              <g fill="#3b82f6"><circle cx="18" cy="172" r="5"/><circle cx="116" cy="142" r="5"/><circle cx="214" cy="150" r="5"/><circle cx="312" cy="104" r="5"/><circle cx="410" cy="122" r="5"/><circle cx="508" cy="78" r="5"/><circle cx="606" cy="92" r="5"/></g>
+              <g class="chart-label"><text x="18" y="232">Mon</text><text x="202" y="232">Wed</text><text x="386" y="232">Fri</text><text x="586" y="232">Sun</text></g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
