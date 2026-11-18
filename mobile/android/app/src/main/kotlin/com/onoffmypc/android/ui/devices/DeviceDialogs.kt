@@ -27,19 +27,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.ClipboardManager
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.onoffmypc.android.data.model.Device
 import com.onoffmypc.android.data.model.NewDevice
 import com.onoffmypc.android.ui.theme.OnOffTheme
+import com.onoffmypc.android.ui.components.SecureDialogContent
+import com.onoffmypc.android.ui.components.copySensitiveText
+import android.content.Context
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -131,7 +132,7 @@ fun TokenRevealDialog(
     pairCodeLoading: Boolean,
     onDismiss: () -> Unit
 ) {
-    val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
     var copiedLabel by remember { mutableStateOf<String?>(null) }
     var advancedExpanded by remember { mutableStateOf(false) }
     LaunchedEffect(copiedLabel) {
@@ -145,6 +146,7 @@ fun TokenRevealDialog(
         title = { Text("Device paired successfully") },
         text = {
             Column {
+                SecureDialogContent()
                 if (pairCodeLoading) {
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
@@ -184,7 +186,7 @@ fun TokenRevealDialog(
                             Spacer(Modifier.width(8.dp))
                             TextButton(
                                 onClick = {
-                                    clipboard.setText(AnnotatedString(pairCode.code))
+                                    copySensitiveText(context, "Pairing code", pairCode.code)
                                     copiedLabel = "Pairing code"
                                 }
                             ) {
@@ -234,9 +236,9 @@ fun TokenRevealDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(12.dp))
-                    CredentialRow("Device ID", device.id.orEmpty(), clipboard) { copiedLabel = it }
+                    CredentialRow("Device ID", device.id.orEmpty(), context) { copiedLabel = it }
                     Spacer(Modifier.height(12.dp))
-                    CredentialRow("Device Token", device.token.orEmpty(), clipboard) { copiedLabel = it }
+                    CredentialRow("Device Token", device.token.orEmpty(), context) { copiedLabel = it }
                 }
 
                 copiedLabel?.let { label ->
@@ -259,7 +261,7 @@ fun PairCodeOnlyDialog(
     pairCode: PairCodeResponse,
     onDismiss: () -> Unit
 ) {
-    val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
     var copiedLabel by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(copiedLabel) {
         if (copiedLabel != null) {
@@ -272,6 +274,7 @@ fun PairCodeOnlyDialog(
         title = { Text("Pairing code") },
         text = {
             Column {
+                SecureDialogContent()
                 Text(
                     text = "Enter this pairing code on your ESP32 setup screen:",
                     style = MaterialTheme.typography.bodyMedium,
@@ -301,7 +304,7 @@ fun PairCodeOnlyDialog(
                         Spacer(Modifier.width(8.dp))
                         TextButton(
                             onClick = {
-                                clipboard.setText(AnnotatedString(pairCode.code))
+                                copySensitiveText(context, "Pairing code", pairCode.code)
                                 copiedLabel = "Pairing code"
                             }
                         ) {
@@ -343,7 +346,7 @@ fun PairCodeOnlyDialog(
 private fun CredentialRow(
     label: String,
     value: String,
-    clipboard: ClipboardManager,
+    context: Context,
     onCopied: (String) -> Unit,
 ) {
     Text(
@@ -360,7 +363,7 @@ private fun CredentialRow(
         }
         TextButton(
             onClick = {
-                clipboard.setText(AnnotatedString(value))
+                copySensitiveText(context, label, value)
                 onCopied(label)
             },
             enabled = value.isNotEmpty(),

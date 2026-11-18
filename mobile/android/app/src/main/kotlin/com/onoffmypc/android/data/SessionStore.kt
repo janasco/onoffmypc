@@ -5,8 +5,14 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
+/** Narrow storage seam so cookie-origin logic is testable without Android. */
+interface SessionTokenStore {
+    var session: String?
+    fun clear()
+}
+
 /** Persists the API `session` cookie in encrypted app-private storage. */
-class SessionStore(context: Context) {
+class SessionStore(context: Context) : SessionTokenStore {
     private val prefs: SharedPreferences = run {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -20,7 +26,7 @@ class SessionStore(context: Context) {
         )
     }
 
-    var session: String?
+    override var session: String?
         get() = prefs.getString(KEY, null)
         set(value) {
             prefs.edit().apply {
@@ -28,7 +34,7 @@ class SessionStore(context: Context) {
             }.apply()
         }
 
-    fun clear() {
+    override fun clear() {
         session = null
     }
 

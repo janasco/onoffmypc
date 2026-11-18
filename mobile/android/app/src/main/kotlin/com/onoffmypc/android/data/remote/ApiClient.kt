@@ -18,6 +18,8 @@ object ApiClient {
     fun create(store: SessionStore): ApiService {
         val clientBuilder = OkHttpClient.Builder()
             .cookieJar(SessionCookieJar(store))
+            .followRedirects(false)
+            .followSslRedirects(false)
             .addInterceptor(UnauthorizedInterceptor(store))
 
         if (BuildConfig.DEBUG) {

@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 /// Shows a newly-created device's ID + token once, with copy buttons.
 struct TokenReveal: View {
@@ -60,7 +61,10 @@ struct TokenReveal: View {
 
     private func copyButton(label: String, value: String) -> some View {
         Button {
-            UIPasteboard.general.string = value
+            UIPasteboard.general.setItems(
+                [[UTType.plainText.identifier: value]],
+                options: [.localOnly: true]
+            )
             copiedLabel = label
             UIAccessibility.post(notification: .announcement, argument: "\(label) copied")
             Task { @MainActor in
