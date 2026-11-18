@@ -36,11 +36,23 @@ export default function ChangelogPage() {
         </div>
 
         <div className="flex flex-col gap-12">
-          {/* Release July 2026 */}
+          {/* Release November 2026 */}
           <div className="border-l-2 border-emerald-500 pl-6 relative">
             <div className="absolute h-3.5 w-3.5 rounded-full bg-emerald-500 -left-[8px] top-1.5 border-4 border-zinc-950" />
-            <h2 className="text-xl font-bold text-zinc-100 mb-4">July 2026</h2>
+            <h2 className="text-xl font-bold text-zinc-100 mb-4">November 2026</h2>
             <ul className="list-disc pl-5 flex flex-col gap-3 text-zinc-300 text-sm leading-relaxed">
+              <li><strong>New OnOffMyPC identity:</strong> the Toggle mark now appears across the web, Android, desktop, and Play listing.</li>
+              <li><strong>Android 0.4.9:</strong> compact device list with OS icons and status pills, a unified device detail screen, and a production release.</li>
+              <li><strong>Desktop 0.1.5:</strong> refreshed installer icon and hostname, local IP, and MAC reporting in telemetry.</li>
+              <li><strong>Direct downloads refreshed:</strong> Android 0.4.9 APK and desktop 0.1.5 installers are now on the downloads page.</li>
+            </ul>
+          </div>
+
+          {/* Release July 2026 */}
+          <div className="border-l-2 border-zinc-800 pl-6 relative">
+            <div className="absolute h-3.5 w-3.5 rounded-full bg-zinc-800 -left-[8px] top-1.5 border-4 border-zinc-950" />
+            <h2 className="text-xl font-bold text-zinc-400 mb-4">July 2026</h2>
+            <ul className="list-disc pl-5 flex flex-col gap-3 text-zinc-400 text-sm leading-relaxed">
               <li><strong>Public Launch:</strong> Account registration is open and remote power controls are free for every device during our launch window.</li>
               <li><strong>Connection Status &amp; Banners:</strong> Device cards now support offline detection and display a warning banner if communication is lost.</li>
               <li><strong>Refactored Dashboard Design:</strong> Sleek dark-mode grid cards with live telemetry graphs and recent command history records.</li>

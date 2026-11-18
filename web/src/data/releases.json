@@ -1,39 +1,39 @@
 {
   "android": {
-    "version": "0.4.3",
+    "version": "0.4.9",
     "assets": [
       {
-        "file": "onoffmypc-android-0.4.3.apk",
+        "file": "onoffmypc-android-0.4.9.apk",
         "label": "Android APK",
         "platform": "Android 8.0+",
-        "sizeBytes": 9721462,
-        "sha256": "1952a7c2851cce756538df911464b44f797a6fae38e3ec18047e561dd4e2f328"
+        "sizeBytes": 2450441,
+        "sha256": "e9485e72cc42e0ec49bb1d3a1ebbf24ab1a94920895e19b915cde4128436b6f8"
       }
     ]
   },
   "desktop": {
-    "version": "0.1.4",
+    "version": "0.1.5",
     "assets": [
       {
-        "file": "OnOffMyPC.Setup.0.1.4.exe",
+        "file": "OnOffMyPC.Setup.0.1.5.exe",
         "label": "Windows installer",
         "platform": "Windows 10/11, x64",
-        "sizeBytes": 99100697,
-        "sha256": "5cb5b695bfb00aa8f7a4fce10d4ededfb03e08a622db56fda52cc80f02c948a2"
+        "sizeBytes": 99711384,
+        "sha256": "26458774bf42c48417f282f58488c2255a6bab69f857820c07802af3dbd98ed8"
       },
       {
-        "file": "OnOffMyPC-0.1.4.AppImage",
+        "file": "OnOffMyPC-0.1.5.AppImage",
         "label": "Linux AppImage",
         "platform": "Any distro, x64",
-        "sizeBytes": 127421351,
-        "sha256": "4cacc73a5161406e7137d14da813c29575c902eac0c06936ed479e7028a79a86"
+        "sizeBytes": 127113870,
+        "sha256": "9730a4314c20ef01f496758837d633ccbe7f63dd15a57c85dbe931bd5f0ef36c"
       },
       {
-        "file": "onoffmypc-desktop_0.1.4_amd64.deb",
+        "file": "onoffmypc-desktop_0.1.5_amd64.deb",
         "label": "Linux .deb",
         "platform": "Debian / Ubuntu, amd64",
-        "sizeBytes": 99526608,
-        "sha256": "8bc58be6bcf56b5fb1f9aaab4cc81356cfc2f97bc7bbc49ffb4c31ed504cf852"
+        "sizeBytes": 99933336,
+        "sha256": "c7f1709fd69352da9643c83d2fbeaca6f2a6df4429c2182cb33f84d884572324"
       }
     ]
   }
