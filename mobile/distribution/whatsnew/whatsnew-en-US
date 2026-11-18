@@ -1,3 +1,3 @@
-• New unified OnOffMyPC mark and refreshed app icon.
-• Compact device list with OS icons, clear status, and last connection.
-• Tap a device for power controls, connection details, and technical info.
+• Security hardening for sessions and credentials.
+• TLS-only networking and stricter redirect handling.
+• Credential dialogs now block screenshots; copied credentials are marked sensitive.
