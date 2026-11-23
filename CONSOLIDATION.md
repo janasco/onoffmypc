@@ -84,7 +84,7 @@ Secrets do not transfer between repositories. The new repositories need:
 `ADMIN_ALLOWED_IPS`, `RESEND_API_KEY`, `FCM_SERVICE_ACCOUNT_JSON`,
 `TURNSTILE_SECRET_KEY`, `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`,
 `POLAR_PRODUCT_ID`, `POLAR_SERVER`, `POLAR_SUCCESS_URL`, `POLAR_RETURN_URL`,
-`HEALTHCHECK_URL`. See `app/wrangler.toml` and `app/DEPLOYMENT.md`.
+`HEALTHCHECK_URL` was removed; cron monitoring is now the native `onoffmypc-watchdog` Worker. See `app/DEPLOYMENT.md`.
 
 **Public repository:** no GitHub Actions secrets are configured or required.
 CI runs tests only. Release signing material (the Android keystore and its
