@@ -1,13 +1,13 @@
 {
   "android": {
-    "version": "0.4.9",
+    "version": "0.4.10",
     "assets": [
       {
-        "file": "onoffmypc-android-0.4.9.apk",
+        "file": "onoffmypc-android-0.4.10.apk",
         "label": "Android APK",
         "platform": "Android 8.0+",
-        "sizeBytes": 2450441,
-        "sha256": "e9485e72cc42e0ec49bb1d3a1ebbf24ab1a94920895e19b915cde4128436b6f8"
+        "sizeBytes": 2450905,
+        "sha256": "9f20827c3b2b44874382b0e8db7ad06382fbb19776f4985251b2f4b8dea5e767"
       }
     ]
   },
