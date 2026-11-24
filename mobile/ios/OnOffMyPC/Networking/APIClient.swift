@@ -25,17 +25,38 @@ private struct AnyEncodable: Encodable {
 /// Minimal API client. Cookie-based auth: the `session` cookie from login is
 /// captured and sent back on each request (URLSession cookie storage is disabled
 /// so persistence is via the Keychain — see Session.swift).
-final class APIClient {
+final class APIClient: NSObject {
     static let shared = APIClient()
 
     private let base = "https://api.onoffmypc.com"
+    private static let apiHost = "api.onoffmypc.com"
     private let session: URLSession = {
         let config = URLSessionConfiguration.default
         config.httpCookieStorage = nil
         config.httpShouldSetCookies = false
+        config.urlCache = nil
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
         config.timeoutIntervalForRequest = 20
-        return URLSession(configuration: config)
+        return URLSession(
+            configuration: config,
+            delegate: NoRedirectDelegate(),
+            delegateQueue: nil
+        )
     }()
+
+    /// API responses must never be followed to another origin. A 3xx becomes the
+    /// response the caller sees (and is rejected by the normal status check).
+    private final class NoRedirectDelegate: NSObject, URLSessionTaskDelegate {
+        func urlSession(
+            _ session: URLSession,
+            task: URLSessionTask,
+            willPerformHTTPRedirection response: HTTPURLResponse,
+            newRequest request: URLRequest,
+            completionHandler: @escaping (URLRequest?) -> Void
+        ) {
+            completionHandler(nil)
+        }
+    }
 
     private func send(_ method: String, _ path: String, body: (any Encodable)? = nil) async throws -> Data {
         guard let url = URL(string: base + "/" + path) else { throw APIError.network }
@@ -75,11 +96,23 @@ final class APIClient {
 
     private func captureCookie(from http: HTTPURLResponse) {
         guard let url = http.url,
+              url.scheme == "https",
+              url.host == Self.apiHost,
+              url.port == nil || url.port == 443,
               let fields = http.allHeaderFields as? [String: String] else { return }
+
         let cookies = HTTPCookie.cookies(withResponseHeaderFields: fields, for: url)
-        if let session = cookies.first(where: { $0.name == "session" }) {
-            Session.cookie = session.value
+        guard let session = cookies.first(where: { $0.name == "session" }) else { return }
+
+        let validDomain = session.domain == Self.apiHost || session.domain == ".onoffmypc.com"
+        guard session.isSecure,
+              validDomain,
+              !session.value.isEmpty,
+              session.value == session.value.trimmingCharacters(in: .whitespacesAndNewlines) else {
+            Session.cookie = nil
+            return
         }
+        Session.cookie = session.value
     }
 
     private func decode<T: Decodable>(_ data: Data) throws -> T {

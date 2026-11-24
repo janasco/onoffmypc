@@ -199,7 +199,7 @@ Interpreted against the product list in the audit brief and current `README.md` 
 | Topic | Current state |
 |---|---|
 | Session storage | Android: EncryptedSharedPreferences; iOS: Keychain |
-| Session-cookie origin binding | Android: HTTPS + exact API host/port, redirects disabled; iOS: **not implemented** (MP-13/OMP-19) |
+| Session-cookie origin binding | Android and iOS source: HTTPS + exact API host/port, redirects disabled; iOS validation on macOS/device is still pending (MP-13/OMP-19) |
 | Backup | `android:allowBackup="false"` |
 | Transport | HTTPS to `api.onoffmypc.com` |
 | Certificate pinning | **Not implemented** |

@@ -12,9 +12,18 @@ enum Session {
     static var isLoggedIn: Bool { cookie != nil }
 
     static var cookie: String? {
-        get { read() }
+        get {
+            guard let value = read()?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !value.isEmpty else { return nil }
+            return value
+        }
         set {
-            if let value = newValue { save(value) } else { delete() }
+            guard let value = newValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !value.isEmpty else {
+                delete()
+                return
+            }
+            save(value)
         }
     }
 

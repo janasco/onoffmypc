@@ -7,17 +7,21 @@ this environment.
 
 ## Environment status
 
-This work was performed on a Linux host without an attached Android device, an
-Android SDK, or Xcode. The static hardening gate and helper fixture tests passed;
-no physical-device or iOS test result is claimed. Android has an origin-bound
-session-cookie jar; iOS still has the cookie-origin gap tracked as MP-13/OMP-19.
+This work was performed on a Linux host without an attached Android device or
+Xcode. The Android SDK is installed at `/home/onoffmypc/Android/Sdk`; the static
+hardening gate, helper fixture tests, and Android debug unit tests passed. No
+physical-device or iOS test result is claimed. Android has an origin-bound
+session-cookie jar. iOS source now has HTTPS/host/port cookie validation, empty
+cookie rejection, redirect blocking, and a disabled URL cache, but that behavior
+still needs macOS/device validation (MP-13/OMP-19).
 
 | Area | Available here? | Status |
 |---|---|---|
 | Node static privacy/hardening gate | Yes — Node v22.23.2 | Run and passed (2026-11-24) |
 | Node SDK-denylist/XML helper tests | Yes — Node v22.23.2 | Run and passed (2026-11-24) |
-| Android build / lint / unit tests | No — no Android SDK or `local.properties` | **Blocked** |
-| Android physical device / `adb` | No — `adb` not installed | **Blocked** |
+| Android build / unit tests | Yes — SDK 36 with `ANDROID_HOME` | `:app:testDebugUnitTest` passed (2026-11-24) |
+| Android lint / release build | SDK available; not run in this pass | **Not verified** |
+| Android physical device / `adb` | `adb` present at the SDK path; no devices attached | **Blocked** |
 | iOS build / simulator | No — no macOS/Xcode | **Blocked** |
 | iOS physical device / TestFlight | No — no Xcode, signing, or App Store Connect access | **Blocked** |
 | Android FCM delivery | No device; `google-services.json` is present | **Blocked** pending device/backend test |
@@ -401,16 +405,13 @@ pass from source inspection alone.
 - [ ] **IOS-K09 `UserDefaults` push placeholder.** In the current build no APNs
   writer exists. Confirm `fcm-push-token` is absent after login. When push is
   implemented, verify it is not left in a backed-up plaintext preference.
-- [ ] **IOS-K10 Session-cookie origin and empty-cookie gap (MP-13).** Source
-  check: `APIClient.captureCookie` does not compare the response URL host or
-  scheme with `https://api.onoffmypc.com`; URLSession follows redirects by
-  default; and `Session.isLoggedIn` is true for any non-nil Keychain value,
-  including an empty string. Expected current behavior: a redirected or hostile
-  response containing `Set-Cookie: session=...` can replace the stored value,
-  and an empty stored value is treated as signed in. Record this as an open gap,
-  not a pass. Closing it requires Android-equivalent host/port/HTTPS checks,
-  empty/expired-cookie clearing, disabled authenticated redirects, and macOS
-  tests.
+- [ ] **IOS-K10 Session-cookie origin, empty-cookie, and redirect controls
+  (MP-13).** Source now requires HTTPS, exact API host/port, `Secure`, a valid
+  cookie domain, and a non-empty value; invalid values clear the stored session.
+  `NoRedirectDelegate` blocks redirects. Expected: a test URLSession request to
+  a cross-origin redirect is not followed, a `Set-Cookie` from a different host
+  is rejected, and an empty Keychain value returns the login screen. Exercise
+  this on macOS/device; do not mark it passed from static inspection alone.
 
 ### L. Clipboard
 
@@ -533,10 +534,10 @@ delivery, Keychain backup behavior, or App Store compliance.
 
 | Blocker | Why it remains | What unblocks it |
 |---|---|---|
-| Android physical backup/restore/transfer, screenshot, clipboard, notifications, TLS proxy | No attached device and no `adb` on this Linux host | A physical API 26–30 and API 33+ device, test account, and the checklist above |
-| Android build/unit/lint | No Android SDK/`local.properties` here | JDK 17 + SDK 36 host or CI |
+| Android physical backup/restore/transfer, screenshot, clipboard, notifications, TLS proxy | `adb` is available but no device is attached | A physical API 26–30 and API 33+ device, test account, and the checklist above |
+| Android lint / release build | SDK 36 is available; only debug unit tests were run in this pass | Run lint and signed release build on a clean host, then smoke-test the minified APK |
 | iOS ATS/Keychain/clipboard/screenshot/backup checks | No macOS/Xcode/device | macOS with Xcode 16+, XcodeGen, test device |
-| iOS session-cookie origin/HTTPS binding | Not implemented in Swift; the client accepts a `session` cookie from any response URL, treats an empty stored value as signed in, and follows redirects by default (MP-13) | Implement the Android-equivalent controls and add macOS tests; keep as an OMP-19 open item until then |
+| iOS session-cookie origin/HTTPS binding | Source controls added; no macOS/Xcode/device execution yet (MP-13) | Run the IOS-K10 redirect/cross-origin/empty-cookie checks on macOS/device; keep OMP-19 open until verified |
 | iOS release/push pipeline | No APNs implementation, no signing/App Store Connect access | APNs entitlement/token registration, signing, TestFlight workflow |
 | Staged API environment | Both clients hard-code `https://api.onoffmypc.com`; no build flavor/scheme | A reviewed base-URL configuration per build type, with staging credentials isolated |
 | Dependency/privacy inventory runtime truth | Inventory is source/build-artifact based; iOS package versions are not locked | Regenerate `sdkDependencies.txt` and commit/review `Package.resolved` |
