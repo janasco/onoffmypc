@@ -35,7 +35,7 @@ The repeatable device checks live in [`ON_DEVICE_VALIDATION.md`](ON_DEVICE_VALID
 | Android backup/transfer | Disabled at manifest level and excluded by both backup rule sets |
 | Transport | HTTPS API only. Production defaults to `https://api.onoffmypc.com`; reviewed staging builds use `https://onoffmypc-api-staging.onoffmypc.workers.dev`. Android network-security config has no cleartext and system CAs only; iOS uses ATS defaults with no declared exceptions and source-level HTTPS/host validation for cookie capture (macOS validation pending) |
 | Certificate pinning | Not implemented on either platform (intentional; needs a rotation/recovery story) |
-| Privacy manifest (`PrivacyInfo.xcprivacy`) | **Present** with no tracking and the UserDefaults required-reason declaration; collected-data declarations are still an App Store gap |
+| Privacy manifest (`PrivacyInfo.xcprivacy`) | **Present** with no tracking, the UserDefaults required-reason declaration, and reviewed collected-data declarations; App Store privacy-label and archive validation still required |
 
 ## Build and dependency sources
 
@@ -204,7 +204,7 @@ The committed source of truth is `ios/project.yml`; `OnOffMyPC/Info.plist` and
 | App Transport Security exceptions | **None declared** (`NSAllowsArbitraryLoads`, `NSExceptionDomains`, `NSAllowsArbitraryLoadsInWebContent`, and media/local variants absent) |
 | Usage descriptions (camera, photos, location, contacts, microphone, tracking) | **None declared** |
 | `NSUserTrackingUsageDescription` | **Absent** |
-| `PrivacyInfo.xcprivacy` | **Present**: no tracking; UserDefaults reason `CA92.1`; `NSPrivacyCollectedDataTypes` intentionally omitted pending an accurate App Store declaration |
+| `PrivacyInfo.xcprivacy` | **Present**: no tracking; empty tracking domains; UserDefaults reason `CA92.1`; reviewed `NSPrivacyCollectedDataTypes` (all linked, not tracking, App Functionality only). App Store labels and the archive privacy report still require validation |
 | Entitlements | Sign in with Apple only (`com.apple.developer.applesignin`, `Default`) |
 | Push entitlement (`aps-environment`) | **Absent**; no APNs registration code |
 | URL schemes | Reversed Google OAuth client ID and `msauth.com.onoffmypc.app` (`project.yml:42-48`) |
@@ -233,6 +233,35 @@ explicitly removed; the app keeps a valid origin-matching session on launch and
 does not clear it on uninstall, which is a deliberate availability trade-off and
 a privacy consideration. Legacy raw-cookie and malformed items are deleted when
 read.
+
+### iOS privacy manifest collected-data declarations
+
+`ios/OnOffMyPC/PrivacyInfo.xcprivacy` now declares the reviewed collected-data
+types. Every entry sets `NSPrivacyCollectedDataTypeLinked` to `true`,
+`NSPrivacyCollectedDataTypeTracking` to `false`, and declares only
+`NSPrivacyCollectedDataTypePurposeAppFunctionality`. No analytics, advertising,
+or other purpose is declared because no analytics/advertising SDK or data flow is
+integrated.
+
+| Apple data type | Inventory data | Notes |
+|---|---|---|
+| `EmailAddress` | Account email | Login, registration, forgot-password, change-email |
+| `UserID` | Account ID, session IDs | Authenticated responses and session inventory/revocation |
+| `DeviceID` | Managed-device IDs, billing device ID, device-level identifiers | Includes device-level push identifiers if iOS push is added; FCM/APNs registration is Android-only today and the iOS `fcm-push-token` placeholder has no writer |
+| `OtherUserContent` | Device names/labels | Add-device and rename-device forms; Play Data Safety classifies the same data as other user-generated content |
+| `PurchaseHistory` | Device-unlock/payment-request records | Billing status/history: plan, device, amount, currency, method, reference, provider, and status; no card data |
+| `ProductInteraction` | Commands, schedules, device actions, session revocation, checkout/portal actions | App functionality, not product analytics |
+| `OtherUsageData` | Telemetry visibility/settings, telemetry and command history retrieved and displayed, plus billing plan/access state | Device status/history and billing access state shown in the UI |
+| `OtherDiagnosticData` | Session metadata and device diagnostic metadata | Session IP address, user agent, created/last-seen/expiry timestamps, and device last-seen/connection status |
+
+`PaymentInfo` and `CreditInfo` are **not** declared: payment-card entry happens
+in Polar's hosted browser, not in the app, and the app never receives card data.
+The transaction rows shown in the billing screen are declared as
+`PurchaseHistory`; they are not a payment-card declaration.
+
+This is a source-level declaration. It does not prove that the built archive
+contains the manifest, that the App Store privacy report matches it, or that App
+Store review accepts the privacy-label answers. Those checks remain outstanding.
 
 ## Third-party data flows
 
@@ -382,7 +411,7 @@ backend/privacy documentation and the published privacy policy.
 | MP-04 | iOS API response cache | Resolved in source; validation pending | `APIClient.swift` sets `urlCache = nil` and `.reloadIgnoringLocalCacheData` | Confirm on macOS that authenticated responses do not appear in the URL cache |
 | MP-05 | Android clipboard contents persist; sensitive marker only on API 33+ | Low–Medium | `SensitiveClipboard.kt`; no auto-clear | Add clipboard auto-clear/expiry or a “clear clipboard” action; document older-OS behavior |
 | MP-06 | Play Data Safety declaration is narrower than actual app data | Medium (compliance) | `PLAYSTORE.md:91` mentions email and telemetry only; app also handles device IDs/names, network identifiers, push token, billing metadata, session IP/user agent | Reconcile the Play form and Apple privacy labels with this inventory |
-| MP-07 | iOS privacy manifest/release privacy validation incomplete | Medium (release blocker) | `PrivacyInfo.xcprivacy` present with no tracking and UserDefaults `CA92.1`; collected-data declarations are absent; no TestFlight/privacy-report validation | Add accurate `NSPrivacyCollectedDataTypes`, verify the archive privacy report, and reconcile App Store labels |
+| MP-07 | iOS privacy manifest source declaration exists; App Store/archive validation incomplete | Medium (release blocker) | `PrivacyInfo.xcprivacy` present with no tracking, UserDefaults `CA92.1`, and reviewed `NSPrivacyCollectedDataTypes` (linked, not tracking, App Functionality); no TestFlight/privacy-report validation | Verify the archive privacy report and bundled manifest, then reconcile App Store privacy labels with the source declarations |
 | MP-08 | iOS dependency resolution is not pinned | Low–Medium (supply chain) | `project.yml` uses `from: 7.1.0`; no `Package.resolved` | Commit the resolved package file and review updates |
 | MP-09 | Debug builds can log API URLs/device IDs | Low | `ApiClient.kt` debug `BASIC` logging | Keep debug builds internal; never attach raw logcat to reports |
 | MP-10 | Notification content may expose device names/status on the lock screen | Low | `Notifications.kt` uses default visibility; no `VISIBILITY_PRIVATE`/public version | Set lock-screen visibility/redaction or document the product decision |
@@ -404,9 +433,10 @@ backend/privacy documentation and the published privacy policy.
   test and a device redirect/cross-origin check (MP-13).
 - Whether Android `bmgr`/OEM migration actually ignores the app on each tested
   OS/device; static rules are not a substitute for a restore/transfer test.
-- Whether the iOS app needs a privacy manifest for the specific APIs it uses
-  (`UserDefaults`, file timestamps, etc.) and what App Store privacy labels
-  should declare.
+- Whether the built iOS archive bundles the committed privacy manifest, what
+  the archive privacy report contains, and whether the App Store privacy-label
+  answers match the source declarations. The manifest now declares the reviewed
+  collected-data types; store acceptance is not validated here.
 - Future APNs implementation details: entitlement, token storage, notification
   content, and unregister behavior.
 
@@ -419,9 +449,11 @@ gate scans all Gradle build/settings/properties files and version catalogs plus,
 when present, the resolved release `sdkDependencies.txt` and merged release
 manifest. It rejects `API_BASE_URL` overrides outside the reviewed app build,
 requires exactly one production, staging, and Info.plist iOS YAML entry, parses
-manifest/resource XML rather than matching exact substrings, and includes
-negative Adjust, HTTP-origin, duplicate/extra YAML, and iOS origin-bound session
-fixtures. It is still not a packaged-APK check. Regenerate
+manifest/resource XML rather than matching exact substrings, validates the iOS
+privacy manifest's collected-data keys, linkage, tracking flag, and purposes
+structurally, and includes negative Adjust, HTTP-origin, duplicate/extra YAML,
+iOS origin-bound session, tracking=true, and card-data fixtures. It is still not
+a packaged-APK check. Regenerate
 `sdkDependencies.txt` on a host with the Android SDK, and generate/review
 `Package.resolved` on macOS. Update this document when a new SDK, permission,
 API field, local-storage location, or data recipient is introduced.

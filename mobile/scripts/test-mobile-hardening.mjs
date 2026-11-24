@@ -7,7 +7,9 @@
  * clean. XML parsing checks cover single quotes, whitespace, attribute order,
  * and `uses-permission-sdk-23`, which the old exact-substring checks missed.
  * API-origin fixtures cover cleartext URLs, stray Gradle property overrides,
- * and duplicate or undeclared iOS `API_BASE_URL` YAML keys.
+ * and duplicate or undeclared iOS `API_BASE_URL` YAML keys. Privacy-manifest
+ * fixtures cover tracking, linkage, purpose, missing-section, and forbidden
+ * payment-data regressions.
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -26,6 +28,7 @@ import {
   validateIosSessionConsumers,
   validateIosSessionStorage,
 } from './lib/mobile-hardening-ios-session.mjs'
+import { validateIosPrivacyManifest } from './lib/mobile-hardening-privacy.mjs'
 import {
   denylistFixturePasses,
   findDeniedSdkTokens,
@@ -281,6 +284,73 @@ assert.ok(
     appStateSource: currentAppState,
   }).some((failure) => failure.includes('clear the session on 401')),
   '401 session-clear fixture was not rejected',
+)
+
+// iOS privacy manifest: the committed declarations must pass structurally, and
+// a tracking=true or weakened purpose/linkage entry must fail closed.
+const currentPrivacyManifest = readFileSync(
+  join(root, 'ios/OnOffMyPC/PrivacyInfo.xcprivacy'),
+  'utf8',
+)
+assert.deepEqual(
+  validateIosPrivacyManifest(currentPrivacyManifest),
+  [],
+  'current iOS privacy manifest is missing or weakens a reviewed declaration',
+)
+
+const trackingFixture = currentPrivacyManifest.replace(
+  /(<key>NSPrivacyCollectedDataTypeTracking<\/key>\s*)<false\/>/,
+  '$1<true/>',
+)
+assert.ok(
+  validateIosPrivacyManifest(trackingFixture).some((failure) =>
+    failure.includes('must not be used for tracking'),
+  ),
+  'tracking=true privacy fixture was not rejected',
+)
+
+const unlinkedFixture = currentPrivacyManifest.replace(
+  /(<key>NSPrivacyCollectedDataTypeLinked<\/key>\s*)<true\/>/,
+  '$1<false/>',
+)
+assert.ok(
+  validateIosPrivacyManifest(unlinkedFixture).some((failure) =>
+    failure.includes('must be linked to the account'),
+  ),
+  'linked=false privacy fixture was not rejected',
+)
+
+const analyticsFixture = currentPrivacyManifest.replace(
+  'NSPrivacyCollectedDataTypePurposeAppFunctionality',
+  'NSPrivacyCollectedDataTypePurposeAnalytics',
+)
+assert.ok(
+  validateIosPrivacyManifest(analyticsFixture).some((failure) =>
+    failure.includes('unreviewed purpose'),
+  ),
+  'unreviewed analytics purpose fixture was not rejected',
+)
+
+const missingCollectedFixture = currentPrivacyManifest.replace(
+  '<key>NSPrivacyCollectedDataTypes</key>',
+  '<key>NSPrivacyCollectedDataTypesMissing</key>',
+)
+assert.ok(
+  validateIosPrivacyManifest(missingCollectedFixture).some((failure) =>
+    failure.includes('NSPrivacyCollectedDataTypes must be an array'),
+  ),
+  'missing collected-data section fixture was not rejected',
+)
+
+const paymentFixture = currentPrivacyManifest.replace(
+  'NSPrivacyCollectedDataTypeEmailAddress',
+  'NSPrivacyCollectedDataTypePaymentInfo',
+)
+assert.ok(
+  validateIosPrivacyManifest(paymentFixture).some((failure) =>
+    failure.includes('does not collect card or credit data'),
+  ),
+  'payment-card data fixture was not rejected',
 )
 
 console.log('mobile hardening helper tests passed')

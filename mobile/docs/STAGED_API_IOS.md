@@ -192,7 +192,8 @@ The manifest declares:
 - `NSPrivacyTracking` = `false`;
 - an empty `NSPrivacyTrackingDomains` array;
 - the required-reason API category `NSPrivacyAccessedAPICategoryUserDefaults`
-  with reason `CA92.1` (app-only defaults).
+  with reason `CA92.1` (app-only defaults);
+- the reviewed `NSPrivacyCollectedDataTypes` entries below.
 
 The UserDefaults declaration is based on the reviewed app sources:
 `Networking/Session.swift` reads, writes, and removes the app-only
@@ -206,23 +207,38 @@ and transitive package versions are not in this repository because
 `Package.resolved` is not committed. Review the archive's privacy report on
 macOS before release.
 
-### Collected-data gap
+### Collected-data declarations
 
-`NSPrivacyCollectedDataTypes` is intentionally **absent**. The app sends
-account, session, device, command, and billing-related data to the OnOffMyPC
-API, but an accurate Apple data-collection declaration depends on the backend
-and privacy-policy review that is not available in this repository. Declaring
-an empty array (which would imply no collection) or inventing categories would
-be inaccurate.
+Every entry is linked to the authenticated account (`...DataTypeLinked` =
+`true`), is not used for tracking (`...DataTypeTracking` = `false`), and
+declares only `NSPrivacyCollectedDataTypePurposeAppFunctionality`. No
+`NSPrivacyCollectedDataTypePurposeAnalytics`, `...PurposeAdvertising`, or
+`...PurposeOther` purpose is declared because no analytics, advertising, or
+other-purpose SDK or data flow was confirmed in the reviewed sources.
 
-Consequences:
+| Apple data type | Data represented | Evidence |
+|---|---|---|
+| `NSPrivacyCollectedDataTypeEmailAddress` | Account email | Login, registration, forgot-password, and change-email requests |
+| `NSPrivacyCollectedDataTypeUserID` | Account and session identifiers | Authenticated API responses; session inventory and revocation |
+| `NSPrivacyCollectedDataTypeDeviceID` | Managed-device IDs, billing device ID, device-level identifiers | Device, telemetry, command, schedule, and billing paths. The FCM/APNs push token is Android-only today; the iOS placeholder has no writer, and `DeviceID` covers device-level push identifiers if iOS push is added |
+| `NSPrivacyCollectedDataTypeOtherUserContent` | Device names/labels the user creates | Add-device and rename-device requests; the same data is classified as other user-generated content on Play |
+| `NSPrivacyCollectedDataTypePurchaseHistory` | Device-unlock/payment-request records the billing screen displays | Plan, device, amount, currency, method, reference, provider, and status from billing status/history; no card data |
+| `NSPrivacyCollectedDataTypeProductInteraction` | Commands, schedules, device actions, session revocation, checkout/portal actions | Power-command and schedule requests, device mutations, and billing actions |
+| `NSPrivacyCollectedDataTypeOtherUsageData` | Telemetry visibility/settings, telemetry and command history retrieved and displayed, plus billing plan/access state | Telemetry/history screens, device status, and billing status/access state |
+| `NSPrivacyCollectedDataTypeOtherDiagnosticData` | Session metadata and device diagnostic metadata | Session inventory (IP address, user agent, created/last-seen/expiry timestamps) and device last-seen/connection status |
 
-- App Store tooling may report a missing `NSPrivacyCollectedDataTypes` key
-  until a reviewed declaration is added.
-- App Store privacy answers still need to be reconciled with
-  `DEPENDENCY_PRIVACY_INVENTORY.md` and the production privacy policy.
-- This manifest is not a legal privacy notice and does not replace the App
-  Store privacy form.
+The app does **not** declare `NSPrivacyCollectedDataTypePaymentInfo` or
+`NSPrivacyCollectedDataTypeCreditInfo`. Payment card entry happens in Polar's
+hosted browser; the app receives only a checkout/portal URL and payment-request
+metadata such as device, amount, provider, reference, and status. Those
+transaction records are declared as `PurchaseHistory`, not payment-card data.
+Payment-card data never reaches the app.
+
+This is a reviewed source declaration, not proof of App Store acceptance. The
+archive privacy report and the App Store privacy-label answers must still be
+reconciled with this manifest, `DEPENDENCY_PRIVACY_INVENTORY.md`, and the
+production privacy policy before submission. This manifest is not a legal
+privacy notice and does not replace the App Store privacy form.
 
 ## Static checks
 
@@ -232,6 +248,7 @@ Run from `mobile/`:
 node --check scripts/check-mobile-hardening.mjs
 node --check scripts/test-mobile-hardening.mjs
 node --check scripts/lib/mobile-hardening-ios-session.mjs
+node --check scripts/lib/mobile-hardening-privacy.mjs
 node scripts/check-mobile-hardening.mjs
 node scripts/test-mobile-hardening.mjs
 ```
@@ -255,11 +272,15 @@ The hardened gate now checks the iOS-specific invariants:
   clears it on 401/logout; `AppState` requires the configured origin for its
   initial logged-in state;
 - `PrivacyInfo.xcprivacy` exists, is an explicit XcodeGen resource, declares no
-  tracking, and declares the UserDefaults reason.
+  tracking, declares the UserDefaults reason, and declares the reviewed
+  collected-data set with `linked=true`, `tracking=false`, and App Functionality
+  as the only purpose. The gate parses the plist structurally and rejects
+  tracking, an unlinked entry, a missing or extra data type, an unreviewed
+  purpose, or card/credit data.
 
-On this Linux host (Node v22.23.2), the four commands above passed on
-2026-11-24. The gate is static and cannot prove XcodeGen output, Swift
-compilation, runtime URLSession behavior, or App Store acceptance.
+On this Linux host (Node v22.23.2), the commands above passed on 2026-11-24.
+The gate is static and cannot prove XcodeGen output, Swift compilation, runtime
+URLSession behavior, or App Store acceptance.
 
 ## Remaining validation (requires macOS/Xcode)
 
@@ -277,8 +298,8 @@ compilation, runtime URLSession behavior, or App Store acceptance.
   macOS/device.
 - Confirm `PrivacyInfo.xcprivacy` is present in the built app bundle with
   `plutil -lint` and the archive privacy report.
-- Reconcile collected-data declarations and App Store privacy answers before
-  submission.
+- Reconcile the source collected-data declarations in `PrivacyInfo.xcprivacy`
+  with the App Store privacy-label answers before submission.
 - Signing, provisioning, physical-device checks, TestFlight, and App Store
   validation are all outstanding.
 

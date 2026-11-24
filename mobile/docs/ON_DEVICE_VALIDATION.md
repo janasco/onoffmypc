@@ -508,11 +508,13 @@ pass from source inspection alone.
   cookie, device token, or API body in app logs.
 - [ ] **IOS-O05 Privacy manifest and labels.** Before App Store submission,
   confirm `PrivacyInfo.xcprivacy` is bundled, declares no tracking and the
-  UserDefaults required reason, and add accurate `NSPrivacyCollectedDataTypes`
-  after reconciling the inventory and App Store privacy answers. Current
-  repository state: manifest present with a documented collected-data gap; no
-  TestFlight pipeline; Play Data Safety copy is narrower than the actual data
-  inventory (MP-06/MP-07).
+  UserDefaults required reason, and retains the reviewed
+  `NSPrivacyCollectedDataTypes` after reconciling the inventory and App Store
+  privacy answers. Current repository state: source manifest present with the
+  reviewed collected-data declarations; archive privacy-report and App Store
+  privacy-label validation remain outstanding, and no TestFlight pipeline
+  exists. Play Data Safety copy is narrower than the actual data inventory
+  (MP-06/MP-07).
 
 ## Automated checks and commands
 
@@ -526,8 +528,9 @@ node scripts/check-mobile-hardening.mjs
 
 # Helper tests: Adjust fixture detection, token-boundary matching, XML
 # quote/whitespace/attribute-order/uses-permission-sdk-23 variants,
-# cleartext/duplicate/undeclared API_BASE_URL fixtures, and iOS origin-bound
-# session/raw-cookie/legacy-item fixtures.
+# cleartext/duplicate/undeclared API_BASE_URL fixtures, iOS origin-bound
+# session/raw-cookie/legacy-item fixtures, and privacy-manifest
+# tracking/linkage/purpose/card-data fixtures.
 node scripts/test-mobile-hardening.mjs
 
 # Syntax checks for the changed scripts
@@ -535,6 +538,7 @@ node --check scripts/check-mobile-hardening.mjs
 node --check scripts/test-mobile-hardening.mjs
 node --check scripts/lib/mobile-hardening-api-origin.mjs
 node --check scripts/lib/mobile-hardening-ios-session.mjs
+node --check scripts/lib/mobile-hardening-privacy.mjs
 node --check scripts/lib/mobile-hardening-sdk-denylist.mjs
 node --check scripts/lib/mobile-hardening-xml.mjs
 
@@ -566,5 +570,6 @@ delivery, Keychain backup behavior, or App Store compliance.
 | iOS ATS/Keychain/clipboard/screenshot/backup checks | No macOS/Xcode/device | macOS with Xcode 16+, XcodeGen, test device |
 | iOS session-cookie origin/HTTPS binding | Source controls added, including origin-bound Keychain storage and legacy-item deletion; no macOS/Xcode/device execution yet (MP-13) | Run the IOS-K10 redirect/cross-origin/empty-cookie/origin-switch and IOS-K11 legacy-upgrade checks on macOS/device; keep OMP-19 open until verified |
 | iOS release/push pipeline | No APNs implementation, no signing/App Store Connect access | APNs entitlement/token registration, signing, TestFlight workflow |
+| iOS privacy manifest archive/labels | Reviewed source declarations are present, but no archive privacy report or App Store privacy-label validation exists | Build an archive on macOS, confirm the bundled manifest and privacy report, and reconcile the App Store labels with the inventory |
 | Staged API environment | Source configuration exists for Android (`-PAPI_BASE_URL`) and iOS (`Staging`/`API_BASE_URL`); no device/simulator validation yet | Build both clients against the staging Worker, verify the effective Info.plist/BuildConfig, and keep staging credentials isolated |
 | Dependency/privacy inventory runtime truth | Inventory is source/build-artifact based; iOS package versions are not locked | Regenerate `sdkDependencies.txt` and commit/review `Package.resolved` |

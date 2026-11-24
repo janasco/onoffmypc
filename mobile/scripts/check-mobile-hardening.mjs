@@ -28,6 +28,7 @@ import {
   validateIosSessionConsumers,
   validateIosSessionStorage,
 } from './lib/mobile-hardening-ios-session.mjs'
+import { validateIosPrivacyManifest } from './lib/mobile-hardening-privacy.mjs'
 import {
   denylistFixturePasses,
   scanAndroidSdkSources,
@@ -560,11 +561,12 @@ requireText('ios/OnOffMyPC/Components/TokenReveal.swift', 'options: [.localOnly:
 rejectText('ios/OnOffMyPC/Components/TokenReveal.swift', 'UIPasteboard.general.string', 'iOS credential clipboard must use local-only items')
 
 // The privacy manifest is committed (unlike the generated Info.plist). It must
-// remain wired as an explicit XcodeGen resource, declare no tracking, and
-// declare the required-reason API the reviewed app sources actually use
-// (UserDefaults in Session.swift). Collected-data declarations are intentionally
-// absent until the App Store privacy answers can be reviewed; see
-// mobile/docs/STAGED_API_IOS.md.
+// remain wired as an explicit XcodeGen resource, declare no tracking, declare
+// the required-reason API the reviewed app sources actually use (UserDefaults
+// in Session.swift), and carry the reviewed collected-data declarations. The
+// collected-data set, linkage, tracking flag, and purposes are validated
+// structurally so a source change cannot silently weaken the manifest; see
+// mobile/docs/STAGED_API_IOS.md and mobile/docs/DEPENDENCY_PRIVACY_INVENTORY.md.
 requirePattern(
   iosProject,
   /^[ \t]*-[ \t]+path:[ \t]+OnOffMyPC\/PrivacyInfo\.xcprivacy[ \t]*$/m,
@@ -581,32 +583,9 @@ requirePattern(
   'PrivacyInfo.xcprivacy must be copied into the app bundle as a resource',
 )
 const privacyManifest = read(iosPrivacyManifest)
-const compactPrivacyManifest = privacyManifest
-  .replace(/<!--[\s\S]*?-->/g, '')
-  .replace(/\s+/g, '')
 if (privacyManifest) {
-  if (!compactPrivacyManifest.includes('<key>NSPrivacyTracking</key><false/>')) {
-    failures.push(`${iosPrivacyManifest}: NSPrivacyTracking must be false`)
-  }
-  if (
-    /<key>NSPrivacyTrackingDomains<\/key><array><string>/.test(
-      compactPrivacyManifest,
-    )
-  ) {
-    failures.push(`${iosPrivacyManifest}: tracking domains are forbidden`)
-  }
-  if (!compactPrivacyManifest.includes('<key>NSPrivacyAccessedAPITypes</key>')) {
-    failures.push(`${iosPrivacyManifest}: NSPrivacyAccessedAPITypes is missing`)
-  }
-  if (
-    !compactPrivacyManifest.includes(
-      '<string>NSPrivacyAccessedAPICategoryUserDefaults</string>',
-    )
-  ) {
-    failures.push(`${iosPrivacyManifest}: UserDefaults required-reason API is not declared`)
-  }
-  if (!compactPrivacyManifest.includes('<string>CA92.1</string>')) {
-    failures.push(`${iosPrivacyManifest}: UserDefaults must declare the app-only reason CA92.1`)
+  for (const failure of validateIosPrivacyManifest(privacyManifest)) {
+    failures.push(`${iosPrivacyManifest}: ${failure}`)
   }
 }
 
