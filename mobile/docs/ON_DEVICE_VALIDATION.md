@@ -20,7 +20,7 @@ still needs macOS/device validation (MP-13/OMP-19).
 | Node static privacy/hardening gate | Yes — Node v22.23.2 | Run and passed (2026-11-24) |
 | Node SDK-denylist/XML helper tests | Yes — Node v22.23.2 | Run and passed (2026-11-24) |
 | Android build / unit tests | Yes — SDK 36 with `ANDROID_HOME` | `:app:testDebugUnitTest` passed (2026-11-24) |
-| Android lint / release build | SDK available; not run in this pass | **Not verified** |
+| Android lint / release build | Yes — SDK 36 with `ANDROID_HOME` | `:app:lintDebug` and `:app:assembleRelease` passed (2026-11-24); signed APK verified separately |
 | Android physical device / `adb` | `adb` present at the SDK path; no devices attached | **Blocked** |
 | iOS build / simulator | No — no macOS/Xcode | **Blocked** |
 | iOS physical device / TestFlight | No — no Xcode, signing, or App Store Connect access | **Blocked** |
@@ -535,7 +535,7 @@ delivery, Keychain backup behavior, or App Store compliance.
 | Blocker | Why it remains | What unblocks it |
 |---|---|---|
 | Android physical backup/restore/transfer, screenshot, clipboard, notifications, TLS proxy | `adb` is available but no device is attached | A physical API 26–30 and API 33+ device, test account, and the checklist above |
-| Android lint / release build | SDK 36 is available; only debug unit tests were run in this pass | Run lint and signed release build on a clean host, then smoke-test the minified APK |
+| Android signed-release smoke test | Lint/unit/release build passed; no device is attached | Install the minified release APK on a physical device and exercise login, push, commands, and credential dialogs |
 | iOS ATS/Keychain/clipboard/screenshot/backup checks | No macOS/Xcode/device | macOS with Xcode 16+, XcodeGen, test device |
 | iOS session-cookie origin/HTTPS binding | Source controls added; no macOS/Xcode/device execution yet (MP-13) | Run the IOS-K10 redirect/cross-origin/empty-cookie checks on macOS/device; keep OMP-19 open until verified |
 | iOS release/push pipeline | No APNs implementation, no signing/App Store Connect access | APNs entitlement/token registration, signing, TestFlight workflow |
