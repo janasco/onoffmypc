@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
 import { AppHeader } from "@/components/app-header";
+import { PlatformPageHeader } from "@/components/platform-page-header";
 import { describeUserAgent, formatWhen, type SessionSummary } from "@/lib/sessions";
 
 interface UserProfile {
@@ -234,10 +235,11 @@ export default function AccountPage() {
       <AppHeader email={profile?.email} />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Account</h1>
-          <p className="mt-1 text-sm text-zinc-400">Profile, security, and active sessions.</p>
-        </div>
+        <PlatformPageHeader
+          eyebrow="Account"
+          title="Your account"
+          description="Profile, security, and active sessions."
+        />
 
         {/* Deletion Countdown Banner */}
         {profile?.deletion_at && (

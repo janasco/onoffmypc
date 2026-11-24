@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api";
 import { AppHeader } from "@/components/app-header";
+import { PlatformPageHeader } from "@/components/platform-page-header";
+import { ConnectionPill } from "@/components/connection-pill";
 import { getPlatformInfo } from "@/lib/platform";
 import { toChartPoints, type TelemetrySample } from "@/lib/telemetry";
 import { commandProgress, progressFromSendResult } from "@/lib/commandLifecycle";
@@ -486,34 +488,35 @@ export default function DashboardPage() {
       <AppHeader email={account?.email} />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Devices</h1>
-            <p className="mt-1 text-sm text-zinc-400">Manage your PCs and ESP32 gateways.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {devices.length > 0 && (
+        <PlatformPageHeader
+          eyebrow="Fleet"
+          title="Devices"
+          description="Manage your PCs and ESP32 gateways."
+          actions={
+            <>
+              {devices.length > 0 && (
+                <Button
+                  variant={bulkMode ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setBulkMode(!bulkMode);
+                    setSelectedIds([]);
+                  }}
+                  className={bulkMode ? "" : "border-zinc-700 text-zinc-300 hover:bg-zinc-900"}
+                >
+                  {bulkMode ? "Exit bulk actions" : "Bulk actions"}
+                </Button>
+              )}
               <Button
-                variant={bulkMode ? "secondary" : "outline"}
                 size="sm"
-                onClick={() => {
-                  setBulkMode(!bulkMode);
-                  setSelectedIds([]);
-                }}
-                className={bulkMode ? "" : "border-zinc-700 text-zinc-300 hover:bg-zinc-900"}
+                onClick={() => setAddOpen(true)}
+                className="bg-emerald-600 text-white hover:bg-emerald-500"
               >
-                {bulkMode ? "Exit bulk actions" : "Bulk actions"}
+                + Add device
               </Button>
-            )}
-            <Button
-              size="sm"
-              onClick={() => setAddOpen(true)}
-              className="bg-emerald-600 text-white hover:bg-emerald-500"
-            >
-              + Add device
-            </Button>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {/* Onboarding Guide */}
         {devices.length === 0 && !onboardingDismissed && (
@@ -574,18 +577,18 @@ export default function DashboardPage() {
         )}
 
         {/* Fleet summary */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 divide-x divide-zinc-800 overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/25">
           {[
             { label: "Devices", value: devices.length, tone: "text-zinc-100" },
             { label: "Online", value: onlineCount, tone: "text-emerald-400" },
             { label: "Offline", value: offlineCount, tone: "text-zinc-400" },
           ].map((stat) => (
-            <Card key={stat.label} className="border-zinc-800 bg-zinc-900/60 p-4">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+            <div key={stat.label} className="px-5 py-4">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
                 {stat.label}
               </span>
-              <span className={`mt-1 block text-2xl font-bold ${stat.tone}`}>{stat.value}</span>
-            </Card>
+              <span className={`mt-1 block font-heading text-2xl font-semibold tracking-tight ${stat.tone}`}>{stat.value}</span>
+            </div>
           ))}
         </div>
 
@@ -610,7 +613,7 @@ export default function DashboardPage() {
                 : null;
               const busy = Boolean(commandInFlight[d.id]);
               return (
-              <Card key={d.id} className="flex flex-col border-zinc-800 bg-zinc-900/60 transition-colors hover:border-zinc-700">
+              <Card key={d.id} className="flex flex-col border-zinc-800/80 bg-zinc-900/25 transition-colors hover:border-zinc-700">
                 <div
                   role="button"
                   tabIndex={0}
@@ -654,11 +657,9 @@ export default function DashboardPage() {
                       </div>
 
                       <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                        <span
-                          className={`inline-block h-2 w-2 rounded-full ${connection.online ? "bg-emerald-500" : "bg-zinc-600"}`}
-                          aria-hidden="true"
-                        />
-                        <span className="text-xs text-zinc-400" title={connection.ageLabel}>{connection.label}</span>
+                        <span title={connection.ageLabel}>
+                          <ConnectionPill online={connection.online} label={connection.label} />
+                        </span>
 
                         <DropdownMenu>
                           <DropdownMenuTrigger

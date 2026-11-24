@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FirmwareFlasher } from "@/components/firmware-flasher";
 import { PublicHeader } from "@/components/public-header";
+import { Lightbulb } from "lucide-react";
 import { BrandLockup } from "@/components/brand-lockup";
 
 /**
@@ -152,7 +153,7 @@ export default function SetupPage() {
         <div className="flex flex-col gap-8">
           {/* Tip Notice */}
           <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-300 flex items-start gap-3">
-            <span className="text-emerald-500 text-lg mt-0.5">💡</span>
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
             <div>
               <strong className="text-zinc-200">Browser Flashing:</strong> If you are using{" "}
               <strong className="text-zinc-200">Chrome or Edge on a desktop computer</strong>, you can flash your ESP32

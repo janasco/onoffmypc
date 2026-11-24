@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { AppHeader } from "@/components/app-header";
+import { PlatformPageHeader } from "@/components/platform-page-header";
 
 interface BillingDevice {
   id: string;
@@ -92,15 +93,16 @@ export default function BillingPage() {
       <AppHeader />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-100">Billing & subscriptions</h1>
-            <p className="text-sm text-zinc-400 mt-1">Manage power control unlocks, invoices, and billing history</p>
-          </div>
-          <Button onClick={handleOpenPortal} className="bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800 h-10 px-5 self-start">
-            Manage receipts
-          </Button>
-        </div>
+        <PlatformPageHeader
+          eyebrow="Billing"
+          title="Billing & subscriptions"
+          description="Manage power control unlocks, invoices, and billing history."
+          actions={
+            <Button onClick={handleOpenPortal} className="h-10 border border-zinc-800 bg-zinc-900 px-5 text-zinc-300 hover:bg-zinc-800">
+              Manage receipts
+            </Button>
+          }
+        />
 
         {loading ? (
           <div className="text-center text-zinc-400 py-16">Loading billing data…</div>
