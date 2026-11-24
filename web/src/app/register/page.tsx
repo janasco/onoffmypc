@@ -8,6 +8,7 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { api } from "@/lib/api";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { BrandLockup } from "@/components/brand-lockup";
+import { AuthHostRedirect } from "@/components/auth-host-redirect";
 
 const FIELD_CLASS =
   "h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-base text-zinc-100 placeholder:text-zinc-400 transition-colors focus:border-emerald-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/80 md:text-sm";
@@ -49,6 +50,7 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 p-4 selection:bg-emerald-500/30 selection:text-emerald-400">
+      <AuthHostRedirect />
       <div className="flex w-full max-w-[22rem] flex-col gap-6">
         <Link href="/" className="flex min-h-11 items-center self-center text-zinc-100 transition-opacity hover:opacity-90">
           <BrandLockup size={22} />
