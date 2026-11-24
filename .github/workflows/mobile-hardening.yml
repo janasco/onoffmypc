@@ -22,3 +22,5 @@ jobs:
           node-version: 22
       - name: Check mobile hardening invariants
         run: node mobile/scripts/check-mobile-hardening.mjs
+      - name: Test mobile hardening helpers
+        run: node mobile/scripts/test-mobile-hardening.mjs

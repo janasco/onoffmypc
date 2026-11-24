@@ -109,13 +109,13 @@ Routes in `AppNav.kt`:
 | `billing?deviceId=` | `BillingScreen` |
 | `device/{deviceId}` | `DeviceDetailScreen` |
 
-Start destination: `devices` if `Graph.session.session != null`, else `login`.  
+Start destination: `devices` if `Graph.session.hasSession` (origin-bound), else `login`.
 `AuthEvents.unauthorized` pops to login on HTTP 401.
 
 ### 2.4 Networking & auth
 
-- **Base URL:** `https://api.onoffmypc.com` (`data/Constants.kt`).
-- **Auth:** Cookie-based. Login / social auth set an HttpOnly-style `session` cookie; `SessionCookieJar` persists the cookie **value** via `SessionStore` (`EncryptedSharedPreferences` + `MasterKey` AES256-GCM).
+- **Base URL:** `BuildConfig.API_BASE_URL`, defaulting to `https://api.onoffmypc.com`; staging builds pass `-PAPI_BASE_URL` (`data/Constants.kt`, `build.gradle.kts`).
+- **Auth:** Cookie-based. Login / social auth set an HttpOnly-style `session` cookie; `SessionCookieJar` persists the cookie **value and issuing API origin** via `SessionStore` (`EncryptedSharedPreferences` + `MasterKey` AES256-GCM). The stored origin must match the configured API origin or the session is cleared.
 - **401:** `UnauthorizedInterceptor` clears session and emits `AuthEvents.unauthorized`.
 - **Logging:** OkHttp `HttpLoggingInterceptor` **BASIC** only when `BuildConfig.DEBUG`.
 - **JSON:** kotlinx.serialization with `ignoreUnknownKeys = true`.
@@ -145,10 +145,10 @@ Start destination: `devices` if `Graph.session.session != null`, else `login`.
 | UI | SwiftUI | `Features/**`, `Components/**` |
 | State | `ObservableObject` ViewModels | `*ViewModel.swift` |
 | Network | `URLSession` + cookie jar | `Networking/APIClient.swift` |
-| Session | Keychain (`Session.cookie`) | `Networking/Session.swift` |
+| Session | Keychain (cookie + issuing API origin) | `Networking/Session.swift` |
 | Models | `Codable` mirrors of API | `Networking/Models.swift` |
 
-Entry: `OnOffMyPCApp.swift` — root switches login vs devices from `Session.isLoggedIn`.
+Entry: `OnOffMyPCApp.swift` — `AppState` switches login vs devices from `Session.isLoggedIn(for:)` using the origin derived from `API_BASE_URL`; a session from another environment is cleared.
 
 Feature folders mirror Android: Auth, Devices, Account, Billing. Shared UI lives in `Components/` (`PowerCommandControls`, `DeviceStatusSummary`, `TokenReveal`, `AppLogo`, `PasswordField`).
 
@@ -199,9 +199,9 @@ Interpreted against the product list in the audit brief and current `README.md` 
 | Topic | Current state |
 |---|---|
 | Session storage | Android: EncryptedSharedPreferences; iOS: Keychain |
-| Session-cookie origin binding | Android and iOS source: HTTPS + exact API host/port, redirects disabled; iOS validation on macOS/device is still pending (MP-13/OMP-19) |
+| Session-cookie origin binding | Android: persisted issuing origin must match the configured API origin or the session is cleared. iOS: Keychain JSON stores the cookie with its issuing origin; `APIClient` derives the exact origin from `API_BASE_URL`, and a mismatch, 401, or logout clears it. Both source clients require HTTPS + exact API host/port and disable redirects; iOS validation on macOS/device is still pending (MP-13/OMP-19) |
 | Backup | `android:allowBackup="false"` |
-| Transport | HTTPS to `api.onoffmypc.com` |
+| Transport | HTTPS only; production defaults to `api.onoffmypc.com`, while reviewed staging builds use the staging Worker origin. No cleartext transport is allowed. |
 | Certificate pinning | **Not implemented** |
 | Biometrics / app lock | **Not implemented** |
 | HTTP logging | Debug-only BASIC |

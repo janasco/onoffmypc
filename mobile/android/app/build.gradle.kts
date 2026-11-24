@@ -1,5 +1,7 @@
 import java.io.FileInputStream
 import java.io.File
+import java.net.URI
+import java.net.URISyntaxException
 import java.util.Properties
 
 plugins {
@@ -60,6 +62,40 @@ fun signingStoreFile(path: String): File {
     return rootProject.file(path)
 }
 
+// API base URL is selected at build time. CI/staging builds pass
+// -PAPI_BASE_URL=https://... (or set the API_BASE_URL environment variable);
+// local production builds keep the HTTPS production default below. A blank or
+// non-HTTPS value fails configuration so cleartext is never compiled in.
+val productionApiBaseUrl = "https://api.onoffmypc.com"
+val apiBaseUrlProperty = project.findProperty("API_BASE_URL") as String?
+val apiBaseUrlEnv = System.getenv("API_BASE_URL")
+val configuredApiBaseUrl = when {
+    apiBaseUrlProperty != null -> apiBaseUrlProperty
+    apiBaseUrlEnv != null -> apiBaseUrlEnv
+    else -> productionApiBaseUrl
+}
+if (configuredApiBaseUrl.isBlank()) {
+    throw GradleException("API_BASE_URL must not be blank")
+}
+val apiBaseUri = try {
+    URI(configuredApiBaseUrl.trim())
+} catch (exception: URISyntaxException) {
+    throw GradleException(
+        "API_BASE_URL must be a valid absolute HTTPS URL: ${exception.message}",
+    )
+}
+if (apiBaseUri.scheme != "https" ||
+    apiBaseUri.host.isNullOrBlank() ||
+    apiBaseUri.userInfo != null ||
+    apiBaseUri.query != null ||
+    apiBaseUri.fragment != null) {
+    throw GradleException(
+        "API_BASE_URL must be an absolute HTTPS URL without credentials, query, " +
+            "or fragment; got '$configuredApiBaseUrl'",
+    )
+}
+val apiBaseUrl = apiBaseUri.toString().trimEnd('/')
+
 android {
     namespace = "com.onoffmypc.android"
     compileSdk = 36
@@ -71,6 +107,10 @@ android {
         versionCode = 27
         versionName = "0.4.10"
         vectorDrawables { useSupportLibrary = true }
+
+        // Backend endpoint injected at build time (see above). Production
+        // builds omit the property and use https://api.onoffmypc.com.
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
 
         // Google Sign-In server (Web) client ID used to request an ID token.
         // Public value; set GOOGLE_SERVER_CLIENT_ID in gradle.properties (or -P).

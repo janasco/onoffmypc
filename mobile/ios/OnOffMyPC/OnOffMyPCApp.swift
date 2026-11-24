@@ -21,7 +21,12 @@ struct OnOffMyPCApp: App {
 /// App-wide auth state. Backed by the Keychain session (see Session.swift).
 @MainActor
 final class AppState: ObservableObject {
-    @Published var loggedIn: Bool = Session.isLoggedIn
+    /// A persisted session counts only when it was issued by this build's
+    /// configured API origin. An invalid/missing `API_BASE_URL` starts logged out.
+    @Published var loggedIn: Bool = {
+        guard let origin = APIClient.shared.configuredOrigin else { return false }
+        return Session.isLoggedIn(for: origin)
+    }()
 
     func didSignIn() { loggedIn = true }
 
@@ -32,7 +37,7 @@ final class AppState: ObservableObject {
 
     /// Called when a request returns 401.
     func sessionExpired() {
-        Session.cookie = nil
+        Session.clear()
         loggedIn = false
     }
 }

@@ -2,7 +2,9 @@ package com.onoffmypc.android.ui.devices
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import com.onoffmypc.android.data.Api
 import com.onoffmypc.android.data.model.ScheduledCommand
+import java.net.URI
 import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.rememberDatePickerState
@@ -91,6 +93,13 @@ private enum class DetailSection(val title: String) {
     Activity("Activity"),
     Telemetry("Telemetry"),
     Settings("Settings"),
+}
+
+private fun cloudRelayLabel(): String {
+    val uri = runCatching { URI(Api.BASE_URL) }.getOrNull()
+    val host = uri?.host ?: "api.onoffmypc.com"
+    val port = uri?.port?.takeIf { it > 0 } ?: 443
+    return "$host:$port"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -359,7 +368,7 @@ private fun OverviewSection(
             )
             DetailInfoRow("Platform", platform.label)
             DetailInfoRow("Version", platform.version ?: "Not reported")
-            DetailInfoRow("Cloud relay", "api.onoffmypc.com:443", monospace = true)
+            DetailInfoRow("Cloud relay", cloudRelayLabel(), monospace = true)
             DetailInfoRow("Local IP", device.local_ip ?: "Not reported", monospace = true)
             DetailInfoRow("MAC address", device.mac_address ?: "Not reported", monospace = true)
             DetailInfoRow("Hostname", device.hostname ?: "Not reported")

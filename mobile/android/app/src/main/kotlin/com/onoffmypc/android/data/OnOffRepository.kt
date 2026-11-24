@@ -38,7 +38,7 @@ class OnOffRepository(
     private val api: ApiService,
     private val session: SessionStore,
 ) {
-    val hasSession: Boolean get() = session.session != null
+    val hasSession: Boolean get() = session.hasSession
 
     suspend fun login(email: String, password: String): Result<Unit> =
         call { api.login(LoginRequest(email.trim(), password)) }.map { }

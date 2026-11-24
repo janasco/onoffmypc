@@ -11,9 +11,12 @@ This work was performed on a Linux host without an attached Android device or
 Xcode. The Android SDK is installed at `/home/onoffmypc/Android/Sdk`; the static
 hardening gate, helper fixture tests, and Android debug unit tests passed. No
 physical-device or iOS test result is claimed. Android has an origin-bound
-session-cookie jar. iOS source now has HTTPS/host/port cookie validation, empty
-cookie rejection, redirect blocking, and a disabled URL cache, but that behavior
-still needs macOS/device validation (MP-13/OMP-19).
+session-cookie jar and an encrypted session store that binds the cookie to its
+issuing API origin. iOS source stores the Keychain cookie together with its
+canonical issuing origin, clears a mismatch/401/logout, deletes legacy raw-cookie
+items, and has HTTPS/host/port cookie validation, empty-cookie rejection,
+redirect blocking, and a disabled URL cache. Those iOS behaviors still need
+macOS/device validation (MP-13/OMP-19).
 
 | Area | Available here? | Status |
 |---|---|---|
@@ -239,10 +242,11 @@ pass from source inspection alone.
   Expected: TLS validation fails; the app does not trust the user CA. Remove the
   proxy and CA afterward. If the app succeeds, treat it as a trust-anchor
   regression.
-- [ ] **AND-F03 Cleartext rejection.** The API base is hard-coded HTTPS
-  (`data/Constants.kt:6`). Confirm no screen can be configured to use HTTP and
-  no request succeeds after a cleartext downgrade attempt. Do not “fix” this by
-  enabling cleartext in the manifest.
+- [ ] **AND-F03 Cleartext rejection.** The API base is a build-time
+  `BuildConfig.API_BASE_URL` defaulting to HTTPS (`build.gradle.kts`,
+  `Constants.kt`); Gradle rejects non-HTTPS overrides. Confirm no screen can be
+  configured to use HTTP and no request succeeds after a cleartext downgrade
+  attempt. Do not “fix” this by enabling cleartext in the manifest.
 - [ ] **AND-F04 Server TLS floor (host check, not app behavior).**
   ```bash
   openssl s_client -connect api.onoffmypc.com:443 -tls1_1 </dev/null
@@ -287,8 +291,9 @@ pass from source inspection alone.
   (cd android && ./gradlew :app:testDebugUnitTest --tests '*SessionCookieJarTest' --no-daemon)
   ```
   Expected: all tests pass, including cross-host, cross-port, HTTP downgrade,
-  insecure-response, expiry, and empty-store cases. These tests existed before
-  this checklist and were not run on this Linux host.
+  insecure-response, expiry, empty-store, and staging/production origin-switch
+  cases. The origin-switch test proves a cookie saved for one API origin is
+  cleared and not replayed to the other.
 - [ ] **AND-G06 Redirect behavior.** Use a test proxy/endpoint that returns a
   302 to another origin. Expected: the app does not follow the redirect with the
   session cookie (`followRedirects(false)` and `followSslRedirects(false)`).
@@ -361,10 +366,16 @@ pass from source inspection alone.
   Expected: there is no certificate pinning, so a fully trusted interception
   can see traffic; record this as expected. Remove the trust profile afterward.
   Do not add pinning based on this checklist alone.
-- [ ] **IOS-J04 No cleartext API path.** Confirm the only API base is
-  `https://api.onoffmypc.com` (`Networking/APIClient.swift:31`) and no screen or
-  debug setting can switch it to HTTP. A temporary HTTP test build would be a
-  source change and is out of scope for this validation.
+- [ ] **IOS-J04 No cleartext API path.** Confirm the built app uses the
+  configured `API_BASE_URL` (production default
+  `https://api.onoffmypc.com`; staging
+  `https://onoffmypc-api-staging.onoffmypc.workers.dev`) and no screen or debug
+  setting can switch it to HTTP. Validate both a production Debug/Release build
+  and the Staging configuration built from `ios/project.yml`; check the built
+  app's Info.plist rather than the generated source plist (see
+  [`STAGED_API_IOS.md`](STAGED_API_IOS.md) for the Staging build command). A
+  temporary HTTP test build would be a source change and is out of scope for
+  this validation.
 - [ ] **IOS-J05 Server TLS floor (host check).** Same `openssl s_client`
   TLS 1.1/1.2 checks as AND-F04; note that ATS imposes its own minimum.
 
@@ -372,8 +383,9 @@ pass from source inspection alone.
 
 - [ ] **IOS-K01 Persistence.** Sign in, force quit, reboot, and reopen. Expected:
   still signed in while the server session is valid.
-- [ ] **IOS-K02 Keychain attributes are device-bound.** Source check:
-  `Networking/Session.swift:33-43` has
+- [ ] **IOS-K02 Keychain attributes are device-bound and origin-bound.** Source
+  check: `Networking/Session.swift` stores one JSON item (`account`
+  `session-origin`) with the cookie and issuing origin, and has
   `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` and
   `kSecAttrSynchronizable as String: false`. Runtime behavior should match.
 - [ ] **IOS-K03 No iCloud Keychain sync.** With iCloud Keychain enabled, sign in
@@ -406,12 +418,22 @@ pass from source inspection alone.
   writer exists. Confirm `fcm-push-token` is absent after login. When push is
   implemented, verify it is not left in a backed-up plaintext preference.
 - [ ] **IOS-K10 Session-cookie origin, empty-cookie, and redirect controls
-  (MP-13).** Source now requires HTTPS, exact API host/port, `Secure`, a valid
-  cookie domain, and a non-empty value; invalid values clear the stored session.
-  `NoRedirectDelegate` blocks redirects. Expected: a test URLSession request to
-  a cross-origin redirect is not followed, a `Set-Cookie` from a different host
-  is rejected, and an empty Keychain value returns the login screen. Exercise
-  this on macOS/device; do not mark it passed from static inspection alone.
+  (MP-13).** Source requires HTTPS, exact API host/port, `Secure`, a valid cookie
+  domain, and a non-empty value; invalid values clear the stored session.
+  `NoRedirectDelegate` blocks redirects. The Keychain item also stores the
+  canonical issuing origin, so a staging build must not replay a production
+  session (or the reverse), and switching builds must clear the old origin's
+  session without a manual sign-out. Expected: a test URLSession request to a
+  cross-origin redirect is not followed, a `Set-Cookie` from a different host is
+  rejected, an empty Keychain value returns the login screen, and an origin
+  mismatch returns to login. Exercise this on macOS/device; do not mark it
+  passed from static inspection alone.
+- [ ] **IOS-K11 Legacy raw-cookie upgrade.** Install a build that used the old
+  raw `session-cookie` Keychain account, sign in, then install the current build
+  over it. Expected: the legacy item is deleted, the app starts on login (or
+  accepts only a correctly origin-bound item), and no raw cookie is replayed.
+  This signs users out once on upgrade by design; confirm the UI behaves
+  cleanly.
 
 ### L. Clipboard
 
@@ -485,11 +507,12 @@ pass from source inspection alone.
   exercise login/device/account actions. Expected: no email, password, session
   cookie, device token, or API body in app logs.
 - [ ] **IOS-O05 Privacy manifest and labels.** Before App Store submission,
-  confirm `PrivacyInfo.xcprivacy` exists if required for the APIs in use, and
-  reconcile App Store privacy answers with
-  [`DEPENDENCY_PRIVACY_INVENTORY.md`](DEPENDENCY_PRIVACY_INVENTORY.md). Current
-  repository state: manifest absent, no TestFlight pipeline, and Play Data
-  Safety copy is narrower than the actual data inventory (MP-06/MP-07).
+  confirm `PrivacyInfo.xcprivacy` is bundled, declares no tracking and the
+  UserDefaults required reason, and add accurate `NSPrivacyCollectedDataTypes`
+  after reconciling the inventory and App Store privacy answers. Current
+  repository state: manifest present with a documented collected-data gap; no
+  TestFlight pipeline; Play Data Safety copy is narrower than the actual data
+  inventory (MP-06/MP-07).
 
 ## Automated checks and commands
 
@@ -501,13 +524,17 @@ Run from the `mobile/` directory unless noted:
 # SDK list when those local build artifacts are present.
 node scripts/check-mobile-hardening.mjs
 
-# Helper tests: Adjust fixture detection, token-boundary matching, and XML
-# quote/whitespace/attribute-order/uses-permission-sdk-23 variants.
+# Helper tests: Adjust fixture detection, token-boundary matching, XML
+# quote/whitespace/attribute-order/uses-permission-sdk-23 variants,
+# cleartext/duplicate/undeclared API_BASE_URL fixtures, and iOS origin-bound
+# session/raw-cookie/legacy-item fixtures.
 node scripts/test-mobile-hardening.mjs
 
 # Syntax checks for the changed scripts
 node --check scripts/check-mobile-hardening.mjs
 node --check scripts/test-mobile-hardening.mjs
+node --check scripts/lib/mobile-hardening-api-origin.mjs
+node --check scripts/lib/mobile-hardening-ios-session.mjs
 node --check scripts/lib/mobile-hardening-sdk-denylist.mjs
 node --check scripts/lib/mobile-hardening-xml.mjs
 
@@ -537,7 +564,7 @@ delivery, Keychain backup behavior, or App Store compliance.
 | Android physical backup/restore/transfer, screenshot, clipboard, notifications, TLS proxy | `adb` is available but no device is attached | A physical API 26–30 and API 33+ device, test account, and the checklist above |
 | Android signed-release smoke test | Lint/unit/release build passed; no device is attached | Install the minified release APK on a physical device and exercise login, push, commands, and credential dialogs |
 | iOS ATS/Keychain/clipboard/screenshot/backup checks | No macOS/Xcode/device | macOS with Xcode 16+, XcodeGen, test device |
-| iOS session-cookie origin/HTTPS binding | Source controls added; no macOS/Xcode/device execution yet (MP-13) | Run the IOS-K10 redirect/cross-origin/empty-cookie checks on macOS/device; keep OMP-19 open until verified |
+| iOS session-cookie origin/HTTPS binding | Source controls added, including origin-bound Keychain storage and legacy-item deletion; no macOS/Xcode/device execution yet (MP-13) | Run the IOS-K10 redirect/cross-origin/empty-cookie/origin-switch and IOS-K11 legacy-upgrade checks on macOS/device; keep OMP-19 open until verified |
 | iOS release/push pipeline | No APNs implementation, no signing/App Store Connect access | APNs entitlement/token registration, signing, TestFlight workflow |
-| Staged API environment | Both clients hard-code `https://api.onoffmypc.com`; no build flavor/scheme | A reviewed base-URL configuration per build type, with staging credentials isolated |
+| Staged API environment | Source configuration exists for Android (`-PAPI_BASE_URL`) and iOS (`Staging`/`API_BASE_URL`); no device/simulator validation yet | Build both clients against the staging Worker, verify the effective Info.plist/BuildConfig, and keep staging credentials isolated |
 | Dependency/privacy inventory runtime truth | Inventory is source/build-artifact based; iOS package versions are not locked | Regenerate `sdkDependencies.txt` and commit/review `Package.resolved` |

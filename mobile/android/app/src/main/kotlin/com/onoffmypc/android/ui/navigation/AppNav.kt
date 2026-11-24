@@ -32,7 +32,7 @@ private fun billingRoute(deviceId: String? = null): String =
 @Composable
 fun AppNav() {
     val navController = rememberNavController()
-    val start = if (Graph.session.session != null) ROUTE_DEVICES else ROUTE_LOGIN
+    val start = if (Graph.session.hasSession) ROUTE_DEVICES else ROUTE_LOGIN
 
     // Return to login whenever the session becomes invalid (401 on an
     // authenticated request, emitted by UnauthorizedInterceptor).

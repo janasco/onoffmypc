@@ -5,6 +5,7 @@ enum APIError: Error, LocalizedError {
     case network
     case unauthorized
     case trialExpired(String)
+    case configuration
 
     var errorDescription: String? {
         switch self {
@@ -12,6 +13,7 @@ enum APIError: Error, LocalizedError {
         case .network: return "Network error. Check your connection."
         case .unauthorized: return "Session expired. Please sign in again."
         case .trialExpired(let m): return m
+        case .configuration: return "The app isn't configured with a secure API server."
         }
     }
 }
@@ -25,11 +27,24 @@ private struct AnyEncodable: Encodable {
 /// Minimal API client. Cookie-based auth: the `session` cookie from login is
 /// captured and sent back on each request (URLSession cookie storage is disabled
 /// so persistence is via the Keychain — see Session.swift).
+///
+/// The API origin comes from the generated Info.plist `API_BASE_URL` key, which
+/// Xcode expands from the build setting in project.yml. The default build
+/// setting is `https://api.onoffmypc.com`; a staging build overrides it.
 final class APIClient: NSObject {
     static let shared = APIClient()
 
-    private let base = "https://api.onoffmypc.com"
-    private static let apiHost = "api.onoffmypc.com"
+    /// `nil` when the build setting is absent or fails validation. Requests then
+    /// fail closed instead of silently using a different environment.
+    private let baseURL: URL?
+    private let apiHost: String?
+    private let apiPort: Int?
+
+    /// Canonical `https://host:port` derived from `API_BASE_URL`. The Keychain
+    /// session is valid only for this origin, so a staging/production switch
+    /// automatically invalidates the previous build's session.
+    let configuredOrigin: String?
+
     private let session: URLSession = {
         let config = URLSessionConfiguration.default
         config.httpCookieStorage = nil
@@ -43,6 +58,44 @@ final class APIClient: NSObject {
             delegateQueue: nil
         )
     }()
+
+    private override init() {
+        let configured = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String
+        let url = Self.validatedBaseURL(configured)
+        baseURL = url
+        apiHost = url?.host?.lowercased()
+        apiPort = url?.port
+        configuredOrigin = url.flatMap(Self.originString)
+        super.init()
+    }
+
+    /// Only HTTPS origins with a non-empty host are accepted. Credentials,
+    /// queries, and fragments are rejected so the configured origin cannot
+    /// smuggle a different authority into request construction.
+    private static func validatedBaseURL(_ raw: String?) -> URL? {
+        let value = raw?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !value.isEmpty,
+              let url = URL(string: value),
+              url.scheme?.lowercased() == "https",
+              let host = url.host,
+              !host.isEmpty,
+              url.user == nil,
+              url.password == nil,
+              url.query == nil,
+              url.fragment == nil else { return nil }
+        return url
+    }
+
+    /// Canonical origin used for Keychain binding. Ports are explicit (443 for
+    /// HTTPS without one) so changing between environments always changes the
+    /// comparison even when both use the default port.
+    private static func originString(_ url: URL) -> String? {
+        guard let scheme = url.scheme?.lowercased(),
+              scheme == "https",
+              let host = url.host?.lowercased(),
+              !host.isEmpty else { return nil }
+        return "\(scheme)://\(host):\(url.port ?? 443)"
+    }
 
     /// API responses must never be followed to another origin. A 3xx becomes the
     /// response the caller sees (and is rejected by the normal status check).
@@ -59,11 +112,16 @@ final class APIClient: NSObject {
     }
 
     private func send(_ method: String, _ path: String, body: (any Encodable)? = nil) async throws -> Data {
+        guard let baseURL, let configuredOrigin else { throw APIError.configuration }
+        var base = baseURL.absoluteString
+        while base.hasSuffix("/") { base.removeLast() }
         guard let url = URL(string: base + "/" + path) else { throw APIError.network }
         var req = URLRequest(url: url)
         req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let cookie = Session.cookie {
+        // `cookie(for:)` only returns a cookie issued by this exact origin and
+        // clears any stored mismatch.
+        if let cookie = Session.cookie(for: configuredOrigin) {
             req.setValue("session=\(cookie)", forHTTPHeaderField: "Cookie")
         }
         if let body { req.httpBody = try JSONEncoder().encode(AnyEncodable(wrapped: body)) }
@@ -76,7 +134,7 @@ final class APIClient: NSObject {
         captureCookie(from: http)
 
         if http.statusCode == 401 {
-            Session.cookie = nil
+            Session.clear()
             // Centralised so every caller is covered: Account and Billing used
             // to swallow this and leave the app in a logged-in UI.
             NotificationCenter.default.post(name: .sessionExpired, object: nil)
@@ -95,24 +153,35 @@ final class APIClient: NSObject {
     }
 
     private func captureCookie(from http: HTTPURLResponse) {
+        guard let configuredOrigin, let apiHost else {
+            Session.clear()
+            return
+        }
         guard let url = http.url,
-              url.scheme == "https",
-              url.host == Self.apiHost,
-              url.port == nil || url.port == 443,
-              let fields = http.allHeaderFields as? [String: String] else { return }
+              url.scheme?.lowercased() == "https",
+              url.host?.lowercased() == apiHost,
+              (url.port ?? 443) == (apiPort ?? 443) else {
+            Session.clear()
+            return
+        }
+        guard let fields = http.allHeaderFields as? [String: String] else { return }
 
         let cookies = HTTPCookie.cookies(withResponseHeaderFields: fields, for: url)
         guard let session = cookies.first(where: { $0.name == "session" }) else { return }
 
-        let validDomain = session.domain == Self.apiHost || session.domain == ".onoffmypc.com"
+        let cookieDomain = session.domain.lowercased()
+        let allowsReviewedParentDomain =
+            apiHost == "onoffmypc.com" || apiHost.hasSuffix(".onoffmypc.com")
+        let validDomain = cookieDomain == apiHost ||
+            (allowsReviewedParentDomain && cookieDomain == ".onoffmypc.com")
         guard session.isSecure,
               validDomain,
               !session.value.isEmpty,
               session.value == session.value.trimmingCharacters(in: .whitespacesAndNewlines) else {
-            Session.cookie = nil
+            Session.clear()
             return
         }
-        Session.cookie = session.value
+        Session.setCookie(session.value, origin: configuredOrigin)
     }
 
     private func decode<T: Decodable>(_ data: Data) throws -> T {
@@ -182,7 +251,7 @@ final class APIClient: NSObject {
             Session.pushToken = nil
         }
         _ = try? await send("POST", "auth/logout")
-        Session.cookie = nil
+        Session.clear()
     }
 
     // MARK: - Devices

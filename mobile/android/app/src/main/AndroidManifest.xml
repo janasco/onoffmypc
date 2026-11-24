@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Talks to api.onoffmypc.com over HTTPS -->
+    <!-- Talks to the configured HTTPS API origin: production defaults to
+         api.onoffmypc.com; staging builds use the reviewed staging Worker. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Show push notifications (runtime-requested on Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

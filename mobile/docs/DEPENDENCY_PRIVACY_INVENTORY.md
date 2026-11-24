@@ -30,12 +30,12 @@ The repeatable device checks live in [`ON_DEVICE_VALIDATION.md`](ON_DEVICE_VALID
 | Advertising / attribution SDK | **None declared** |
 | Ads or tracking permission | **None** on Android; no `NSUserTrackingUsageDescription` on iOS |
 | Push | Android FCM wired and config-gated; iOS has a `pushToken` placeholder and no APNs pipeline |
-| Session storage | Android `EncryptedSharedPreferences`; iOS Keychain, `AfterFirstUnlockThisDeviceOnly`, non-synchronizing |
-| Session-cookie origin binding | Android: HTTPS + exact API host/port, host-only/Secure/HttpOnly cookie jar, redirects disabled. iOS source now requires HTTPS/exact API host/port, rejects empty cookies, and blocks redirects; macOS/device validation is still pending (MP-13) |
+| Session storage | Android `EncryptedSharedPreferences` storing the cookie value plus its issuing API origin; iOS Keychain JSON (`cookie` + `origin`), `AfterFirstUnlockThisDeviceOnly`, non-synchronizing |
+| Session-cookie origin binding | Android: persisted issuing origin must exactly match the configured API origin or the session is cleared; HTTPS + exact API host/port, host-only/Secure/HttpOnly cookie jar, redirects disabled. iOS: the Keychain item stores the canonical issuing origin, and `APIClient`/`AppState` only use a session for the configured `API_BASE_URL` origin; mismatch, 401, or logout clears it, and legacy raw-cookie items are deleted. HTTPS/exact API host/port, empty-cookie rejection, and redirect blocking remain source-level pending macOS/device validation (MP-13) |
 | Android backup/transfer | Disabled at manifest level and excluded by both backup rule sets |
-| Transport | HTTPS API only; Android network-security config has no cleartext and system CAs only; iOS uses ATS defaults with no declared exceptions and source-level HTTPS/host validation for cookie capture (macOS validation pending) |
+| Transport | HTTPS API only. Production defaults to `https://api.onoffmypc.com`; reviewed staging builds use `https://onoffmypc-api-staging.onoffmypc.workers.dev`. Android network-security config has no cleartext and system CAs only; iOS uses ATS defaults with no declared exceptions and source-level HTTPS/host validation for cookie capture (macOS validation pending) |
 | Certificate pinning | Not implemented on either platform (intentional; needs a rotation/recovery story) |
-| Privacy manifest (`PrivacyInfo.xcprivacy`) | **Not present** |
+| Privacy manifest (`PrivacyInfo.xcprivacy`) | **Present** with no tracking and the UserDefaults required-reason declaration; collected-data declarations are still an App Store gap |
 
 ## Build and dependency sources
 
@@ -130,7 +130,7 @@ Source manifest: `android/app/src/main/AndroidManifest.xml`.
 
 | Permission | Source | Purpose |
 |---|---|---|
-| `android.permission.INTERNET` | App manifest | Talk to `https://api.onoffmypc.com` |
+| `android.permission.INTERNET` | App manifest | Talk to the configured HTTPS API origin (production default `https://api.onoffmypc.com`; staging builds use the reviewed staging Worker) |
 | `android.permission.POST_NOTIFICATIONS` | App manifest | Show push notifications; runtime request on Android 13+ |
 | `android.permission.ACCESS_NETWORK_STATE` | Merged from Firebase/Google Play services | Network state for SDK transport |
 | `android.permission.WAKE_LOCK` | Merged from Firebase/Google Play services | FCM token/delivery support |
@@ -158,11 +158,11 @@ to validate the ID token's signature, issuer, audience, and nonce/state.
 
 | Control | Evidence | Effect |
 |---|---|---|
-| Session encryption | `data/SessionStore.kt:16-27` | `EncryptedSharedPreferences` with AES256-GCM master key, AES256-SIV keys, AES256-GCM values |
-| Session key/name | `data/SessionStore.kt:41-44` | `onoffmypc.session` / `session_cookie` |
-| Cookie origin binding | `data/remote/SessionCookieJar.kt:20-47`; `ios/OnOffMyPC/Networking/APIClient.swift` | Android: HTTPS only, exact API host/port, host-only, Secure, HttpOnly; redirects disabled. iOS source: HTTPS + exact API host/port, Secure/domain checks, empty-cookie rejection, redirects blocked; macOS/device validation pending (MP-13). |
-| Cleartext/TLS | `res/xml/network_security_config.xml:4-10`, manifest lines 11-15 | Cleartext denied; system CAs only; no user CA trust |
-| Backup | `AndroidManifest.xml:11-13`, `res/xml/backup_rules.xml:8-14`, `res/xml/data_extraction_rules.xml:9-24` | Cloud backup, legacy backup, and Android 12+ device transfer exclude `root`, `database`, `sharedpref`, `file`, `external` |
+| Session encryption | `data/SessionStore.kt:34-46` | `EncryptedSharedPreferences` with AES256-GCM master key, AES256-SIV keys, AES256-GCM values |
+| Session key/name | `data/SessionStore.kt:78-82` | `onoffmypc.session` / `session_cookie` plus `session_api_origin` |
+| Cookie origin binding | `data/SessionStore.kt:23-31,74-76`; `data/remote/SessionCookieJar.kt:22-53`; `ios/OnOffMyPC/Networking/APIClient.swift` | Android: stored issuing origin (scheme/host/port) must match the configured API origin or both values are cleared; HTTPS only, exact API host/port, host-only, Secure, HttpOnly; redirects disabled. iOS source: HTTPS + exact API host/port, Secure/domain checks, empty-cookie rejection, redirects blocked; macOS/device validation pending (MP-13). |
+| Cleartext/TLS | `res/xml/network_security_config.xml:4-10`, manifest lines 15-16 | Cleartext denied; system CAs only; no user CA trust |
+| Backup | `AndroidManifest.xml:12-14`, `res/xml/backup_rules.xml:8-14`, `res/xml/data_extraction_rules.xml:9-24` | Cloud backup, legacy backup, and Android 12+ device transfer exclude `root`, `database`, `sharedpref`, `file`, `external` |
 | Onboarding flag | `ui/devices/DevicesViewModel.kt:46-49,357` | Plain boolean in `onoffmypc_onboarding`; also covered by the all-domain backup exclusion |
 | Debug logging | `data/remote/ApiClient.kt:25-30` | `HttpLoggingInterceptor.Level.BASIC` only under `BuildConfig.DEBUG`; release build has no logging interceptor |
 | SDK denylist | `scripts/check-mobile-hardening.mjs` | Rejects Adjust, Braze/Appboy, Google Analytics/Measurement, Firebase Performance/Crashlytics, ads, attribution, and crash SDKs across all Gradle sources plus the optional resolved SDK list |
@@ -204,7 +204,7 @@ The committed source of truth is `ios/project.yml`; `OnOffMyPC/Info.plist` and
 | App Transport Security exceptions | **None declared** (`NSAllowsArbitraryLoads`, `NSExceptionDomains`, `NSAllowsArbitraryLoadsInWebContent`, and media/local variants absent) |
 | Usage descriptions (camera, photos, location, contacts, microphone, tracking) | **None declared** |
 | `NSUserTrackingUsageDescription` | **Absent** |
-| `PrivacyInfo.xcprivacy` | **Absent** |
+| `PrivacyInfo.xcprivacy` | **Present**: no tracking; UserDefaults reason `CA92.1`; `NSPrivacyCollectedDataTypes` intentionally omitted pending an accurate App Store declaration |
 | Entitlements | Sign in with Apple only (`com.apple.developer.applesignin`, `Default`) |
 | Push entitlement (`aps-environment`) | **Absent**; no APNs registration code |
 | URL schemes | Reversed Google OAuth client ID and `msauth.com.onoffmypc.app` (`project.yml:42-48`) |
@@ -214,13 +214,13 @@ The committed source of truth is `ios/project.yml`; `OnOffMyPC/Info.plist` and
 
 | Control | Evidence | Effect |
 |---|---|---|
-| API base URL | `Networking/APIClient.swift:31` | Hard-coded `https://api.onoffmypc.com` |
-| Cookie storage | `Networking/APIClient.swift:32-38` | `httpCookieStorage = nil`, `httpShouldSetCookies = false`; the app captures and replays the cookie value manually |
-| Cookie origin binding | Source controls added (MP-13 validation pending) | `captureCookie(from:)` requires HTTPS, exact API host/port, a valid session cookie domain, `Secure`, and a non-empty value; invalid cookies clear the stored session |
-| Empty/expired cookie handling | Empty values rejected (MP-13 expiry validation pending) | `Session.cookie` trims and rejects empty/whitespace values; `Session.isLoggedIn` therefore cannot accept an empty stored cookie. Server-side expiry remains authoritative. |
+| API base URL | `ios/project.yml`, `Networking/APIClient.swift` | Build-time `API_BASE_URL`; production default `https://api.onoffmypc.com`, isolated staging configuration; client rejects non-HTTPS/credential/query/fragment values and fails closed |
+| Cookie storage | `Networking/APIClient.swift:43-55` | `httpCookieStorage = nil`, `httpShouldSetCookies = false`; the app captures and replays the cookie value manually |
+| Cookie origin binding | Source controls added (MP-13 validation pending) | `captureCookie(from:)` requires HTTPS, exact API host/port, a valid session cookie domain, `Secure`, and a non-empty value. `Session.setCookie(_:origin:)` stores the cookie with the canonical issuing origin, and `Session.cookie(for:)` clears a mismatch before returning anything. |
+| Empty/expired cookie handling | Empty values rejected (MP-13 expiry validation pending) | `Session.setCookie(_:origin:)` trims and rejects empty/whitespace values; `Session.isLoggedIn(for:)` therefore cannot accept an empty stored cookie. Server-side expiry remains authoritative. |
 | Redirect handling | Redirects blocked in source (MP-13 validation pending) | `NoRedirectDelegate` returns `completionHandler(nil)`; authenticated responses cannot be followed to another origin |
-| Session at rest | `Networking/Session.swift:33-43` | Keychain generic password, service `com.onoffmypc.app`, account `session-cookie`, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, `kSecAttrSynchronizable: false` |
-| Push token placeholder | `Networking/Session.swift:21-31` | `UserDefaults.standard` key `fcm-push-token`; no writer exists today because iOS push is not wired |
+| Session at rest | `Networking/Session.swift` | Keychain generic password, service `com.onoffmypc.app`, account `session-origin`, JSON `{cookie, origin}`, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, `kSecAttrSynchronizable: false`; malformed items and the legacy raw-cookie account `session-cookie` are deleted |
+| Push token placeholder | `Networking/Session.swift` | `UserDefaults.standard` key `fcm-push-token`; no writer exists today because iOS push is not wired |
 | Credential clipboard | `Components/TokenReveal.swift:62-69` | `UIPasteboard.setItems(..., options: [.localOnly: true])` |
 | Screenshot/screen-capture guard | **Not implemented** | No `UIScreen.isCaptured` handling, no secure overlay, and `TokenReveal` is a normal SwiftUI form |
 | Release logging | No `print`/`os_log` calls found in the reviewed Swift sources | No app-level API logging; system/OS logs are outside app control |
@@ -229,8 +229,10 @@ The committed source of truth is `ios/project.yml`; `OnOffMyPC/Info.plist` and
 The Keychain item is device-bound and non-synchronizing, so it should not
 synchronize through iCloud Keychain or migrate to a different device through
 backup/device transfer. Keychain items normally survive app deletion until
-explicitly removed; the app does not delete the session on launch or uninstall,
-which is a deliberate availability trade-off and a privacy consideration.
+explicitly removed; the app keeps a valid origin-matching session on launch and
+does not clear it on uninstall, which is a deliberate availability trade-off and
+a privacy consideration. Legacy raw-cookie and malformed items are deleted when
+read.
 
 ## Third-party data flows
 
@@ -296,22 +298,23 @@ device detail screen (`ui/devices/DeviceDetailScreen.kt:363-365,804`); iOS's
 
 | Platform | Data | Location / protection | Backup behavior |
 |---|---|---|---|
-| Android | Session cookie value | `EncryptedSharedPreferences` (`onoffmypc.session`), Android Keystore-backed master key | Excluded from cloud backup, legacy backup, and device transfer |
+| Android | Session cookie value and issuing API origin | `EncryptedSharedPreferences` (`onoffmypc.session`), Android Keystore-backed master key | Excluded from cloud backup, legacy backup, and device transfer |
 | Android | Onboarding-dismissed boolean | Plain `SharedPreferences` (`onoffmypc_onboarding`) | Excluded by all-domain backup rules |
 | Android | FCM token / installation IDs | Firebase SDK app-private storage; not read or written by app code except through FCM APIs | App-private files are covered by backup exclusions |
 | Android | In-memory form values, device/telemetry data | Process memory only; no database, Room, DataStore, or app file writes found | Not persisted by app code |
-| iOS | Session cookie value | Keychain, `AfterFirstUnlockThisDeviceOnly`, non-synchronizing | Not synchronized to iCloud Keychain; not migrated to another device; survives app uninstall until deleted |
+| iOS | Session cookie value and issuing API origin | Keychain JSON (`cookie` + `origin`), `AfterFirstUnlockThisDeviceOnly`, non-synchronizing | Not synchronized to iCloud Keychain; not migrated to another device; survives app uninstall until deleted; legacy raw-cookie item deleted on read |
 | iOS | `fcm-push-token` placeholder | `UserDefaults.standard` | Not explicitly excluded from device backup; currently never written |
 | iOS | API responses | `URLSessionConfiguration` with `urlCache = nil` and reload-ignoring-cache policy | Not stored in URLSession's disk cache by app code |
 | iOS | In-memory form values, device/telemetry data | View-model memory only; no file/database writes found | Not persisted by app code |
 
 Session lifetime is server-controlled. Android clears locally on logout, HTTP
-401, and an expired/empty `session` cookie. iOS source now clears on logout and
-HTTP 401, rejects empty/whitespace stored cookies, validates captured cookies
-against the HTTPS API origin, and blocks redirects; cookie-expiry and redirect
-behavior still need macOS/device validation (MP-13). The app does not implement
-an idle timeout or biometric app lock; anyone who can unlock the device and open
-the app can use an existing session.
+401, an expired/empty `session` cookie, and an origin mismatch. iOS source clears
+on logout, HTTP 401, an origin mismatch, and empty/whitespace or malformed stored
+values; it validates captured cookies against the HTTPS API origin and blocks
+redirects. Legacy raw-cookie items are deleted on read. Cookie-expiry, redirect,
+and origin-switch behavior still need macOS/device validation (MP-13). The app
+does not implement an idle timeout or biometric app lock; anyone who can unlock
+the device and open the app can use an existing session.
 
 ### Clipboard, screenshots, and logging behavior
 
@@ -353,8 +356,8 @@ iOS:
 
 | Path | Mobile behavior | Evidence |
 |---|---|---|
-| Logout | Unregister push token while session is valid, call `POST /auth/logout`, clear local session | `android/.../OnOffRepository.kt:156-161`; `ios/.../APIClient.swift:145-152` |
-| Session expiry / 401 | Clear local session and return to login | Android `UnauthorizedInterceptor`; iOS `APIClient.swift:57-63` |
+| Logout | Unregister push token while session is valid, call `POST /auth/logout`, clear local session | `android/.../OnOffRepository.kt:156-161`; `ios/.../APIClient.swift:222-230` |
+| Session expiry / 401 | Clear local session and return to login | Android `UnauthorizedInterceptor`; iOS `APIClient.swift:117-123` |
 | Revoke one session | Account screen calls `DELETE /auth/sessions/{id}` | `ApiService.kt`, `APIClient.swift` session methods |
 | Revoke other sessions | Account screen calls `POST /auth/sessions/revoke-others` | Same |
 | Delete account | Account screen calls `DELETE /auth/account`; UI says deletion is scheduled with a 15-day grace period and can be cancelled | `AccountScreen.kt:293,448-470`; iOS `AccountView.swift:187-188,214` and `AccountViewModel.scheduleDeletion()` |
@@ -379,13 +382,13 @@ backend/privacy documentation and the published privacy policy.
 | MP-04 | iOS API response cache | Resolved in source; validation pending | `APIClient.swift` sets `urlCache = nil` and `.reloadIgnoringLocalCacheData` | Confirm on macOS that authenticated responses do not appear in the URL cache |
 | MP-05 | Android clipboard contents persist; sensitive marker only on API 33+ | Low–Medium | `SensitiveClipboard.kt`; no auto-clear | Add clipboard auto-clear/expiry or a “clear clipboard” action; document older-OS behavior |
 | MP-06 | Play Data Safety declaration is narrower than actual app data | Medium (compliance) | `PLAYSTORE.md:91` mentions email and telemetry only; app also handles device IDs/names, network identifiers, push token, billing metadata, session IP/user agent | Reconcile the Play form and Apple privacy labels with this inventory |
-| MP-07 | No iOS privacy manifest or release privacy validation | Medium (release blocker) | No `PrivacyInfo.xcprivacy`; no TestFlight pipeline | Add required-reason API declarations and validate App Store privacy answers |
+| MP-07 | iOS privacy manifest/release privacy validation incomplete | Medium (release blocker) | `PrivacyInfo.xcprivacy` present with no tracking and UserDefaults `CA92.1`; collected-data declarations are absent; no TestFlight/privacy-report validation | Add accurate `NSPrivacyCollectedDataTypes`, verify the archive privacy report, and reconcile App Store labels |
 | MP-08 | iOS dependency resolution is not pinned | Low–Medium (supply chain) | `project.yml` uses `from: 7.1.0`; no `Package.resolved` | Commit the resolved package file and review updates |
 | MP-09 | Debug builds can log API URLs/device IDs | Low | `ApiClient.kt` debug `BASIC` logging | Keep debug builds internal; never attach raw logcat to reports |
 | MP-10 | Notification content may expose device names/status on the lock screen | Low | `Notifications.kt` uses default visibility; no `VISIBILITY_PRIVATE`/public version | Set lock-screen visibility/redaction or document the product decision |
 | MP-11 | No in-app privacy policy or data export path | Low–Medium (compliance/UX) | No link/export found in either client | Add a privacy/account-data link and an export/delete support path |
 | MP-12 | Android backup protection is only statically verified | Medium until tested | Manifest/rules are present; no physical restore/transfer test | Execute the Android checklist in `ON_DEVICE_VALIDATION.md` on API 26–30 and 31+ |
-| MP-13 | iOS session-cookie origin/HTTPS validation is not yet device-verified | Medium | Source now requires HTTPS/exact API host/port, Secure/domain-valid non-empty cookies, clears invalid values, blocks redirects, and disables URL cache. No macOS/device test exists. | Exercise the redirect, cross-origin, and empty-cookie cases in `ON_DEVICE_VALIDATION.md` on macOS/device; keep OMP-19 open until verified. |
+| MP-13 | iOS session-cookie origin/HTTPS validation is not yet device-verified | Medium | Source stores the cookie with its canonical issuing origin, requires HTTPS/exact API host/port, rejects Secure/domain-invalid or empty cookies, clears mismatches/401/logout, deletes legacy raw-cookie items, blocks redirects, and disables URL cache. No macOS/device test exists. | Exercise the redirect, cross-origin, empty-cookie, staging/production switch, and legacy-upgrade cases in `ON_DEVICE_VALIDATION.md` on macOS/device; keep OMP-19 open until verified. |
 
 ## Unknowns and follow-up verification
 
@@ -414,9 +417,11 @@ Re-run `node mobile/scripts/check-mobile-hardening.mjs` and
 backup-rule, network-security, Keychain, clipboard, or screenshot changes. The
 gate scans all Gradle build/settings/properties files and version catalogs plus,
 when present, the resolved release `sdkDependencies.txt` and merged release
-manifest. It parses manifest/resource XML rather than matching exact substrings,
-and includes a negative Adjust fixture, but it is still not a packaged-APK
-check. Regenerate `sdkDependencies.txt` on a host with the Android SDK, and
-generate/review `Package.resolved` on macOS. Update this document when a new
-SDK, permission, API field, local-storage location, or data recipient is
-introduced.
+manifest. It rejects `API_BASE_URL` overrides outside the reviewed app build,
+requires exactly one production, staging, and Info.plist iOS YAML entry, parses
+manifest/resource XML rather than matching exact substrings, and includes
+negative Adjust, HTTP-origin, duplicate/extra YAML, and iOS origin-bound session
+fixtures. It is still not a packaged-APK check. Regenerate
+`sdkDependencies.txt` on a host with the Android SDK, and generate/review
+`Package.resolved` on macOS. Update this document when a new SDK, permission,
+API field, local-storage location, or data recipient is introduced.

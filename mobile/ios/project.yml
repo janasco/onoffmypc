@@ -1,6 +1,10 @@
-# XcodeGen spec — generates OnOffMyPC.xcodeproj (never committed).
+# XcodeGen spec — generates OnOffMyPC.xcodeproj and OnOffMyPC/Info.plist (never committed).
 # On a Mac:  brew install xcodegen && cd ios && xcodegen generate && open OnOffMyPC.xcodeproj
 name: OnOffMyPC
+configs:
+  Debug: debug
+  Release: release
+  Staging: release
 options:
   bundleIdPrefix: com.onoffmypc
   deploymentTarget:
@@ -25,16 +29,31 @@ targets:
         product: GoogleSignIn
     sources:
       - path: OnOffMyPC
+        excludes:
+          # Added explicitly below so it is always copied as a bundle resource.
+          - PrivacyInfo.xcprivacy
+      - path: OnOffMyPC/PrivacyInfo.xcprivacy
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.onoffmypc.app
         GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_EXPAND_BUILD_SETTINGS: YES
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        # Production API origin. Override for a staging build with the
+        # `Staging` configuration below or `xcodebuild ... API_BASE_URL=...`.
+        API_BASE_URL: https://api.onoffmypc.com
+      configs:
+        Staging:
+          API_BASE_URL: https://onoffmypc-api-staging.onoffmypc.workers.dev
     info:
       path: OnOffMyPC/Info.plist
       properties:
+        # Expanded by Xcode from the API_BASE_URL build setting; read by
+        # APIClient (HTTPS + non-empty host are validated at runtime).
+        API_BASE_URL: $(API_BASE_URL)
         CFBundleDisplayName: OnOffMyPC
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:

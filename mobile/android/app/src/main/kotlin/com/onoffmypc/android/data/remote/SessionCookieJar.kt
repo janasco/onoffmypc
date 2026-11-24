@@ -1,7 +1,10 @@
 package com.onoffmypc.android.data.remote
 
 import com.onoffmypc.android.data.Api
+import com.onoffmypc.android.data.ApiSession
 import com.onoffmypc.android.data.SessionTokenStore
+import com.onoffmypc.android.data.originString
+import com.onoffmypc.android.data.sessionFor
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
@@ -16,6 +19,7 @@ class SessionCookieJar(
     private val store: SessionTokenStore,
     private val apiUrl: HttpUrl = Api.BASE_URL.toHttpUrl(),
 ) : CookieJar {
+    private val apiOrigin = apiUrl.originString()
 
     private fun isApiOrigin(url: HttpUrl): Boolean =
         url.isHttps && url.host == apiUrl.host && url.port == apiUrl.port
@@ -27,14 +31,14 @@ class SessionCookieJar(
             if (cookie.value.isBlank() || cookie.expiresAt < System.currentTimeMillis()) {
                 store.clear()
             } else {
-                store.session = cookie.value
+                store.storedSession = ApiSession(cookie.value, apiOrigin)
             }
         }
     }
 
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
         if (!isApiOrigin(url)) return emptyList()
-        val value = store.session ?: return emptyList()
+        val value = store.sessionFor(apiOrigin) ?: return emptyList()
         return listOf(
             Cookie.Builder()
                 .name("session")

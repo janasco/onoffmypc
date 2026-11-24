@@ -59,8 +59,8 @@ ios/
     ├── Components/             Shared logo, power controls, and device-status UI
     ├── Design/Generated/       Vendored @onoffmypc/design Swift outputs
     ├── Networking/
-    │   ├── APIClient.swift      URLSession; cookie-session auth
-    │   ├── Session.swift        Keychain-backed session cookie
+    │   ├── APIClient.swift      URLSession; origin-bound cookie-session auth
+    │   ├── Session.swift        Keychain cookie + issuing API origin
     │   └── Models.swift         Codable models (mirror the API)
     ├── Features/Auth/           LoginView + AuthViewModel
     ├── Features/Devices/        DevicesView + DevicesViewModel
@@ -69,8 +69,9 @@ ios/
 
 ## Notes
 - Auth is **cookie-based** (matches the API/web/Android): `POST /auth/login` sets a
-  `session` cookie, captured and stored in the Keychain, sent on later requests.
-- The app talks to `https://api.onoffmypc.com` (see `APIClient.swift`).
+  `session` cookie, captured and stored in the Keychain with its issuing API
+  origin, sent only to that exact origin on later requests.
+- The app reads `API_BASE_URL` from the generated Info.plist; production defaults to `https://api.onoffmypc.com` and a Staging configuration points at the staging Worker (see `project.yml`, `APIClient.swift`). Switching configurations invalidates the old origin's session automatically; raw-cookie items from older builds are deleted, so users may be signed out once on upgrade.
 - Device screens distinguish live connection state from last-reported PC telemetry,
   show last-contact freshness, and use an explicit unknown state when presence cannot
   be established.

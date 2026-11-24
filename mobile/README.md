@@ -16,7 +16,7 @@ receive device notifications. Both use the shared API at `https://api.onoffmypc.
 | Lifecycle | AndroidX Lifecycle 2.8.6 (`runtime-compose`, `viewmodel-compose`) |
 | Networking | **Retrofit** 2.11.0 + **OkHttp** 4.12.0 (logging interceptor) |
 | JSON | **kotlinx.serialization** 1.7.3 (via a small in-repo Retrofit converter) |
-| Auth | Cookie-based — an OkHttp `CookieJar` persists the API `session` cookie |
+| Auth | Cookie-based — an OkHttp `CookieJar` persists the API `session` cookie with its issuing API origin |
 | Push | **Firebase Cloud Messaging** (Firebase BOM 33.5.1); google-services plugin 4.4.2 |
 | Charts | dependency-free **Compose `Canvas`** (temperature history) |
 | Build | **Gradle** 8.11.1 (Kotlin DSL) + version catalog; **AGP** 8.10.1 |
@@ -51,9 +51,10 @@ Single `MainActivity` hosting Compose (`AppNav`). **MVVM**: screens observe a
 `OnOffApp`) provides the repository. Networking is Retrofit + OkHttp +
 kotlinx.serialization. **Auth is cookie-based**: the API sets an HttpOnly
 `session` cookie on login and accepts it on later requests, so a
-`SessionCookieJar` captures/replays it (persisted app-private via `SessionStore`;
-device backups disabled so it can't be extracted). A 401 interceptor clears the
-session and routes back to login.
+`SessionCookieJar` captures/replays it (persisted app-private via `SessionStore`
+together with its issuing API origin; device backups disabled so it can't be
+extracted). A stored session from a different API origin is cleared, and a 401
+interceptor also clears the session and routes back to login.
 
 ```
 app/src/main/kotlin/com/onoffmypc/android/
