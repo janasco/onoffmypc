@@ -46,8 +46,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center p-4 selection:bg-emerald-500/30 selection:text-emerald-400">
       <div className="w-full max-w-sm flex flex-col gap-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-lg hover:opacity-90 transition-opacity self-center text-zinc-100">
+        <Link href="https://onoffmypc.com" className="flex items-center gap-2 font-semibold text-lg hover:opacity-90 transition-opacity self-center text-zinc-100">
           <BrandLockup size={22} />
+        </Link>
+        <Link href="https://onoffmypc.com" className="-mt-3 self-center text-xs text-zinc-500 transition-colors hover:text-zinc-300">
+          ← Back to onoffmypc.com
         </Link>
 
         <Card className="bg-zinc-900 border-zinc-800">
