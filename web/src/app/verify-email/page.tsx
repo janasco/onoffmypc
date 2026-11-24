@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { BrandLockup } from "@/components/brand-lockup";
 
@@ -37,34 +37,34 @@ function VerifyEmailInner() {
   }, [token]);
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800 w-full max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-zinc-100 font-bold">Email Verification</CardTitle>
-        <CardDescription className="text-zinc-400">
+    <Card className="w-full bg-zinc-900 ring-1 ring-zinc-800/80">
+      <CardHeader className="gap-2">
+        <h1 className="type-section-title text-zinc-50">Email verification</h1>
+        <p className="type-body text-zinc-400">
           Confirming your email address registration
-        </CardDescription>
+        </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 text-center">
         {verifyingNow ? (
-          <p className="text-zinc-400 py-6 text-sm">Verifying your email address, please wait…</p>
+          <p className="py-6 type-body-sm text-zinc-400">Verifying your email address, please wait…</p>
         ) : successNow ? (
           <div className="flex flex-col gap-4 py-4">
-            <span className="text-emerald-500 text-5xl">✓</span>
-            <p className="text-zinc-300 text-sm">Your email address has been successfully verified! You can now use all dashboard fleet actions.</p>
-            <Link href="/dashboard" className="w-full mt-2">
-              <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10">
-                Go to Dashboard
+            <span aria-hidden="true" className="text-5xl text-emerald-400">✓</span>
+            <p className="type-body text-zinc-300">Your email address has been successfully verified. You can now use all dashboard fleet actions.</p>
+            <Link href="/dashboard" className="mt-2 block w-full">
+              <Button className="h-11 w-full">
+                Go to dashboard
               </Button>
             </Link>
           </div>
         ) : (
           <div className="flex flex-col gap-4 py-4">
-            <span className="text-red-500 text-5xl">✕</span>
-            <p className="text-red-400 text-sm font-semibold">{error || "Verification failed"}</p>
-            <p className="text-zinc-400 text-xs">The link may have expired or is invalid. Request a new verification link from your account page.</p>
-            <Link href="/login" className="w-full mt-2">
-              <Button variant="outline" className="w-full border-zinc-800 text-zinc-300 hover:bg-zinc-950">
-                Return to Login
+            <span aria-hidden="true" className="text-5xl text-red-400">✕</span>
+            <p role="alert" className="type-label text-red-300">{error || "Verification failed"}</p>
+            <p className="type-body-sm text-zinc-400">The link may have expired or is invalid. Request a new verification link from your account page.</p>
+            <Link href="/login" className="mt-2 block w-full">
+              <Button variant="outline" className="h-11 w-full border-zinc-700 text-zinc-300 hover:bg-zinc-950">
+                Return to login
               </Button>
             </Link>
           </div>
@@ -76,19 +76,19 @@ function VerifyEmailInner() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center p-4 selection:bg-emerald-500/30 selection:text-emerald-400">
-      <div className="w-full max-w-sm flex flex-col gap-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-lg hover:opacity-90 transition-opacity self-center text-zinc-100">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 p-4 selection:bg-emerald-500/30 selection:text-emerald-400">
+      <div className="flex w-full max-w-[22rem] flex-col gap-6">
+        <Link href="/" className="flex min-h-11 items-center self-center text-zinc-100 transition-opacity hover:opacity-90">
           <BrandLockup size={22} />
         </Link>
 
         <Suspense fallback={
-          <Card className="bg-zinc-900 border-zinc-800 w-full max-w-sm">
-            <CardHeader>
-              <CardTitle className="text-zinc-100 font-bold">Email Verification</CardTitle>
+          <Card className="w-full bg-zinc-900 ring-1 ring-zinc-800/80">
+            <CardHeader className="gap-2">
+              <h1 className="type-section-title text-zinc-50">Email verification</h1>
             </CardHeader>
             <CardContent>
-              <p className="text-zinc-400 py-6 text-sm text-center">Loading parameters…</p>
+              <p className="py-6 text-center type-body-sm text-zinc-400">Loading parameters…</p>
             </CardContent>
           </Card>
         }>

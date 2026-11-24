@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { AppHeader } from "@/components/app-header";
@@ -92,50 +92,54 @@ export default function BillingPage() {
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
       <AppHeader />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
         <PlatformPageHeader
           eyebrow="Billing"
           title="Billing & subscriptions"
           description="Manage power control unlocks, invoices, and billing history."
           actions={
-            <Button onClick={handleOpenPortal} className="h-10 border border-zinc-800 bg-zinc-900 px-5 text-zinc-300 hover:bg-zinc-800">
+            <Button
+              onClick={handleOpenPortal}
+              variant="outline"
+              className="min-h-11 border-zinc-700 px-5 text-zinc-200 hover:bg-zinc-900"
+            >
               Manage receipts
             </Button>
           }
         />
 
         {loading ? (
-          <div className="text-center text-zinc-400 py-16">Loading billing data…</div>
+          <div className="py-16 text-center type-body-sm text-zinc-400">Loading billing data…</div>
         ) : (
           <div className="flex flex-col gap-6">
             {/* Device Unlocks */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
               <CardHeader>
-                <CardTitle className="text-zinc-100 text-lg font-bold">Device Licenses</CardTitle>
-                <CardDescription className="text-zinc-400">
-                  Power control licenses configured per device endpoints
-                </CardDescription>
+                <CardTitle className="type-card-title text-zinc-100">Device licenses</CardTitle>
+                <p className="type-body-sm text-zinc-400">
+                  Power control licenses configured per device endpoint
+                </p>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 {devices.length === 0 ? (
-                  <p className="text-center text-zinc-500 py-6 text-sm">No devices found. Add devices in the dashboard first.</p>
+                  <p className="py-6 text-center type-body-sm text-zinc-400">No devices found. Add devices in the dashboard first.</p>
                 ) : (
                   <div className="flex flex-col gap-3">
                     {devices.map((d) => (
-                      <div key={d.id} className="flex justify-between items-center p-4 bg-zinc-950/65 rounded-xl border border-zinc-800">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-semibold text-zinc-200 text-sm">{d.name}</span>
-                          <span className="text-[10px] text-zinc-500 font-mono">ID: {d.id}</span>
+                      <div key={d.id} className="flex flex-col justify-between gap-3 rounded-xl border border-zinc-800/80 bg-zinc-950/50 p-4 sm:flex-row sm:items-center">
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <span className="type-label text-zinc-100">{d.name}</span>
+                          <span className="type-mono break-all text-zinc-400">ID: {d.id}</span>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${d.unlocked ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
+                        <div className="flex flex-wrap items-center gap-4">
+                          <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${d.unlocked ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" : "border-amber-500/20 bg-amber-500/10 text-amber-300"}`}>
                             {d.unlocked ? "Unlocked" : "Trial status"}
                           </span>
                           {!d.unlocked && (
                             <Button
                               onClick={() => handleCheckout(d.id)}
                               disabled={checkoutBusy}
-                              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-9 px-4 text-xs"
+                              className="min-h-11 px-4"
                             >
                               Unlock ({d.price_formatted || "$19.00"})
                             </Button>
@@ -149,40 +153,40 @@ export default function BillingPage() {
             </Card>
 
             {/* Invoices / Transactions history */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
               <CardHeader>
-                <CardTitle className="text-zinc-100 text-lg font-bold">Billing History</CardTitle>
-                <CardDescription className="text-zinc-400">
+                <CardTitle className="type-card-title text-zinc-100">Billing history</CardTitle>
+                <p className="type-body-sm text-zinc-400">
                   Past invoices and checkout requests
-                </CardDescription>
+                </p>
               </CardHeader>
               <CardContent className="pt-0">
                 {history.length === 0 ? (
-                  <p className="text-center text-zinc-500 py-8 text-sm">No transactions recorded yet.</p>
+                  <p className="py-8 text-center type-body-sm text-zinc-400">No transactions recorded yet.</p>
                 ) : (
                   <Table className="text-zinc-300">
                     <TableHeader className="border-zinc-800">
                       <TableRow>
-                        <TableHead className="text-zinc-400">Date</TableHead>
-                        <TableHead className="text-zinc-400">Device ID</TableHead>
-                        <TableHead className="text-zinc-400">Amount</TableHead>
-                        <TableHead className="text-zinc-400">Status</TableHead>
+                        <TableHead className="type-overline text-zinc-400">Date</TableHead>
+                        <TableHead className="type-overline text-zinc-400">Device ID</TableHead>
+                        <TableHead className="type-overline text-zinc-400">Amount</TableHead>
+                        <TableHead className="type-overline text-zinc-400">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {history.map((h) => (
                         <TableRow key={h.id} className="border-zinc-800 hover:bg-zinc-800/30">
-                          <TableCell className="text-sm">
+                          <TableCell className="type-metadata text-zinc-300">
                             {new Date(h.created_at).toLocaleDateString()}
                           </TableCell>
-                          <TableCell className="text-xs font-mono">
+                          <TableCell className="type-mono break-all text-zinc-400">
                             {h.device_id}
                           </TableCell>
-                          <TableCell className="text-sm font-semibold">
+                          <TableCell className="type-mono text-zinc-100">
                             ${(h.amount / 100).toFixed(2)}
                           </TableCell>
                           <TableCell>
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${h.status === "paid" || h.status === "approved" ? "bg-emerald-500/10 text-emerald-400" : "bg-zinc-800 text-zinc-400"}`}>
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${h.status === "paid" || h.status === "approved" ? "bg-emerald-500/10 text-emerald-300" : "bg-zinc-800 text-zinc-300"}`}>
                               {h.status}
                             </span>
                           </TableCell>

@@ -34,7 +34,11 @@ declare global {
  */
 export function GoogleSignInButton({ nextPath }: { nextPath?: string | null }) {
   const router = useRouter();
+  const wrapper = useRef<HTMLDivElement>(null);
   const container = useRef<HTMLDivElement>(null);
+  const initializedCallback = useRef<((response: CredentialResponse) => void) | null>(null);
+  const buttonWidthRef = useRef<number | null>(null);
+  const [buttonWidth, setButtonWidth] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,17 +65,10 @@ export function GoogleSignInButton({ nextPath }: { nextPath?: string | null }) {
     [nextPath, router],
   );
 
-  const initialize = useCallback(() => {
+  const renderButton = useCallback((width: number) => {
     const id = window.google?.accounts?.id;
     if (!id || !container.current) return;
-    id.initialize({
-      client_id: GOOGLE_WEB_CLIENT_ID,
-      callback: handleCredential,
-      ux_mode: "popup",
-      auto_select: false,
-      cancel_on_tap_outside: true,
-    });
-    // Re-render safely if both the script onLoad and the effect fire.
+    // Re-rendering the GIS button replaces its iframe, so clear it first.
     container.current.innerHTML = "";
     id.renderButton(container.current, {
       type: "standard",
@@ -80,16 +77,51 @@ export function GoogleSignInButton({ nextPath }: { nextPath?: string | null }) {
       text: "continue_with",
       shape: "rectangular",
       logo_alignment: "left",
-      width: 320,
+      width,
     });
     setReady(true);
-  }, [handleCredential]);
+  }, []);
+
+  const initialize = useCallback(() => {
+    const id = window.google?.accounts?.id;
+    const width = buttonWidthRef.current;
+    if (!id || !container.current || width === null) return;
+    if (initializedCallback.current !== handleCredential) {
+      id.initialize({
+        client_id: GOOGLE_WEB_CLIENT_ID,
+        callback: handleCredential,
+        ux_mode: "popup",
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+      initializedCallback.current = handleCredential;
+    }
+    renderButton(width);
+  }, [handleCredential, renderButton]);
+
+  // Keep the GIS iframe inside the card at narrow viewports. GIS accepts a
+  // minimum width of 200px and a maximum of 400px, so cap it at 320px.
+  useEffect(() => {
+    const node = wrapper.current;
+    if (!node) return;
+    const updateWidth = (value: number) => {
+      const next = Math.min(320, Math.max(200, Math.round(value)));
+      buttonWidthRef.current = next;
+      setButtonWidth((current) => (current === next ? current : next));
+    };
+    updateWidth(node.getBoundingClientRect().width);
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) updateWidth(entry.contentRect.width);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   // Navigating between /login and /register can keep the script loaded, so the
   // onLoad event may not fire again. Initialize whenever the API is present.
   useEffect(() => {
-    if (window.google?.accounts?.id) initialize();
-  }, [initialize]);
+    if (buttonWidth !== null && window.google?.accounts?.id) initialize();
+  }, [buttonWidth, initialize]);
 
   useEffect(() => {
     if (ready || error) return;
@@ -104,7 +136,7 @@ export function GoogleSignInButton({ nextPath }: { nextPath?: string | null }) {
   }, [ready, error]);
 
   return (
-    <div>
+    <div ref={wrapper}>
       <Script
         src="https://accounts.google.com/gsi/client"
         strategy="afterInteractive"
@@ -119,7 +151,7 @@ export function GoogleSignInButton({ nextPath }: { nextPath?: string | null }) {
         aria-busy={busy}
       />
       {!ready && !error && (
-        <p className="mt-2 text-center text-xs text-zinc-500">Loading Google sign-in…</p>
+        <p className="mt-2 text-center text-xs text-zinc-400">Loading Google sign-in…</p>
       )}
       {busy && <p className="mt-2 text-center text-xs text-zinc-400">Signing in…</p>}
       {error && (

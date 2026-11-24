@@ -4,9 +4,12 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { BrandLockup } from "@/components/brand-lockup";
+
+const FIELD_CLASS =
+  "h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-base text-zinc-100 placeholder:text-zinc-400 transition-colors focus:border-emerald-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/80 md:text-sm";
 
 function ResetPasswordInner() {
   const router = useRouter();
@@ -50,67 +53,65 @@ function ResetPasswordInner() {
     }
   };
 
-  if (!token) {
-    return (
-      <div className="bg-red-950/40 border border-red-900/50 text-red-400 text-sm px-3.5 py-3 rounded-lg text-center">
-        Recovery token is invalid or missing. Link may have expired.
-      </div>
-    );
-  }
-
   return (
-    <Card className="bg-zinc-900 border-zinc-800">
-      <CardHeader>
-        <CardTitle className="text-zinc-100 text-xl font-bold">New Password</CardTitle>
-        <CardDescription className="text-zinc-400">
+    <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
+      <CardHeader className="gap-2">
+        <h1 className="type-section-title text-zinc-50">New password</h1>
+        <p className="type-body text-zinc-400">
           Enter and confirm your new account password
-        </CardDescription>
+        </p>
       </CardHeader>
       <CardContent>
-        {success ? (
-          <div className="bg-emerald-950/40 border border-emerald-900/50 text-emerald-400 text-sm px-3.5 py-3 rounded-lg flex flex-col gap-2">
-            <span className="font-semibold">Password updated successfully!</span>
+        {!token ? (
+          <div role="alert" className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-3 text-center type-body-sm text-red-300">
+            Recovery token is invalid or missing. The link may have expired.
+          </div>
+        ) : success ? (
+          <div role="status" className="flex flex-col gap-2 rounded-lg border border-emerald-900/50 bg-emerald-950/40 px-3.5 py-3 type-body-sm text-emerald-300">
+            <span className="type-label">Password updated successfully</span>
             <span>Redirecting to the login screen…</span>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {error && (
-              <div className="bg-red-950/40 border border-red-900/50 text-red-400 text-sm px-3.5 py-2.5 rounded-lg">
+              <div role="alert" className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 type-body-sm text-red-300">
                 {error}
               </div>
             )}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-zinc-400" htmlFor="password">New Password</label>
+              <label className="type-label text-zinc-300" htmlFor="password">New password</label>
               <input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min 8 characters"
+                autoComplete="new-password"
                 required
-                className="bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-lg h-10 px-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none transition-colors"
+                className={FIELD_CLASS}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-zinc-400" htmlFor="confirmPassword">Confirm Password</label>
+              <label className="type-label text-zinc-300" htmlFor="confirmPassword">Confirm password</label>
               <input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
+                autoComplete="new-password"
                 required
-                className="bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-lg h-10 px-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none transition-colors"
+                className={FIELD_CLASS}
               />
             </div>
-            <Button type="submit" disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 mt-2">
-              {loading ? "Resetting…" : "Reset Password"}
+            <Button type="submit" disabled={loading} className="mt-2 h-11 w-full">
+              {loading ? "Resetting…" : "Reset password"}
             </Button>
           </form>
         )}
       </CardContent>
       <CardFooter className="justify-center border-t border-zinc-800/60 pt-6">
-        <Link href="/login" className="text-sm text-emerald-500 hover:text-emerald-400 font-semibold transition-colors">
+        <Link href="/login" className="type-label text-emerald-400 transition-colors hover:text-emerald-300">
           Return to login
         </Link>
       </CardFooter>
@@ -120,30 +121,25 @@ function ResetPasswordInner() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center p-4 selection:bg-emerald-500/30 selection:text-emerald-400">
-      <div className="w-full max-w-sm flex flex-col gap-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-lg hover:opacity-90 transition-opacity self-center text-zinc-100">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 p-4 selection:bg-emerald-500/30 selection:text-emerald-400">
+      <div className="flex w-full max-w-[22rem] flex-col gap-6">
+        <Link href="/" className="flex min-h-11 items-center self-center text-zinc-100 transition-opacity hover:opacity-90">
           <BrandLockup size={22} />
         </Link>
 
         <Suspense fallback={
-          <Card className="bg-zinc-900 border-zinc-800 w-full max-w-sm">
-            <CardHeader>
-              <CardTitle className="text-zinc-100 font-bold">New Password</CardTitle>
+          <Card className="w-full bg-zinc-900 ring-1 ring-zinc-800/80">
+            <CardHeader className="gap-2">
+              <h1 className="type-section-title text-zinc-50">New password</h1>
             </CardHeader>
             <CardContent>
-              <p className="text-zinc-400 py-6 text-sm text-center">Loading parameters…</p>
+              <p className="py-6 text-center type-body-sm text-zinc-400">Loading parameters…</p>
             </CardContent>
           </Card>
         }>
-          <VerifyEmailInnerWrapper />
+          <ResetPasswordInner />
         </Suspense>
       </div>
     </div>
   );
-}
-
-// Map VerifyEmailInnerWrapper component to avoid naming conflicts
-function VerifyEmailInnerWrapper() {
-  return <ResetPasswordInner />;
 }

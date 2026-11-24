@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
 import { AppHeader } from "@/components/app-header";
@@ -16,6 +16,11 @@ interface UserProfile {
   email_verified: boolean;
   deletion_at: string | null;
 }
+
+const FIELD_CLASS =
+  "h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-base text-zinc-100 placeholder:text-zinc-400 transition-colors focus:border-emerald-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/80 md:text-sm";
+
+const FIELD_LABEL_CLASS = "type-label text-zinc-300";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -226,7 +231,8 @@ export default function AccountPage() {
     } else {
       setDeleteOpen(false);
       setDeleteConfirmEmail("");
-      if (profile && data) setProfile({ ...profile, deletion_at: data.deletion_at });      alert("Account scheduled for deletion. You can cancel any time before the timer ends.");
+      if (profile && data) setProfile({ ...profile, deletion_at: data.deletion_at });
+      alert("Account scheduled for deletion. You can cancel any time before the timer ends.");
     }
   };
 
@@ -234,7 +240,7 @@ export default function AccountPage() {
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
       <AppHeader email={profile?.email} />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
         <PlatformPageHeader
           eyebrow="Account"
           title="Your account"
@@ -243,42 +249,44 @@ export default function AccountPage() {
 
         {/* Deletion Countdown Banner */}
         {profile?.deletion_at && (
-          <div className="bg-red-950/80 border border-red-900/50 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col gap-4 rounded-xl border border-red-900/50 bg-red-950/80 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-0.5">
-              <span className="font-semibold text-red-200 text-sm">Account scheduled for deletion</span>
-              <span className="text-xs text-red-400">Your account will be deleted in: <strong className="font-mono">{countdown}</strong></span>
+              <span className="type-label text-red-200">Account scheduled for deletion</span>
+              <span className="type-metadata text-red-300">
+                Your account will be deleted in: <strong className="type-mono font-semibold">{countdown}</strong>
+              </span>
             </div>
-            <Button variant="outline" onClick={handleCancelDeletion} className="border-red-900/80 hover:bg-red-900/20 text-red-300">
+            <Button variant="outline" onClick={handleCancelDeletion} className="min-h-11 border-red-900/80 text-red-300 hover:bg-red-900/20">
               Cancel deletion
             </Button>
           </div>
         )}
 
         {loading ? (
-          <div className="text-center text-zinc-400 py-16">Loading account settings…</div>
+          <div className="py-16 text-center type-body-sm text-zinc-400">Loading account settings…</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             {/* Account Details */}
-            <div className="md:col-span-1 flex flex-col gap-6">
-              <Card className="bg-zinc-900 border-zinc-800">
+            <div className="flex flex-col gap-6 md:col-span-1">
+              <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
                 <CardHeader>
-                  <CardTitle className="text-zinc-100 text-lg font-bold">Profile Info</CardTitle>
+                  <CardTitle className="type-card-title text-zinc-100">Profile info</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4 text-sm">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Email Address</span>
-                    <span className="text-zinc-200 break-all">{profile?.email}</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="type-overline text-zinc-400">Email address</span>
+                    <span className="break-all text-zinc-100">{profile?.email}</span>
                   </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Member Since</span>
-                    <span className="text-zinc-200">
+                  <div className="flex flex-col gap-1">
+                    <span className="type-overline text-zinc-400">Member since</span>
+                    <span className="type-metadata text-zinc-200">
                       {profile ? new Date(profile.created_at).toLocaleDateString() : ""}
                     </span>
                   </div>
                   {!profile?.email_verified && (
-                    <div className="bg-amber-950/20 border border-amber-900/40 p-3 rounded-lg flex flex-col gap-2 mt-2">
-                      <span className="text-xs text-amber-400">Email is not verified yet. Verify it to unlock all fleet actions.</span>
-                      <Button size="sm" variant="outline" onClick={handleResendVerify} className="border-amber-900/60 hover:bg-amber-900/10 text-amber-300 w-full text-xs">
+                    <div className="mt-2 flex flex-col gap-2 rounded-lg border border-amber-900/40 bg-amber-950/20 p-3">
+                      <span className="type-body-sm text-amber-300">Email is not verified yet. Verify it to unlock all fleet actions.</span>
+                      <Button size="sm" variant="outline" onClick={handleResendVerify} className="min-h-11 w-full border-amber-900/60 text-amber-300 hover:bg-amber-900/10">
                         Resend email
                       </Button>
                     </div>
@@ -287,15 +295,15 @@ export default function AccountPage() {
               </Card>
 
               {/* GDPR Portability & Export */}
-              <Card className="bg-zinc-900 border-zinc-800">
+              <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
                 <CardHeader>
-                  <CardTitle className="text-zinc-100 text-lg font-bold">Data Privacy</CardTitle>
-                  <CardDescription className="text-zinc-400">
+                  <CardTitle className="type-card-title text-zinc-100">Data privacy</CardTitle>
+                  <p className="type-body-sm text-zinc-400">
                     GDPR data portability
-                  </CardDescription>
+                  </p>
                 </CardHeader>
                 <CardContent>
-                  <Button onClick={handleExportData} className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100 text-sm">
+                  <Button onClick={handleExportData} className="min-h-11 w-full bg-zinc-800 text-zinc-100 hover:bg-zinc-700">
                     Download my data
                   </Button>
                 </CardContent>
@@ -303,18 +311,18 @@ export default function AccountPage() {
 
               {/* Danger Zone */}
               {!profile?.deletion_at && (
-                <Card className="border-red-900/30 bg-zinc-900 p-4">
+                <Card className="bg-zinc-900 p-4 ring-1 ring-red-900/40">
                   <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-semibold text-zinc-200 text-sm">Delete account</span>
-                      <span className="text-xs text-zinc-500">
+                    <div className="flex flex-col gap-1">
+                      <span className="type-card-title text-zinc-100">Delete account</span>
+                      <span className="type-body-sm text-zinc-400">
                         Permanently delete your profile and telemetry logs.
                       </span>
                     </div>
                     <Button
                       variant="destructive"
                       onClick={() => setDeleteOpen(true)}
-                      className="h-10 w-full font-bold"
+                      className="min-h-11 w-full"
                     >
                       Delete account
                     </Button>
@@ -324,29 +332,29 @@ export default function AccountPage() {
             </div>
 
             {/* Forms section */}
-            <div className="md:col-span-2 flex flex-col gap-6">
+            <div className="flex flex-col gap-6 md:col-span-2">
               {/* Update Email */}
-              <Card className="bg-zinc-900 border-zinc-800">
+              <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
                 <CardHeader>
-                  <CardTitle className="text-zinc-100 text-lg font-bold">Update Email</CardTitle>
-                  <CardDescription className="text-zinc-400">
+                  <CardTitle className="type-card-title text-zinc-100">Update email</CardTitle>
+                  <p className="type-body-sm text-zinc-400">
                     Change the email address used to log in
-                  </CardDescription>
+                  </p>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleUpdateEmail} className="flex flex-col gap-4">
                     {emailError && (
-                      <div className="bg-red-950/40 border border-red-900/50 text-red-400 text-sm px-3.5 py-2.5 rounded-lg">
+                      <div role="alert" className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 type-body-sm text-red-300">
                         {emailError}
                       </div>
                     )}
                     {emailSuccess && (
-                      <div className="bg-emerald-950/40 border border-emerald-900/50 text-emerald-400 text-sm px-3.5 py-2.5 rounded-lg">
+                      <div role="status" className="rounded-lg border border-emerald-900/50 bg-emerald-950/40 px-3.5 py-2.5 type-body-sm text-emerald-300">
                         {emailSuccess}
                       </div>
                     )}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-zinc-400" htmlFor="newEmail">New Email</label>
+                      <label className={FIELD_LABEL_CLASS} htmlFor="newEmail">New email</label>
                       <input
                         id="newEmail"
                         type="email"
@@ -354,11 +362,11 @@ export default function AccountPage() {
                         onChange={(e) => setNewEmail(e.target.value)}
                         placeholder="new@example.com"
                         required
-                        className="bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-lg h-10 px-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none transition-colors"
+                        className={FIELD_CLASS}
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-zinc-400" htmlFor="emailPw">Current Password</label>
+                      <label className={FIELD_LABEL_CLASS} htmlFor="emailPw">Current password</label>
                       <input
                         id="emailPw"
                         type="password"
@@ -366,10 +374,10 @@ export default function AccountPage() {
                         onChange={(e) => setEmailPw(e.target.value)}
                         placeholder="••••••••"
                         required
-                        className="bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-lg h-10 px-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none transition-colors"
+                        className={FIELD_CLASS}
                       />
                     </div>
-                    <Button type="submit" disabled={emailLoading} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 self-start px-6">
+                    <Button type="submit" disabled={emailLoading} className="min-h-11 self-start px-6">
                       {emailLoading ? "Updating…" : "Update email"}
                     </Button>
                   </form>
@@ -377,41 +385,41 @@ export default function AccountPage() {
               </Card>
 
               {/* Active sessions */}
-              <Card className="bg-zinc-900 border-zinc-800">
+              <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
                 <CardHeader>
-                  <CardTitle className="text-zinc-100 text-lg font-bold">Active sessions</CardTitle>
-                  <CardDescription className="text-zinc-400">
+                  <CardTitle className="type-card-title text-zinc-100">Active sessions</CardTitle>
+                  <p className="type-body-sm text-zinc-400">
                     Where your account is signed in. Revoke anything you do not recognise.
-                  </CardDescription>
+                  </p>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                   {sessionsError && (
-                    <div role="alert" className="bg-red-950/40 border border-red-900/50 text-red-400 text-sm px-3.5 py-2.5 rounded-lg">
+                    <div role="alert" className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 type-body-sm text-red-300">
                       {sessionsError}
                     </div>
                   )}
 
                   {sessionsLoading ? (
-                    <p className="text-sm text-zinc-500">Loading sessions…</p>
+                    <p className="type-body-sm text-zinc-400">Loading sessions…</p>
                   ) : sessions.length === 0 ? (
-                    <p className="text-sm text-zinc-500">No active sessions.</p>
+                    <p className="type-body-sm text-zinc-400">No active sessions.</p>
                   ) : (
                     <ul className="flex flex-col divide-y divide-zinc-800 rounded-lg border border-zinc-800">
                       {sessions.map((session) => (
-                        <li key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3">
+                        <li key={session.id} className="flex flex-col justify-between gap-3 p-3 sm:flex-row sm:items-center">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold text-zinc-200">
+                              <span className="type-label text-zinc-100">
                                 {describeUserAgent(session.user_agent)}
                               </span>
                               {session.current && (
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-1.5 py-0.5">
+                                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-300">
                                   This device
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-zinc-500 mt-0.5">
-                              {session.ip ?? "IP unknown"} · active {formatWhen(session.last_seen_at, now)}
+                            <div className="type-metadata mt-0.5 text-zinc-400">
+                              <span className="type-mono">{session.ip ?? "IP unknown"}</span> · active {formatWhen(session.last_seen_at, now)}
                             </div>
                           </div>
                           <Button
@@ -419,7 +427,7 @@ export default function AccountPage() {
                             variant="outline"
                             disabled={sessionsBusy !== null}
                             onClick={() => handleRevokeSession(session.id)}
-                            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 whitespace-nowrap"
+                            className="min-h-11 whitespace-nowrap border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                           >
                             {sessionsBusy === session.id
                               ? "Revoking…"
@@ -436,11 +444,11 @@ export default function AccountPage() {
                       variant="outline"
                       disabled={sessionsBusy !== null || sessions.length < 2}
                       onClick={handleRevokeOtherSessions}
-                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                      className="min-h-11 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                     >
                       {sessionsBusy === "others" ? "Signing out…" : "Sign out other devices"}
                     </Button>
-                    <span className="text-xs text-zinc-600">
+                    <span className="type-metadata text-zinc-400">
                       Revoking takes effect immediately, even for a copied token.
                     </span>
                   </div>
@@ -448,27 +456,27 @@ export default function AccountPage() {
               </Card>
 
               {/* Update Password */}
-              <Card className="bg-zinc-900 border-zinc-800">
+              <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
                 <CardHeader>
-                  <CardTitle className="text-zinc-100 text-lg font-bold">Change Password</CardTitle>
-                  <CardDescription className="text-zinc-400">
+                  <CardTitle className="type-card-title text-zinc-100">Change password</CardTitle>
+                  <p className="type-body-sm text-zinc-400">
                     Change password and sign out other sessions
-                  </CardDescription>
+                  </p>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
                     {pwError && (
-                      <div className="bg-red-950/40 border border-red-900/50 text-red-400 text-sm px-3.5 py-2.5 rounded-lg">
+                      <div role="alert" className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 type-body-sm text-red-300">
                         {pwError}
                       </div>
                     )}
                     {pwSuccess && (
-                      <div className="bg-emerald-950/40 border border-emerald-900/50 text-emerald-400 text-sm px-3.5 py-2.5 rounded-lg">
+                      <div role="status" className="rounded-lg border border-emerald-900/50 bg-emerald-950/40 px-3.5 py-2.5 type-body-sm text-emerald-300">
                         {pwSuccess}
                       </div>
                     )}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-zinc-400" htmlFor="curPw">Current Password</label>
+                      <label className={FIELD_LABEL_CLASS} htmlFor="curPw">Current password</label>
                       <input
                         id="curPw"
                         type="password"
@@ -476,11 +484,11 @@ export default function AccountPage() {
                         onChange={(e) => setCurPw(e.target.value)}
                         placeholder="••••••••"
                         required
-                        className="bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-lg h-10 px-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none transition-colors"
+                        className={FIELD_CLASS}
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-zinc-400" htmlFor="newPw">New Password</label>
+                      <label className={FIELD_LABEL_CLASS} htmlFor="newPw">New password</label>
                       <input
                         id="newPw"
                         type="password"
@@ -488,11 +496,11 @@ export default function AccountPage() {
                         onChange={(e) => setNewPw(e.target.value)}
                         placeholder="Min 8 characters"
                         required
-                        className="bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-lg h-10 px-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none transition-colors"
+                        className={FIELD_CLASS}
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-zinc-400" htmlFor="confirmPw">Confirm New Password</label>
+                      <label className={FIELD_LABEL_CLASS} htmlFor="confirmPw">Confirm new password</label>
                       <input
                         id="confirmPw"
                         type="password"
@@ -500,10 +508,10 @@ export default function AccountPage() {
                         onChange={(e) => setConfirmPw(e.target.value)}
                         placeholder="••••••••"
                         required
-                        className="bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-lg h-10 px-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none transition-colors"
+                        className={FIELD_CLASS}
                       />
                     </div>
-                    <Button type="submit" disabled={pwLoading} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 self-start px-6">
+                    <Button type="submit" disabled={pwLoading} className="min-h-11 self-start px-6">
                       {pwLoading ? "Changing…" : "Change password"}
                     </Button>
                   </form>
@@ -517,9 +525,9 @@ export default function AccountPage() {
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteOpen} onOpenChange={(open) => { setDeleteOpen(open); setDeleteError(null); }}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+        <DialogContent className="bg-zinc-900 text-zinc-100 ring-zinc-800/80">
           <DialogHeader>
-            <DialogTitle className="text-red-400 font-bold">Delete account</DialogTitle>
+            <DialogTitle className="text-red-400">Delete account</DialogTitle>
             <DialogDescription className="text-zinc-400">
               This will permanently delete your account, paired devices, and history logs after a 30-day grace period.
             </DialogDescription>
@@ -527,13 +535,13 @@ export default function AccountPage() {
 
           <form onSubmit={handleConfirmDeletion} className="flex flex-col gap-4 py-4">
             {deleteError && (
-              <div className="bg-red-950/40 border border-red-900/50 text-red-400 text-sm px-3.5 py-2.5 rounded-lg">
+              <div role="alert" className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 type-body-sm text-red-300">
                 {deleteError}
               </div>
             )}
-            <div className="flex flex-col gap-1.5 text-sm">
-              <label className="text-xs font-semibold text-zinc-300" htmlFor="confirmEmail">
-                Type your email <strong className="text-zinc-100 font-mono">{profile?.email}</strong> to confirm:
+            <div className="flex flex-col gap-1.5">
+              <label className={FIELD_LABEL_CLASS} htmlFor="confirmEmail">
+                Type your email <strong className="type-mono font-semibold text-zinc-100">{profile?.email}</strong> to confirm:
               </label>
               <input
                 id="confirmEmail"
@@ -542,14 +550,14 @@ export default function AccountPage() {
                 onChange={(e) => setDeleteConfirmEmail(e.target.value)}
                 placeholder="Type email address"
                 required
-                className="bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-lg h-10 px-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none transition-colors"
+                className={FIELD_CLASS}
               />
             </div>
-            <DialogFooter className="gap-2 sm:gap-0 mt-2">
-              <Button type="button" variant="ghost" onClick={() => setDeleteOpen(false)} className="text-zinc-400 hover:text-zinc-100">
+            <DialogFooter className="mt-2 gap-2 sm:gap-0">
+              <Button type="button" variant="ghost" onClick={() => setDeleteOpen(false)} className="min-h-11 text-zinc-400 hover:text-zinc-100">
                 Cancel
               </Button>
-              <Button type="submit" disabled={deleteLoading} variant="destructive">
+              <Button type="submit" disabled={deleteLoading} variant="destructive" className="min-h-11">
                 {deleteLoading ? "Scheduling…" : "Schedule deletion"}
               </Button>
             </DialogFooter>

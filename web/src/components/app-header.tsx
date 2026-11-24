@@ -17,7 +17,7 @@ function Logo() {
   return (
     <Link
       href="/dashboard"
-      className="flex items-center gap-2 font-semibold text-lg tracking-tight hover:opacity-90"
+      className="flex min-h-11 items-center hover:opacity-90"
     >
       <BrandLockup size={22} />
     </Link>
@@ -46,7 +46,7 @@ export function AppHeader({ email }: { email?: string | null }) {
                 key={href}
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`type-label flex min-h-11 items-center gap-2 rounded-lg px-3 transition-colors ${
                   active
                     ? "bg-zinc-800 text-zinc-100"
                     : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
@@ -61,7 +61,7 @@ export function AppHeader({ email }: { email?: string | null }) {
 
         <div className="flex items-center gap-2">
           {email && (
-            <span className="hidden max-w-[180px] truncate text-xs text-zinc-500 lg:inline">
+            <span className="type-metadata hidden max-w-[180px] truncate text-zinc-400 lg:inline">
               {email}
             </span>
           )}
@@ -69,7 +69,7 @@ export function AppHeader({ email }: { email?: string | null }) {
             variant="ghost"
             size="sm"
             onClick={handleLogout}
-            className="text-zinc-400 hover:text-zinc-100"
+            className="min-h-11 text-zinc-400 hover:text-zinc-100"
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
             <span className="hidden sm:inline">Log out</span>
@@ -80,7 +80,7 @@ export function AppHeader({ email }: { email?: string | null }) {
 
       <nav
         aria-label="Main mobile"
-        className="flex gap-1 overflow-x-auto border-t border-zinc-800/60 px-4 py-2 md:hidden"
+        className="flex gap-1 overflow-x-auto border-t border-zinc-800/80 px-3 py-1.5 md:hidden"
       >
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
@@ -89,13 +89,13 @@ export function AppHeader({ email }: { email?: string | null }) {
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`type-label flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-3 transition-colors ${
                 active
                   ? "bg-zinc-800 text-zinc-100"
                   : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
               }`}
             >
-              <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+              <Icon className="h-4 w-4" aria-hidden="true" />
               {label}
             </Link>
           );

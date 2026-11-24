@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api";
@@ -101,6 +101,22 @@ interface CommandResult {
   replayed?: boolean;
   reason?: string;
 }
+
+const FIELD_CLASS =
+  "h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-base text-zinc-100 placeholder:text-zinc-400 transition-colors focus:border-emerald-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/80 md:text-sm";
+
+const FIELD_LABEL_CLASS = "type-label text-zinc-300";
+
+const OUTLINE_ACTION_CLASS =
+  "min-h-11 border-zinc-700 text-zinc-200 hover:bg-zinc-800";
+
+const COMMAND_TONE_CLASS: Record<string, string> = {
+  success: "bg-emerald-500/10 text-emerald-300",
+  info: "bg-zinc-500/10 text-zinc-300",
+  warning: "bg-amber-500/10 text-amber-300",
+  danger: "bg-red-500/10 text-red-300",
+  neutral: "bg-zinc-500/10 text-zinc-300",
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -457,7 +473,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
       {/* Offline banner */}
       {offline && (
-        <div className="bg-amber-950/80 border-b border-amber-900/50 text-amber-400 text-sm text-center py-2 font-medium animate-pulse">
+        <div className="border-b border-amber-900/50 bg-amber-950/80 py-2 text-center type-body-sm font-medium text-amber-300">
           Connection lost — retrying…
         </div>
       )}
@@ -467,9 +483,9 @@ export default function DashboardPage() {
           dismissed so a slow reader does not lose the result. */}
       <div role="status" aria-live="polite" aria-atomic="true">
         {notification && (
-          <div className={`text-center py-2.5 px-4 text-sm font-medium border-b flex justify-between items-center transition-all ${
-            notification.type === 'success' ? 'bg-emerald-950/85 text-emerald-400 border-emerald-900/50' : 
-            notification.type === 'error' ? 'bg-red-950/85 text-red-400 border-red-900/50' :
+          <div className={`flex items-center justify-between border-b px-4 py-2.5 text-center type-body-sm font-medium transition-all ${
+            notification.type === 'success' ? 'bg-emerald-950/85 text-emerald-300 border-emerald-900/50' :
+            notification.type === 'error' ? 'bg-red-950/85 text-red-300 border-red-900/50' :
             'bg-zinc-900/90 text-zinc-300 border-zinc-800'
           }`}>
             <span className="mx-auto">{notification.message}</span>
@@ -477,7 +493,7 @@ export default function DashboardPage() {
               type="button"
               aria-label="Dismiss notification"
               onClick={() => setNotification(null)}
-              className="text-zinc-500 hover:text-zinc-300 text-xs ml-4 min-h-[44px] min-w-[44px] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              className="ml-4 flex min-h-11 min-w-11 items-center justify-center rounded text-zinc-400 transition-colors hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
               ✕
             </button>
@@ -487,7 +503,7 @@ export default function DashboardPage() {
 
       <AppHeader email={account?.email} />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
         <PlatformPageHeader
           eyebrow="Fleet"
           title="Devices"
@@ -502,7 +518,7 @@ export default function DashboardPage() {
                     setBulkMode(!bulkMode);
                     setSelectedIds([]);
                   }}
-                  className={bulkMode ? "" : "border-zinc-700 text-zinc-300 hover:bg-zinc-900"}
+                  className={bulkMode ? "min-h-11" : "min-h-11 border-zinc-700 text-zinc-300 hover:bg-zinc-900"}
                 >
                   {bulkMode ? "Exit bulk actions" : "Bulk actions"}
                 </Button>
@@ -510,7 +526,7 @@ export default function DashboardPage() {
               <Button
                 size="sm"
                 onClick={() => setAddOpen(true)}
-                className="bg-emerald-600 text-white hover:bg-emerald-500"
+                className="min-h-11 px-4"
               >
                 + Add device
               </Button>
@@ -520,54 +536,55 @@ export default function DashboardPage() {
 
         {/* Onboarding Guide */}
         {devices.length === 0 && !onboardingDismissed && (
-          <Card className="bg-zinc-900 border-zinc-800">
-            <CardHeader className="flex flex-row justify-between items-start">
+          <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
+            <CardHeader className="flex flex-row items-start justify-between">
               <div>
-                <CardTitle className="text-zinc-100 font-bold">Onboarding guide</CardTitle>
-                <CardDescription className="text-zinc-400">
+                <h2 className="type-card-title text-zinc-100">Onboarding guide</h2>
+                <p className="type-body-sm mt-1 text-zinc-400">
                   Follow these steps to connect your first hardware endpoint
-                </CardDescription>
+                </p>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label="Dismiss onboarding guide"
                 onClick={() => setOnboardingDismissed(true)}
-                className="text-zinc-500 hover:text-zinc-300"
+                className="min-h-11 min-w-11 text-zinc-400 hover:text-zinc-200"
               >
                 ✕
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-sm">
-                <div className="flex flex-col gap-2 p-4 rounded-xl bg-zinc-950 border border-zinc-800/80">
-                  <div className="text-emerald-500 font-extrabold">Step 1</div>
-                  <h4 className="font-semibold text-zinc-200">Verify email</h4>
-                  <p className="text-zinc-400 text-xs">
+              <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-4">
+                <div className="flex flex-col gap-2 rounded-xl border border-zinc-800/80 bg-zinc-950 p-4">
+                  <div className="type-overline text-emerald-400">Step 1</div>
+                  <h3 className="type-label text-zinc-100">Verify email</h3>
+                  <p className="type-body-sm text-zinc-400">
                     {account?.email_verified ? "✓ Verified" : "Check inbox for verify link."}
                   </p>
                 </div>
-                <div className="flex flex-col gap-2 p-4 rounded-xl bg-zinc-950 border border-zinc-800/80">
-                  <div className="text-emerald-500 font-extrabold">Step 2</div>
-                  <h4 className="font-semibold text-zinc-200">Add first device</h4>
-                  <p className="text-zinc-400 text-xs">
-                    Click the &quot;+ Add device&quot; button to create your first endpoint.
+                <div className="flex flex-col gap-2 rounded-xl border border-zinc-800/80 bg-zinc-950 p-4">
+                  <div className="type-overline text-emerald-400">Step 2</div>
+                  <h3 className="type-label text-zinc-100">Add first device</h3>
+                  <p className="type-body-sm text-zinc-400">
+                    Select &quot;+ Add device&quot; to create your first endpoint.
                   </p>
                 </div>
-                <div className="flex flex-col gap-2 p-4 rounded-xl bg-zinc-950 border border-zinc-800/80">
-                  <div className="text-emerald-500 font-extrabold">Step 3</div>
-                  <h4 className="font-semibold text-zinc-200">Flash ESP32</h4>
-                  <p className="text-zinc-400 text-xs">
+                <div className="flex flex-col gap-2 rounded-xl border border-zinc-800/80 bg-zinc-950 p-4">
+                  <div className="type-overline text-emerald-400">Step 3</div>
+                  <h3 className="type-label text-zinc-100">Flash ESP32</h3>
+                  <p className="type-body-sm text-zinc-400">
                     Flash custom firmware to your board on the{" "}
-                    <Link href="/setup" target="_blank" className="text-emerald-400 underline">
+                    <Link href="/setup" target="_blank" className="text-emerald-400 underline underline-offset-2 hover:text-emerald-300">
                       setup page
                     </Link>
                     .
                   </p>
                 </div>
-                <div className="flex flex-col gap-2 p-4 rounded-xl bg-zinc-950 border border-zinc-800/80">
-                  <div className="text-emerald-500 font-extrabold">Step 4</div>
-                  <h4 className="font-semibold text-zinc-200">Try a command</h4>
-                  <p className="text-zinc-400 text-xs">
+                <div className="flex flex-col gap-2 rounded-xl border border-zinc-800/80 bg-zinc-950 p-4">
+                  <div className="type-overline text-emerald-400">Step 4</div>
+                  <h3 className="type-label text-zinc-100">Try a command</h3>
+                  <p className="type-body-sm text-zinc-400">
                     Trigger a power action from the dashboard cards.
                   </p>
                 </div>
@@ -580,27 +597,27 @@ export default function DashboardPage() {
         <div className="grid grid-cols-3 divide-x divide-zinc-800 overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/25">
           {[
             { label: "Devices", value: devices.length, tone: "text-zinc-100" },
-            { label: "Online", value: onlineCount, tone: "text-emerald-400" },
-            { label: "Offline", value: offlineCount, tone: "text-zinc-400" },
+            { label: "Online", value: onlineCount, tone: "text-emerald-300" },
+            { label: "Offline", value: offlineCount, tone: "text-zinc-300" },
           ].map((stat) => (
             <div key={stat.label} className="px-5 py-4">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+              <span className="type-overline text-zinc-400">
                 {stat.label}
               </span>
-              <span className={`mt-1 block font-heading text-2xl font-semibold tracking-tight ${stat.tone}`}>{stat.value}</span>
+              <span className={`type-mono mt-1 block text-2xl font-semibold ${stat.tone}`}>{stat.value}</span>
             </div>
           ))}
         </div>
 
         {/* Devices list */}
         {loading ? (
-          <div className="text-center text-zinc-400 py-16">Loading devices…</div>
+          <div className="py-16 text-center type-body-sm text-zinc-400">Loading devices…</div>
         ) : devices.length === 0 ? (
-          <div className="text-center text-zinc-500 py-20 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/10">
-            No devices configured yet. Click &quot;+ Add device&quot; to get started.
+          <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/10 py-20 text-center type-body-sm text-zinc-400">
+            No devices configured yet. Select &quot;+ Add device&quot; to get started.
           </div>
         ) : (
-          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
             {devices.map((d) => {
               const pc = describePcState(d.pc_on, d.telemetry_at);
               const connection = describeConnection(d.last_seen_at);
@@ -613,7 +630,7 @@ export default function DashboardPage() {
                 : null;
               const busy = Boolean(commandInFlight[d.id]);
               return (
-              <Card key={d.id} className="flex flex-col border-zinc-800/80 bg-zinc-900/25 transition-colors hover:border-zinc-700">
+              <Card key={d.id} className="flex flex-col bg-zinc-900/25 ring-1 ring-zinc-800/80 transition-colors hover:ring-zinc-700">
                 <div
                   role="button"
                   tabIndex={0}
@@ -625,34 +642,52 @@ export default function DashboardPage() {
                       handleOpenDeviceDetail(d);
                     }
                   }}
-                  className="group cursor-pointer rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  className="group flex cursor-pointer flex-col rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                   <CardHeader className="pb-4">
-                    <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-3">
                         {bulkMode && (
-                          <input
-                            type="checkbox"
-                            aria-label={`Select ${d.name}`}
-                            checked={selectedIds.includes(d.id)}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              toggleSelectDevice(d.id);
-                            }}
-                            className="h-4 w-4 rounded border-zinc-700 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-zinc-900"
-                          />
+                          <label
+                            className="-ml-2 flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-md"
+                            onClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => event.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              aria-label={`Select ${d.name}`}
+                              checked={selectedIds.includes(d.id)}
+                              onChange={(event) => {
+                                event.stopPropagation();
+                                toggleSelectDevice(d.id);
+                              }}
+                              onClick={(event) => event.stopPropagation()}
+                              className="h-5 w-5 cursor-pointer rounded border-zinc-600 bg-zinc-950 accent-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+                            />
+                          </label>
                         )}
-                        <div>
-                          <CardTitle className="text-zinc-100 text-lg font-bold group-hover:text-emerald-400 transition-colors">{d.name}</CardTitle>
-                          <CardDescription className="text-zinc-500 text-xs mt-0.5">
-                            <span className={pc.state === "Unknown" ? "text-zinc-500" : pc.stale ? "text-amber-400" : "text-zinc-300"}>
+                        <div className="min-w-0">
+                          <CardTitle className="type-card-title text-zinc-100 transition-colors group-hover:text-emerald-300">{d.name}</CardTitle>
+                          <div className="type-metadata mt-1 flex flex-wrap items-center gap-x-1.5 text-zinc-400">
+                            <span
+                              className={
+                                pc.state === "Unknown"
+                                  ? "text-zinc-400"
+                                  : pc.stale
+                                    ? "text-amber-300"
+                                    : pc.state === "On"
+                                      ? "text-emerald-300"
+                                      : "text-zinc-300"
+                              }
+                            >
                               {pc.state === "Unknown" ? "PC state unknown" : `PC ${pc.state.toLowerCase()}`}
                             </span>
-                            <span className="text-zinc-600"> · {pc.ageLabel}</span>
-                          </CardDescription>
-                          <span className="text-[10px] text-zinc-600">
+                            <span aria-hidden="true" className="text-zinc-600">·</span>
+                            <span>{pc.ageLabel}</span>
+                          </div>
+                          <p className="type-metadata text-zinc-400">
                             {d.firmware_version ? `Firmware ${d.firmware_version}` : "Firmware unknown"}
-                          </span>
+                          </p>
                         </div>
                       </div>
 
@@ -664,11 +699,11 @@ export default function DashboardPage() {
                         <DropdownMenu>
                           <DropdownMenuTrigger
                             aria-label={`Actions for ${d.name}`}
-                            className="h-9 w-9 text-zinc-500 hover:text-zinc-300 flex items-center justify-center rounded-lg hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
+                            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-lg leading-none text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                           >
                             •••
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-zinc-300">
+                          <DropdownMenuContent align="end" className="border-zinc-800 bg-zinc-900 text-zinc-300">
                             <DropdownMenuItem onClick={() => handleGetPairCode(d.id)}>
                               Get pairing code
                             </DropdownMenuItem>
@@ -688,54 +723,54 @@ export default function DashboardPage() {
                   </CardHeader>
 
                   <CardContent className="pb-4">
-                    {/* Telemetry Progress Bars */}
+                    {/* Telemetry progress bars */}
                     {(d.cpu_load !== null || d.gpu_temp !== null || d.ram_used_mb !== null) && (
-                      <div className="flex flex-col gap-3 p-3 bg-zinc-950/60 rounded-lg border border-zinc-800">
+                      <div className="flex flex-col gap-3">
                         {d.cpu_load !== null && (
                           <div className="flex flex-col gap-1">
-                            <div className="flex justify-between text-xs text-zinc-400">
+                            <div className="flex justify-between type-metadata text-zinc-400">
                               <span>CPU</span>
-                              <span>{Math.round(d.cpu_load)}%</span>
+                              <span className="type-mono text-zinc-300">{Math.round(d.cpu_load)}%</span>
                             </div>
-                            <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-emerald-500 h-full" style={{ width: `${d.cpu_load}%` }} />
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                              <div className="h-full bg-emerald-500" style={{ width: `${d.cpu_load}%` }} />
                             </div>
                           </div>
                         )}
                         {d.gpu_temp !== null && (
                           <div className="flex flex-col gap-1">
-                            <div className="flex justify-between text-xs text-zinc-400">
+                            <div className="flex justify-between type-metadata text-zinc-400">
                               <span>GPU</span>
-                              <span>{Math.round(d.gpu_temp)}°C</span>
+                              <span className="type-mono text-zinc-300">{Math.round(d.gpu_temp)}°C</span>
                             </div>
-                            <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-sky-500 h-full" style={{ width: `${d.gpu_temp}%` }} />
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                              <div className="h-full bg-sky-500" style={{ width: `${d.gpu_temp}%` }} />
                             </div>
                           </div>
                         )}
                       </div>
                     )}
                     {d.cpu_load === null && d.gpu_temp === null && d.ram_used_mb === null && (
-                      <div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-950/40 px-3 py-4 text-xs text-zinc-500">
+                      <div className="rounded-lg border border-dashed border-zinc-800/80 px-3 py-4 type-metadata text-zinc-400">
                         {d.last_seen_at
-                          ? `No live telemetry — last seen ${connection.ageLabel}.`
+                          ? `No live telemetry — ${connection.ageLabel}.`
                           : "No telemetry yet."}
                       </div>
                     )}
                   </CardContent>
                 </div>
 
-                {/* Power Action Buttons */}
-                <CardContent className="pt-0">
+                {/* Power action buttons */}
+                <CardContent className="mt-auto pt-0">
                   {!bulkMode && (
-                    <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-zinc-800">
+                    <div className="mt-4 flex flex-col gap-3 border-t border-zinc-800/80 pt-4">
                       <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
                           disabled={busy}
                           aria-label={`Power On ${d.name}`}
                           onClick={() => handlePowerAction(d, "power_on")}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold min-h-[44px] focus-visible:ring-2 focus-visible:ring-emerald-400"
+                          className="min-h-11 px-4"
                         >
                           {busy ? "…" : "On"}
                         </Button>
@@ -745,7 +780,7 @@ export default function DashboardPage() {
                           disabled={busy}
                           aria-label={`Sleep ${d.name}`}
                           onClick={() => handlePowerAction(d, "sleep")}
-                          className="min-h-[44px] border-zinc-700 text-zinc-200 hover:bg-zinc-800"
+                          className={OUTLINE_ACTION_CLASS}
                         >
                           Sleep
                         </Button>
@@ -753,21 +788,21 @@ export default function DashboardPage() {
                           <>
                             <Button
                               size="sm"
-                              variant="secondary"
+                              variant="outline"
                               disabled={busy}
                               aria-label={`Lock ${d.name}`}
                               onClick={() => handlePowerAction(d, "lock")}
-                              className="min-h-[44px] border-zinc-700 text-zinc-200 hover:bg-zinc-800"
+                              className={OUTLINE_ACTION_CLASS}
                             >
                               Lock
                             </Button>
                             <Button
                               size="sm"
-                              variant="secondary"
+                              variant="outline"
                               disabled={busy}
                               aria-label={`Log Out ${d.name}`}
                               onClick={() => handlePowerAction(d, "logout")}
-                              className="min-h-[44px] border-zinc-700 text-zinc-200 hover:bg-zinc-800"
+                              className={OUTLINE_ACTION_CLASS}
                             >
                               Log Out
                             </Button>
@@ -779,7 +814,7 @@ export default function DashboardPage() {
                           disabled={busy}
                           aria-label={`Power Off ${d.name}`}
                           onClick={() => handlePowerAction(d, "power_off")}
-                          className="min-h-[44px] border-zinc-700 text-zinc-200 hover:bg-zinc-800"
+                          className={OUTLINE_ACTION_CLASS}
                         >
                           Off
                         </Button>
@@ -789,7 +824,7 @@ export default function DashboardPage() {
                           disabled={busy}
                           aria-label={`Force Off ${d.name}`}
                           onClick={() => handlePowerAction(d, "power_off_force")}
-                          className="min-h-[44px] border-red-900/60 text-red-400 hover:bg-red-950/40"
+                          className="min-h-11 border-red-900/60 text-red-300 hover:bg-red-950/40"
                         >
                           Force Off
                         </Button>
@@ -799,7 +834,7 @@ export default function DashboardPage() {
                           disabled={busy}
                           aria-label={`Reset ${d.name}`}
                           onClick={() => handlePowerAction(d, "reset")}
-                          className="min-h-[44px] border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                          className={OUTLINE_ACTION_CLASS}
                         >
                           Reset
                         </Button>
@@ -809,14 +844,14 @@ export default function DashboardPage() {
                           visible without opening the device. */}
                       {lastCommand && (
                         <p
-                          className={`text-[11px] ${
+                          className={`type-metadata ${
                             lastCommand.tone === "danger"
-                              ? "text-red-400"
+                              ? "text-red-300"
                               : lastCommand.tone === "warning"
-                                ? "text-amber-400"
+                                ? "text-amber-300"
                                 : lastCommand.tone === "success"
-                                  ? "text-emerald-400"
-                                  : "text-zinc-500"
+                                  ? "text-emerald-300"
+                                  : "text-zinc-400"
                           }`}
                         >
                           Last command: {lastCommand.label}
@@ -834,25 +869,25 @@ export default function DashboardPage() {
 
       {/* Bulk commands bar at bottom */}
       {bulkMode && selectedIds.length > 0 && (
-        <div className="bg-zinc-900 border-t border-zinc-800 py-4 px-4 sticky bottom-0 z-40">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <span className="text-sm font-semibold text-zinc-300">
+        <div className="sticky bottom-0 z-40 border-t border-zinc-800/80 bg-zinc-950/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span className="type-label text-zinc-300">
               {selectedIds.length} selected
             </span>
-            <div className="flex gap-2">
-              <Button size="sm" onClick={() => handleBulkCommand("power_on")} className="bg-emerald-600 hover:bg-emerald-500 text-white">
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => handleBulkCommand("power_on")} className="min-h-11 px-4">
                 Bulk On
               </Button>
-              <Button size="sm" variant="secondary" onClick={() => handleBulkCommand("sleep")} className="bg-zinc-800 text-zinc-100">
+              <Button size="sm" variant="secondary" onClick={() => handleBulkCommand("sleep")} className="min-h-11 bg-zinc-800 text-zinc-100 hover:bg-zinc-700">
                 Bulk Sleep
               </Button>
-              <Button size="sm" variant="secondary" onClick={() => handleBulkCommand("power_off")} className="bg-zinc-800 text-zinc-100">
+              <Button size="sm" variant="secondary" onClick={() => handleBulkCommand("power_off")} className="min-h-11 bg-zinc-800 text-zinc-100 hover:bg-zinc-700">
                 Bulk Off
               </Button>
-              <Button size="sm" variant="destructive" onClick={() => handleBulkCommand("power_off_force")}>
+              <Button size="sm" variant="destructive" onClick={() => handleBulkCommand("power_off_force")} className="min-h-11">
                 Bulk Force Off
               </Button>
-              <Button size="sm" variant="destructive" onClick={() => handleBulkCommand("reset")}>
+              <Button size="sm" variant="destructive" onClick={() => handleBulkCommand("reset")} className="min-h-11">
                 Bulk Reset
               </Button>
             </div>
@@ -862,7 +897,7 @@ export default function DashboardPage() {
 
       {/* Add Device Dialog */}
       <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); setCreatedCredentials(null); }}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+        <DialogContent className="bg-zinc-900 text-zinc-100 ring-zinc-800/80">
           <DialogHeader>
             <DialogTitle>Add device</DialogTitle>
             <DialogDescription className="text-zinc-400">
@@ -873,29 +908,29 @@ export default function DashboardPage() {
           {createdCredentials ? (
             <div className="flex flex-col gap-4 py-4">
               {createdCredentials.code && (
-                <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 text-center flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Pairing Code</span>
-                  <span className="text-3xl font-black text-emerald-400 tracking-widest">{createdCredentials.code}</span>
-                  <span className="text-[10px] text-zinc-500 mt-1">Enter this code on your ESP32 board during setup.</span>
+                <div className="flex flex-col gap-1.5 rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-center">
+                  <span className="type-overline text-zinc-400">Pairing code</span>
+                  <span className="type-mono select-all break-all text-3xl font-semibold tracking-[0.2em] text-emerald-300">{createdCredentials.code}</span>
+                  <span className="type-metadata mt-1 text-zinc-400">Enter this code on your ESP32 board during setup.</span>
                 </div>
               )}
 
-              <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 flex flex-col gap-2.5">
-                <span className="text-xs font-semibold text-zinc-500 uppercase">Advanced Credentials</span>
+              <div className="flex flex-col gap-2.5 rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+                <span className="type-overline text-zinc-400">Advanced credentials</span>
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold text-zinc-500">DEVICE ID</span>
-                  <span className="text-xs font-mono select-all bg-zinc-900 p-2 rounded text-zinc-300">{createdCredentials.id}</span>
+                  <span className="type-overline text-zinc-400">Device ID</span>
+                  <span className="type-mono select-all break-all rounded bg-zinc-900 p-2 text-zinc-200">{createdCredentials.id}</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold text-zinc-500">DEVICE TOKEN</span>
-                  <span className="text-xs font-mono select-all bg-zinc-900 p-2 rounded text-zinc-300">{createdCredentials.token}</span>
+                  <span className="type-overline text-zinc-400">Device token</span>
+                  <span className="type-mono select-all break-all rounded bg-zinc-900 p-2 text-zinc-200">{createdCredentials.token}</span>
                 </div>
               </div>
             </div>
           ) : (
             <form onSubmit={handleAddDevice} className="flex flex-col gap-4 py-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-zinc-400" htmlFor="deviceName">Device Name</label>
+                <label className={FIELD_LABEL_CLASS} htmlFor="deviceName">Device name</label>
                 <input
                   id="deviceName"
                   type="text"
@@ -903,12 +938,12 @@ export default function DashboardPage() {
                   onChange={(e) => setNewDeviceName(e.target.value)}
                   placeholder="e.g. My Desktop"
                   required
-                  className="bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-lg h-10 px-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none transition-colors"
+                  className={FIELD_CLASS}
                 />
               </div>
               <DialogFooter>
-                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 w-full mt-2">
-                  Create Device
+                <Button type="submit" className="mt-2 min-h-11 w-full">
+                  Create device
                 </Button>
               </DialogFooter>
             </form>
@@ -918,7 +953,7 @@ export default function DashboardPage() {
 
       {/* Pairing Code Display Dialog */}
       <Dialog open={pairOpen} onOpenChange={setPairOpen}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+        <DialogContent className="bg-zinc-900 text-zinc-100 ring-zinc-800/80">
           <DialogHeader>
             <DialogTitle>Pairing credentials</DialogTitle>
             <DialogDescription className="text-zinc-400">
@@ -927,10 +962,10 @@ export default function DashboardPage() {
           </DialogHeader>
 
           {pairCodeInfo && (
-            <div className="bg-zinc-950 p-6 rounded-xl border border-zinc-800 text-center flex flex-col gap-2.5 py-8 my-4">
-              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Pairing Code</span>
-              <span className="text-4xl font-black text-emerald-400 tracking-widest">{pairCodeInfo.code}</span>
-              <span className="text-[10px] text-zinc-500 mt-2">Expires at: {new Date(pairCodeInfo.expires_at).toLocaleTimeString()}</span>
+            <div className="my-4 flex flex-col gap-2.5 rounded-xl border border-zinc-800 bg-zinc-950 px-6 py-8 text-center">
+              <span className="type-overline text-zinc-400">Pairing code</span>
+              <span className="type-mono select-all break-all text-4xl font-semibold tracking-[0.2em] text-emerald-300">{pairCodeInfo.code}</span>
+              <span className="type-metadata mt-2 text-zinc-400">Expires at: {new Date(pairCodeInfo.expires_at).toLocaleTimeString()}</span>
             </div>
           )}
         </DialogContent>
@@ -938,7 +973,7 @@ export default function DashboardPage() {
 
       {/* Telemetry Settings Dialog */}
       <Dialog open={telemetryOpen} onOpenChange={setTelemetryOpen}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+        <DialogContent className="bg-zinc-900 text-zinc-100 ring-zinc-800/80">
           <DialogHeader>
             <DialogTitle>Telemetry settings</DialogTitle>
             <DialogDescription className="text-zinc-400">
@@ -946,63 +981,63 @@ export default function DashboardPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4 py-4">
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-800 hover:bg-zinc-950 transition-colors">
+          <div className="flex flex-col gap-3 py-4">
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 transition-colors hover:bg-zinc-950">
               <input
                 type="checkbox"
                 checked={telemetryCpu}
                 onChange={(e) => setTelemetryCpu(e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-700 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-zinc-900"
+                className="h-5 w-5 shrink-0 cursor-pointer rounded border-zinc-600 bg-zinc-950 accent-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               />
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-semibold text-zinc-200">CPU Load</span>
-                <span className="text-xs text-zinc-500">Report active processor utilization percentage</span>
+                <span className="type-label text-zinc-100">CPU load</span>
+                <span className="type-body-sm text-zinc-400">Report active processor utilization percentage</span>
               </div>
             </label>
 
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-800 hover:bg-zinc-950 transition-colors">
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 transition-colors hover:bg-zinc-950">
               <input
                 type="checkbox"
                 checked={telemetryRam}
                 onChange={(e) => setTelemetryRam(e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-700 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-zinc-900"
+                className="h-5 w-5 shrink-0 cursor-pointer rounded border-zinc-600 bg-zinc-950 accent-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               />
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-semibold text-zinc-200">RAM Usage</span>
-                <span className="text-xs text-zinc-500">Report physical memory consumption</span>
+                <span className="type-label text-zinc-100">RAM usage</span>
+                <span className="type-body-sm text-zinc-400">Report physical memory consumption</span>
               </div>
             </label>
 
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-800 hover:bg-zinc-950 transition-colors">
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 transition-colors hover:bg-zinc-950">
               <input
                 type="checkbox"
                 checked={telemetryGpu}
                 onChange={(e) => setTelemetryGpu(e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-700 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-zinc-900"
+                className="h-5 w-5 shrink-0 cursor-pointer rounded border-zinc-600 bg-zinc-950 accent-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               />
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-semibold text-zinc-200">GPU Temperature</span>
-                <span className="text-xs text-zinc-500">Report graphics processor temperature in Celsius</span>
+                <span className="type-label text-zinc-100">GPU temperature</span>
+                <span className="type-body-sm text-zinc-400">Report graphics processor temperature in Celsius</span>
               </div>
             </label>
 
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-zinc-950/60 border border-zinc-800 hover:bg-zinc-950 transition-colors">
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 transition-colors hover:bg-zinc-950">
               <input
                 type="checkbox"
                 checked={telemetryWifi}
                 onChange={(e) => setTelemetryWifi(e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-700 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-zinc-900"
+                className="h-5 w-5 shrink-0 cursor-pointer rounded border-zinc-600 bg-zinc-950 accent-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
               />
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-semibold text-zinc-200">Wi-Fi Signal Strength</span>
-                <span className="text-xs text-zinc-500">Report active wireless connection RSSI level</span>
+                <span className="type-label text-zinc-100">Wi-Fi signal strength</span>
+                <span className="type-body-sm text-zinc-400">Report active wireless connection RSSI level</span>
               </div>
             </label>
           </div>
 
           <DialogFooter>
-            <Button onClick={handleSaveTelemetrySettings} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 w-full">
-              Save Settings
+            <Button onClick={handleSaveTelemetrySettings} className="min-h-11 w-full">
+              Save settings
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1010,13 +1045,13 @@ export default function DashboardPage() {
 
       {/* Device Details Dialog */}
       <Dialog open={detailDevice !== null} onOpenChange={(open) => { if (!open) setDetailDevice(null); }}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100 sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-h-[85vh] overflow-y-auto bg-zinc-900 text-zinc-100 ring-zinc-800/80 sm:max-w-2xl">
           <DialogHeader>
-            <div className="flex justify-between items-center pr-6">
-              <div>
-                <DialogTitle className="text-xl font-bold">{detailDevice?.name}</DialogTitle>
-                <DialogDescription className="text-zinc-400 text-xs">
-                  Device ID: {detailDevice?.id}
+            <div className="flex items-center justify-between gap-3 pr-6">
+              <div className="min-w-0">
+                <DialogTitle>{detailDevice?.name}</DialogTitle>
+                <DialogDescription className="mt-1 text-zinc-400">
+                  Device ID: <span className="type-mono break-all">{detailDevice?.id}</span>
                 </DialogDescription>
               </div>
               {(() => {
@@ -1024,12 +1059,14 @@ export default function DashboardPage() {
                 const pc = describePcState(detailDevice.pc_on, detailDevice.telemetry_at);
                 return (
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                    className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${
                       pc.state === "Unknown"
-                        ? "bg-zinc-800 text-zinc-400"
+                        ? "border-zinc-700 bg-zinc-800/60 text-zinc-300"
                         : pc.stale
-                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                          : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
+                          : pc.state === "On"
+                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                            : "border-zinc-700 bg-zinc-800/60 text-zinc-300"
                     }`}
                     title={pc.ageLabel}
                   >
@@ -1041,50 +1078,50 @@ export default function DashboardPage() {
           </DialogHeader>
 
           {detailLoading ? (
-            <div className="text-center py-12 text-zinc-400">Loading device details…</div>
+            <div className="py-12 text-center type-body-sm text-zinc-400">Loading device details…</div>
           ) : (
             <div className="flex flex-col gap-6">
               {/* Quick stats grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="bg-zinc-950/40 border-zinc-800 p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Room Temp</span>
-                  <span className="text-lg font-black text-zinc-200 mt-1">
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <Card className="flex flex-col justify-between bg-zinc-950/40 p-3 ring-1 ring-zinc-800/80">
+                  <span className="type-overline text-zinc-400">Room temp</span>
+                  <span className="type-mono mt-1 text-lg font-semibold text-zinc-100">
                     {detailTelemetry?.room_temp !== undefined && detailTelemetry.room_temp !== null 
                       ? `${Number(detailTelemetry.room_temp).toFixed(1)}°C` 
                       : "N/A"}
                   </span>
                 </Card>
-                <Card className="bg-zinc-950/40 border-zinc-800 p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Room Humidity</span>
-                  <span className="text-lg font-black text-zinc-200 mt-1">
+                <Card className="flex flex-col justify-between bg-zinc-950/40 p-3 ring-1 ring-zinc-800/80">
+                  <span className="type-overline text-zinc-400">Room humidity</span>
+                  <span className="type-mono mt-1 text-lg font-semibold text-zinc-100">
                     {detailTelemetry?.room_humidity !== undefined && detailTelemetry.room_humidity !== null 
                       ? `${Math.round(Number(detailTelemetry.room_humidity))}%` 
                       : "N/A"}
                   </span>
                 </Card>
-                <Card className="bg-zinc-950/40 border-zinc-800 p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Wi-Fi RSSI</span>
-                  <span className="text-lg font-black text-zinc-200 mt-1">
+                <Card className="flex flex-col justify-between bg-zinc-950/40 p-3 ring-1 ring-zinc-800/80">
+                  <span className="type-overline text-zinc-400">Wi-Fi RSSI</span>
+                  <span className="type-mono mt-1 text-lg font-semibold text-zinc-100">
                     {detailTelemetry?.rssi !== undefined && detailTelemetry.rssi !== null 
                       ? `${detailTelemetry.rssi} dBm` 
                       : "N/A"}
                   </span>
                 </Card>
-                <Card className="bg-zinc-950/40 border-zinc-800 p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Device Source</span>
-                  <div className="flex flex-col mt-1">
+                <Card className="flex flex-col justify-between bg-zinc-950/40 p-3 ring-1 ring-zinc-800/80">
+                  <span className="type-overline text-zinc-400">Device source</span>
+                  <div className="mt-1 flex flex-col">
                     {(() => {
                       const platformInfo = getPlatformInfo(detailDevice?.firmware_version);
                       return (
                         <>
-                          <span className={`text-xs font-bold ${
-                            platformInfo.platform === "Windows Software" ? "text-blue-400" :
-                            platformInfo.platform === "ESP32" ? "text-emerald-400" :
-                            platformInfo.platform === "ESP8266" ? "text-cyan-400" : "text-zinc-400"
+                          <span className={`type-label ${
+                            platformInfo.platform === "Windows Software" ? "text-blue-300" :
+                            platformInfo.platform === "ESP32" ? "text-emerald-300" :
+                            platformInfo.platform === "ESP8266" ? "text-cyan-300" : "text-zinc-300"
                           }`}>
                             {platformInfo.platform}
                           </span>
-                          <span className="text-[10px] text-zinc-500 font-medium truncate mt-0.5" title={platformInfo.version}>
+                          <span className="type-mono mt-0.5 truncate text-zinc-400" title={platformInfo.version}>
                             v{platformInfo.version}
                           </span>
                         </>
@@ -1096,13 +1133,13 @@ export default function DashboardPage() {
 
               {/* Telemetry charts */}
               <div>
-                <h3 className="text-sm font-semibold text-zinc-300 mb-3">Temperature (Last 7 Days)</h3>
+                <h2 className="type-card-title mb-3 text-zinc-200">Temperature (last 7 days)</h2>
                 {detailHistory.length === 0 ? (
-                  <div className="h-[150px] flex items-center justify-center border border-zinc-800 rounded-lg bg-zinc-950/40 text-xs text-zinc-500">
+                  <div className="flex h-[150px] items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950/40 type-body-sm text-zinc-400">
                     No historical temperature data available.
                   </div>
                 ) : (
-                  <div className="p-4 border border-zinc-800 rounded-lg bg-zinc-950/50">
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-4">
                     <HistoryTempChart history={detailHistory} />
                   </div>
                 )}
@@ -1110,38 +1147,29 @@ export default function DashboardPage() {
 
               {/* Command history */}
               <div>
-                <h3 className="text-sm font-semibold text-zinc-300 mb-3">Recent Commands</h3>
+                <h2 className="type-card-title mb-3 text-zinc-200">Recent commands</h2>
                 {detailCommands.length === 0 ? (
-                  <div className="text-center py-6 border border-zinc-800 rounded-lg bg-zinc-950/40 text-xs text-zinc-500">
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 py-6 text-center type-body-sm text-zinc-400">
                     No commands sent recently.
                   </div>
                 ) : (
-                  <div className="border border-zinc-800 rounded-lg overflow-hidden bg-zinc-950/20">
+                  <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950/20">
                     <div className="max-h-[220px] overflow-y-auto">
-                      <table className="w-full text-left border-collapse text-xs">
+                      <table className="w-full border-collapse text-left">
                         <thead>
-                          <tr className="border-b border-zinc-800 bg-zinc-900/50 text-zinc-400">
-                            <th className="p-2.5 font-medium">Command</th>
-                            <th className="p-2.5 font-medium">Sent At</th>
-                            <th className="p-2.5 font-medium">Status</th>
+                          <tr className="border-b border-zinc-800 bg-zinc-900/50">
+                            <th className="p-2.5 type-overline text-zinc-400">Command</th>
+                            <th className="p-2.5 type-overline text-zinc-400">Sent at</th>
+                            <th className="p-2.5 type-overline text-zinc-400">Status</th>
                           </tr>
                         </thead>
                         <tbody>
                           {detailCommands.map((cmd) => {
                           const progress = commandProgress(cmd);
-                          const toneClass =
-                            progress.tone === "success"
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : progress.tone === "info"
-                              ? "bg-sky-500/10 text-sky-400"
-                              : progress.tone === "warning"
-                              ? "bg-amber-500/10 text-amber-400"
-                              : progress.tone === "danger"
-                              ? "bg-red-500/10 text-red-400"
-                              : "bg-zinc-500/10 text-zinc-400";
+                          const toneClass = COMMAND_TONE_CLASS[progress.tone] ?? COMMAND_TONE_CLASS.neutral;
                           return (
                             <tr key={cmd.id} className="border-b border-zinc-800/60 hover:bg-zinc-800/10">
-                              <td className="p-2.5 font-semibold text-zinc-200">
+                              <td className="p-2.5 type-label text-zinc-200">
                                  {cmd.type === "power_on" ? "Power On" :
                                   cmd.type === "power_off" ? "Power Off" :
                                   cmd.type === "power_off_force" ? "Force Off" :
@@ -1150,12 +1178,12 @@ export default function DashboardPage() {
                                   cmd.type === "lock" ? "Lock" :
                                   cmd.type === "logout" ? "Log Out" : cmd.type}
                               </td>
-                              <td className="p-2.5 text-zinc-400">
+                              <td className="type-metadata p-2.5 text-zinc-400">
                                 {new Date(cmd.created_at).toLocaleString()}
                               </td>
                               <td className="p-2.5">
                                 <span
-                                  className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${toneClass}`}
+                                  className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${toneClass}`}
                                   title={progress.detail}
                                 >
                                   {progress.shortLabel}
@@ -1173,31 +1201,31 @@ export default function DashboardPage() {
 
               {/* Scheduled commands */}
               <div>
-                <h3 className="text-sm font-semibold text-zinc-300 mb-3">Scheduled commands</h3>
+                <h2 className="type-card-title mb-3 text-zinc-200">Scheduled commands</h2>
                 {scheduleError && (
-                  <div role="alert" className="mb-3 bg-red-950/40 border border-red-900/50 text-red-400 text-xs px-3 py-2 rounded-lg">
+                  <div role="alert" className="mb-3 rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 type-body-sm text-red-300">
                     {scheduleError}
                   </div>
                 )}
 
                 {detailSchedules.length === 0 ? (
-                  <div className="text-center py-4 border border-zinc-800 rounded-lg bg-zinc-950/40 text-xs text-zinc-500">
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 py-4 text-center type-body-sm text-zinc-400">
                     Nothing scheduled for this device.
                   </div>
                 ) : (
-                  <ul className="divide-y divide-zinc-800 border border-zinc-800 rounded-lg overflow-hidden">
+                  <ul className="divide-y divide-zinc-800 overflow-hidden rounded-lg border border-zinc-800">
                     {detailSchedules.map((item) => (
-                      <li key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-zinc-950/20">
+                      <li key={item.id} className="flex flex-col justify-between gap-2 bg-zinc-950/20 p-3 sm:flex-row sm:items-center">
                         <div>
-                          <span className="text-xs font-semibold text-zinc-200">{actionLabel(item.type)}</span>
-                          <span className="text-xs text-zinc-500"> · {new Date(item.run_at).toLocaleString()}</span>
+                          <span className="type-label text-zinc-200">{actionLabel(item.type)}</span>
+                          <span className="type-metadata text-zinc-400"> · {new Date(item.run_at).toLocaleString()}</span>
                         </div>
                         <Button
                           size="sm"
                           variant="outline"
                           disabled={scheduleBusy}
                           onClick={() => handleCancelSchedule(item.id)}
-                          className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                          className="min-h-11 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                         >
                           Cancel
                         </Button>
@@ -1206,12 +1234,12 @@ export default function DashboardPage() {
                   </ul>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                   <select
                     aria-label="Scheduled command type"
                     value={scheduleType}
                     onChange={(e) => setScheduleType(e.target.value)}
-                    className="bg-zinc-950 border border-zinc-800 rounded-lg h-10 px-3 text-sm text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className={FIELD_CLASS}
                   >
                     <option value="power_on">Power On</option>
                     <option value="power_off">Power Off</option>
@@ -1225,18 +1253,18 @@ export default function DashboardPage() {
                     aria-label="Scheduled run time"
                     value={scheduleAt}
                     onChange={(e) => setScheduleAt(e.target.value)}
-                    className="bg-zinc-950 border border-zinc-800 rounded-lg h-10 px-3 text-sm text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className={FIELD_CLASS}
                   />
                   <Button
                     size="sm"
                     onClick={handleScheduleCommand}
                     disabled={scheduleBusy || !scheduleAt}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold h-10"
+                    className="min-h-11 shrink-0 px-4"
                   >
                     {scheduleBusy ? "Saving…" : "Schedule"}
                   </Button>
                 </div>
-                <p className="text-[10px] text-zinc-600 mt-2">
+                <p className="type-metadata mt-2 text-zinc-400">
                   The command is sent when the time arrives. It expires 10 minutes later if the device is offline.
                 </p>
               </div>
@@ -1253,7 +1281,7 @@ function HistoryTempChart({ history }: { history: TelemetrySample[] }) {
   const points = toChartPoints(history);
 
   if (points.length === 0) {
-    return <div className="text-zinc-500 text-xs text-center py-4">No valid temperature points to display.</div>;
+    return <div className="py-4 text-center type-body-sm text-zinc-400">No valid temperature points to display.</div>;
   }
 
   // Find min/max temperature for mapping
@@ -1300,7 +1328,7 @@ function HistoryTempChart({ history }: { history: TelemetrySample[] }) {
 
   return (
     <div className="w-full">
-      <div className="flex justify-between text-[10px] text-zinc-500 mb-1 px-1">
+      <div className="mb-1 flex justify-between px-1 type-metadata text-zinc-400">
         <span>Min: {minTemp.toFixed(1)}°C</span>
         <span>Max: {maxTemp.toFixed(1)}°C</span>
       </div>
@@ -1358,7 +1386,7 @@ function HistoryTempChart({ history }: { history: TelemetrySample[] }) {
         </figure>
       </div>
       {/* Timeline Labels */}
-      <div className="flex justify-between text-[9px] text-zinc-500 mt-1 px-1">
+      <div className="mt-1 flex justify-between px-1 type-metadata text-zinc-400">
         <span>{new Date(points[0].hour).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
         <span>{new Date(points[points.length - 1].hour).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
       </div>

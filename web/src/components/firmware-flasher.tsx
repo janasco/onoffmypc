@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 type Gate = "loading" | "in" | "out";
 
 const primaryLink =
-  "inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-emerald-500";
+  "inline-flex h-9 items-center justify-center rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-400";
 const secondaryLink =
   "inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 px-4 text-sm font-semibold text-zinc-200 transition-colors hover:bg-zinc-800";
 
@@ -46,7 +46,7 @@ export function FirmwareFlasher() {
   }, []);
 
   if (gate === "loading") {
-    return <p className="text-sm text-zinc-500">Checking your account…</p>;
+    return <p className="text-sm text-zinc-400">Checking your account…</p>;
   }
 
   if (gate === "out") {
@@ -72,11 +72,11 @@ export function FirmwareFlasher() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-zinc-400">
           Signed in as <span className="text-zinc-300">{email ?? "your account"}</span>
         </p>
         {channel === "rc" && (
-          <span className="rounded-full border border-amber-700/60 bg-amber-950/40 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300">
+          <span className="rounded-full border border-amber-700/60 bg-amber-950/40 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-300">
             Beta 1.4.0-rc1 — bench only
           </span>
         )}
@@ -94,7 +94,7 @@ export function FirmwareFlasher() {
       >
         <button
           slot="activate"
-          className="inline-flex h-11 items-center justify-center rounded-lg bg-emerald-600 px-5 text-sm font-bold text-white transition-colors hover:bg-emerald-500"
+          className="inline-flex h-11 items-center justify-center rounded-lg bg-emerald-500 px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-400"
         >
           ⚡ Flash ESP32 gateway
         </button>
@@ -108,7 +108,7 @@ export function FirmwareFlasher() {
       {/* @ts-expect-error closing tag of the custom element above */}
       </esp-web-install-button>
 
-      <p className="mt-3 text-xs text-zinc-500">
+      <p className="mt-3 text-xs text-zinc-400">
         Use a USB <span className="text-zinc-300">data</span> cable, not a charge-only
         cable. If the board is not detected, hold <span className="text-zinc-300">BOOT</span>{" "}
         while plugging it in.

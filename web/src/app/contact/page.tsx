@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { BrandLockup } from "@/components/brand-lockup";
+import { PublicFooter } from "@/components/public-footer";
+import { PublicHeader } from "@/components/public-header";
+import { PublicPageHeader } from "@/components/public-page-header";
 
 export default function ContactPage() {
   const [name, setName] = useState("");
@@ -63,63 +63,68 @@ export default function ContactPage() {
     }
   };
 
+  const fieldClass =
+    "type-body w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-zinc-100 placeholder:text-zinc-400 transition-colors focus-visible:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40";
+  const inputClass = `${fieldClass} h-11`;
+  const textareaClass = `${fieldClass} min-h-[132px] py-2.5`;
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
-      {/* Navbar */}
-      <nav className="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-lg hover:opacity-90 transition-opacity">
-            <BrandLockup size={22} />
-          </Link>
-          <div className="flex items-center gap-6 text-sm font-medium">
-            <Link href="/" className="text-zinc-400 hover:text-zinc-100 transition-colors">Home</Link>
-            <Link href="/setup" className="text-zinc-400 hover:text-zinc-100 transition-colors">Setup</Link>
-            <Link href="/login" className="text-zinc-400 hover:text-zinc-100 transition-colors">Log in</Link>
-            <Link href="/register">
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
-                Get Started
-              </Button>
-            </Link>
+    <div className="flex min-h-screen flex-col bg-zinc-950 text-zinc-50 selection:bg-emerald-500/30 selection:text-emerald-400">
+      <PublicHeader />
+
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:py-14">
+        <PublicPageHeader
+          eyebrow="Support"
+          title="Contact & Support"
+          description="Get help, request features, or report firmware bugs. We reply within 24–48 hours."
+        />
+
+        <section aria-labelledby="support-channels" className="mt-8">
+          <h2 id="support-channels" className="type-section-title text-zinc-50">
+            Support channels
+          </h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+              <h3 className="type-card-title text-zinc-100">Email Support</h3>
+              <p className="type-body-sm mt-1.5 text-zinc-400">
+                For accounts, billing, security disclosures, or enterprise setups.
+              </p>
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className="type-label mt-3 inline-block break-all text-emerald-400 underline-offset-2 hover:underline"
+              >
+                {SUPPORT_EMAIL}
+              </a>
+            </div>
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+              <h3 className="type-card-title text-zinc-100">Report a Bug</h3>
+              <p className="type-body-sm mt-1.5 text-zinc-400">
+                Spotted an issue on the firmware, dashboard, or apps? Open a GitHub ticket.
+              </p>
+              <a
+                href="https://github.com/janasco/onoffmypc/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="type-label mt-3 inline-block break-all text-emerald-400 underline-offset-2 hover:underline"
+              >
+                github.com/janasco/onoffmypc/issues
+              </a>
+            </div>
           </div>
-        </div>
-      </nav>
+        </section>
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-2xl mx-auto px-4 py-16 w-full">
-        <div className="mb-10 text-center md:text-left">
-          <h1 className="text-4xl font-extrabold text-zinc-100 tracking-tight">Contact &amp; Support</h1>
-          <p className="text-zinc-400 text-sm mt-2">
-            Get help, request features, or report firmware bugs. We reply within 24–48 hours.
-          </p>
-        </div>
+        <section aria-labelledby="send-message" className="mt-10">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 sm:p-6">
+            <h2 id="send-message" className="type-section-title text-zinc-50">
+              Send a Message
+            </h2>
+            <p className="type-body mt-2 text-zinc-400">Fill in the details below to message support.</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          <Card className="bg-zinc-900/40 border-zinc-800 p-4">
-            <h3 className="text-sm font-bold text-zinc-200">Email Support</h3>
-            <p className="text-xs text-zinc-500 mt-1">For accounts, billing, security disclosures, or enterprise setups.</p>
-            <a href={`mailto:${SUPPORT_EMAIL}`} className="text-xs text-emerald-400 hover:underline font-semibold block mt-3">
-              {SUPPORT_EMAIL}
-            </a>
-          </Card>
-          <Card className="bg-zinc-900/40 border-zinc-800 p-4">
-            <h3 className="text-sm font-bold text-zinc-200">Report a Bug</h3>
-            <p className="text-xs text-zinc-500 mt-1">Spotted an issue on the firmware, dashboard, or apps? Open a GitHub ticket.</p>
-            <a href="https://github.com/janasco/onoffmypc/issues" target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:underline font-semibold block mt-3">
-              github.com/janasco/onoffmypc/issues
-            </a>
-          </Card>
-        </div>
-
-        {/* Message Form */}
-        <Card className="bg-zinc-900/50 border-zinc-800 max-w-xl mx-auto">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-zinc-100">Send a Message</CardTitle>
-            <CardDescription className="text-xs text-zinc-400">Fill in the details below to message support.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="name" className="text-xs font-semibold text-zinc-400">Name</label>
+            <form onSubmit={handleSubmit} className="mt-6 flex max-w-xl flex-col gap-5">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="name" className="type-label text-zinc-200">
+                  Name
+                </label>
                 <input
                   type="text"
                   id="name"
@@ -127,12 +132,14 @@ export default function ContactPage() {
                   onChange={(e) => setName(e.target.value)}
                   maxLength={100}
                   required
-                  className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 h-9 transition-colors"
+                  className={inputClass}
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="email" className="text-xs font-semibold text-zinc-400">Email Address</label>
+              <div className="flex flex-col gap-2">
+                <label htmlFor="email" className="type-label text-zinc-200">
+                  Email Address
+                </label>
                 <input
                   type="email"
                   id="email"
@@ -141,12 +148,14 @@ export default function ContactPage() {
                   placeholder="you@example.com"
                   maxLength={200}
                   required
-                  className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 h-9 transition-colors"
+                  className={inputClass}
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="message" className="text-xs font-semibold text-zinc-400">Message</label>
+              <div className="flex flex-col gap-2">
+                <label htmlFor="message" className="type-label text-zinc-200">
+                  Message
+                </label>
                 <textarea
                   id="message"
                   value={message}
@@ -154,7 +163,7 @@ export default function ContactPage() {
                   rows={5}
                   maxLength={5000}
                   required
-                  className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 min-h-[100px] transition-colors"
+                  className={textareaClass}
                 />
               </div>
 
@@ -166,16 +175,22 @@ export default function ContactPage() {
                 autoComplete="off"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="absolute opacity-0 pointer-events-none -z-50"
+                className="pointer-events-none absolute -z-50 opacity-0"
                 aria-hidden="true"
               />
 
               {status.text && (
-                <div className={`text-xs p-3 rounded border font-medium ${
-                  status.type === "success" ? "bg-emerald-950/80 border-emerald-900/50 text-emerald-400" :
-                  status.type === "error" ? "bg-red-950/80 border-red-900/50 text-red-400" :
-                  "bg-zinc-950/80 border-zinc-800 text-zinc-400"
-                }`}>
+                <div
+                  role={status.type === "error" ? "alert" : "status"}
+                  aria-live={status.type === "error" ? "assertive" : "polite"}
+                  className={`type-body-sm rounded-lg border p-3 ${
+                    status.type === "success"
+                      ? "border-emerald-900/50 bg-emerald-950/80 text-emerald-300"
+                      : status.type === "error"
+                        ? "border-red-900/50 bg-red-950/80 text-red-300"
+                        : "border-zinc-800 bg-zinc-950/80 text-zinc-300"
+                  }`}
+                >
                   {status.text}
                 </div>
               )}
@@ -183,45 +198,16 @@ export default function ContactPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 w-full mt-2 cursor-pointer"
+                className="type-label h-11 w-full cursor-pointer bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
               >
                 {loading ? "Sending..." : "Send Message"}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-zinc-900 bg-zinc-950 mt-20">
-        <div className="max-w-6xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="flex flex-col gap-3">
-            <span className="flex items-center gap-2 font-bold text-lg text-zinc-100">
-              <BrandLockup size={20} />
-            </span>
-            <p className="text-zinc-500 text-xs leading-relaxed">
-              Open-source, self-hosted, and cloud-enabled remote power controls for your workstation PCs.
-            </p>
-          </div>
-          <div>
-            <h4 className="text-zinc-400 font-semibold text-xs uppercase tracking-wider mb-3">Links</h4>
-            <ul className="flex flex-col gap-2 text-xs text-zinc-500 font-medium">
-              <li><Link href="/" className="hover:text-zinc-300">Home</Link></li>
-              <li><Link href="/setup" className="hover:text-zinc-300">Setup Guide</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-zinc-400 font-semibold text-xs uppercase tracking-wider mb-3">Auth</h4>
-            <ul className="flex flex-col gap-2 text-xs text-zinc-500 font-medium">
-              <li><Link href="/login" className="hover:text-zinc-300">Log in</Link></li>
-              <li><Link href="/register" className="hover:text-zinc-300">Create Account</Link></li>
-            </ul>
-          </div>
-          <div className="text-xs text-zinc-600 flex items-end">
-            &copy; 2026 OnOffMyPC. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
