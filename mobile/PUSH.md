@@ -1,9 +1,10 @@
-# Push notifications (FCM)
+# Push notifications (FCM, Android)
 
-The app is wired for Firebase Cloud Messaging but **inert until you add Firebase
-config** — it builds and runs fine without it (the google-services plugin is
-applied only when `app/google-services.json` exists, and all FCM calls no-op
-when Firebase isn't initialized).
+The Android app is wired for Firebase Cloud Messaging but **inert until you add
+Firebase config** — it builds and runs fine without it (the google-services
+plugin is applied only when `app/google-services.json` exists, and all FCM calls
+no-op when Firebase isn't initialized). iOS/APNs push is not implemented in this
+repository.
 
 ## What's already built (client)
 - `firebase-messaging` dependency + conditional google-services plugin.

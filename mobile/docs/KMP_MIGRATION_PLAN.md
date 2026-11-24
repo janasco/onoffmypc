@@ -179,7 +179,7 @@ Implement jar logic carefully per engine; add integration tests against a mock s
 ### 6.3 Why this is optional / last
 
 - Social login and push are platform-heavy.  
-- App Store / TestFlight pipeline today is SwiftUI-shaped.  
+- There is no App Store / TestFlight pipeline yet; a future pipeline would be SwiftUI-shaped.
 - Existing SwiftUI already near feature parity for core flows.  
 - ROI is mainly long-term single UI codebase — not short-term shipping.
 

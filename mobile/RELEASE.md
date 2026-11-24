@@ -34,7 +34,7 @@ and `ANDROID_KEYSTORE_BASE64`, and restricts the files to `0600`.
 ### Cloudflare credentials
 
 Publishing needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the
-environment (see `release/R2-RELEASES.md`).
+environment (see `../release/R2-RELEASES.md`).
 
 ## Cutting a release
 
@@ -75,7 +75,23 @@ Run from `mobile/` unless noted.
      | grep SHA256
    ```
 
-5. **Upload to Play:**
+5. **Smoke-test the minified release build (required).** R8 and resource
+   shrinking are enabled, so a debug build is not a substitute. Install the
+   release APK built from the same commit and exercise sign-in, the device list,
+   a power command, telemetry/history, the billing screen, and a notification
+   tap. If a flow crashes or a reflection/serialization path fails, fix the
+   narrowest keep rule in `app/proguard-rules.pro`, rebuild, and repeat.
+
+   ```bash
+   adb install -r app/build/outputs/apk/release/app-release.apk
+   adb logcat -c
+   # Exercise the flows above, then check for stripped-code failures:
+   adb logcat -d | grep -iE "ClassNotFound|NoSuchMethod|Serialization|FATAL EXCEPTION"
+   ```
+
+   Do not upload or promote a build that fails this smoke test.
+
+6. **Upload to Play:**
 
    ```bash
    export PLAY_SERVICE_ACCOUNT_JSON=/opt/repo/onoffmypc-private/secrets/play-service-account.json
@@ -99,14 +115,14 @@ Run from `mobile/` unless noted.
    **Play Console → Publishing overview**. The uploader retries with
    `changesNotSentForReview=true` automatically.
 
-6. **Check Play's DEX metrics.** R8 is enabled for release builds
+7. **Check Play's DEX metrics.** R8 is enabled for release builds
    (`isMinifyEnabled`/`isShrinkResources`). Play requires 25% optimization,
    shrinking, and obfuscation when the bundle contains more than 10 MB of
    uncompressed DEX. After uploading, open **Test and release → App bundle
    explorer**, select the new bundle, and check the DEX percentages. This app's
-   DEX is ~3.6 MB after R8, below the enforcement floor, but keep it optimized.
+   DEX is ~3.8 MB after R8, below the enforcement floor, but keep it optimized.
 
-7. **Optional direct APK distribution.** Upload the APK to R2 (step 7 below),
+8. **Optional direct APK distribution.** Upload the APK to R2 (see below),
    update `web/src/data/releases.json`, then:
 
    ```bash
@@ -117,7 +133,7 @@ Run from `mobile/` unless noted.
 
    `releases:check -- --verify` also re-downloads and hashes every artifact.
 
-8. **Store listing artwork.** If `playstore/icon-512.png` or
+9. **Store listing artwork.** If `playstore/icon-512.png` or
    `playstore/feature-graphic-1024x500.png` changed, upload both and commit the
    listing edit:
 
@@ -128,14 +144,14 @@ Run from `mobile/` unless noted.
    The tool validates the PNG dimensions, replaces the existing icon and
    feature graphic, and commits atomically.
 
-9. **Screenshots.** If the UI changed, replace
+10. **Screenshots.** If the UI changed, replace
    `playstore/screenshots/play/*.png` (1080×1920) and run:
 
    ```bash
    node scripts/publish-play.mjs --upload-screenshots --replace
    ```
 
-10. **Post-launch:** check the public page and run
+11. **Post-launch:** check the public page and run
    `node scripts/play-report.mjs --days 7` for crash/ANR and reviews.
 
 ### Uploading the APK to R2 (direct distribution)
@@ -178,7 +194,13 @@ builds are unaffected.
 
 ## Notes
 
-- R8/minification is **off** (`isMinifyEnabled = false`) to avoid mis-stripping
-  the reflection-based networking stack. Keep rules for kotlinx.serialization
-  live in `app/proguard-rules.pro` for when it is enabled.
+- R8/minification and resource shrinking are **on** for release
+  (`isMinifyEnabled = true`, `isShrinkResources = true`). Keep rules in
+  `app/proguard-rules.pro` are production configuration, not optional. When a
+  reflection-based dependency changes, update the narrowest keep rule and repeat
+  the minified release smoke test. Do not add a global `-dontobfuscate`; Play
+  requires at least 25% optimization, shrinking, and obfuscation for bundles
+  above 10 MB of uncompressed DEX.
+- Keep the generated `app/build/outputs/mapping/release/mapping.txt` with the
+  release; it is needed to read obfuscated crash stacks.
 - The version code must increase for every Play upload, even for a rebuild.

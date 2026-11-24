@@ -2,7 +2,8 @@
 
 **Repo:** `onoffmypc-mobile`  
 **Audited:** 2026-07-16  
-**Primary target:** Android (`android/`) — Jetpack Compose, version **0.3.8** (`versionCode` 15)  
+**Updated:** 2026-11-24  
+**Primary target:** Android (`android/`) — Jetpack Compose, version **0.4.10** (`versionCode` 27)  
 **Secondary:** iOS (`ios/`) — SwiftUI, iOS 16+, XcodeGen  
 
 This document describes the **current** architecture. It is not a redesign proposal. Incremental evolution guidance lives in [`MOBILE_ROADMAP.md`](MOBILE_ROADMAP.md) and [`KMP_MIGRATION_PLAN.md`](KMP_MIGRATION_PLAN.md).
@@ -130,8 +131,8 @@ Start destination: `devices` if `Graph.session.session != null`, else `login`.
 ### 2.6 Build / CI
 
 - AGP 8.10.1, Gradle 8.11.1, Kotlin 2.0.20, Compose BOM 2024.09.03, `minSdk 26`, `targetSdk`/`compileSdk` 36, JDK 17.
-- Release: R8 **disabled** (`isMinifyEnabled = false`); signing from env / `.env` / `keystore.properties`.
-- Workflows: `mobile-ci.yml` (Android build check) and `mobile-ios-ci.yml` (simulator build). Delivery is manual.
+- Release: R8 **enabled** (`isMinifyEnabled = true`, resource shrinking on); signing from env / `.env` / `keystore.properties`.
+- Workflows: `mobile-ci.yml` (Android build check), `mobile-ios-ci.yml` (simulator build), and `mobile-hardening.yml` (static manifest/TLS/storage/privacy gate). Delivery is manual.
 
 ---
 
@@ -198,12 +199,13 @@ Interpreted against the product list in the audit brief and current `README.md` 
 | Topic | Current state |
 |---|---|
 | Session storage | Android: EncryptedSharedPreferences; iOS: Keychain |
+| Session-cookie origin binding | Android: HTTPS + exact API host/port, redirects disabled; iOS: **not implemented** (MP-13/OMP-19) |
 | Backup | `android:allowBackup="false"` |
 | Transport | HTTPS to `api.onoffmypc.com` |
 | Certificate pinning | **Not implemented** |
 | Biometrics / app lock | **Not implemented** |
 | HTTP logging | Debug-only BASIC |
-| ProGuard/R8 | Off for release |
+| ProGuard/R8 | Enabled for release (`isMinifyEnabled = true`, `isShrinkResources = true`) |
 | Secrets in APK | Polar credentials not shipped; OAuth client IDs via BuildConfig / Swift constants |
 | Assessment | Pointer only: [`SECURITY_ASSESSMENT.md`](SECURITY_ASSESSMENT.md) → private cross-repo docs |
 
@@ -226,7 +228,7 @@ CI validates **compile** (Android assemble / iOS simulator build), not behavior.
 1. **Duplicated Android/iOS domain layer** — models, command status copy, billing eligibility helpers.
 2. **Monolithic `OnOffRepository` + fat screens** — presentation helpers exist, but screens still own large Compose trees (e.g. `DevicesScreen.kt`, `DeviceDetailScreen.kt`, `BillingScreen.kt`).
 3. **No automated tests** around command feedback, connection heuristics (`connectionFromLastContact`), or billing gates.
-4. **R8 off** — larger APK; reflection/keep rules deferred.
+4. **R8 keep-rule drift** — release shrinking is enabled; reflection/keep rules need regression coverage.
 5. **Stale comments** (Bearer vs cookie) and emoji hamburger (`☰`) as menu affordance.
 6. **Store billing** — Polar browser checkout conflicts with Play/App Store IAP rules for digital unlocks on those storefronts (`README.md` policy section).
 7. **iOS push gap** — Keychain session is solid; push registration is preparatory only.
@@ -238,7 +240,7 @@ CI validates **compile** (Android assemble / iOS simulator build), not behavior.
 
 **Strengths:** Clear MVVM, honest command/status language, encrypted session, thin dependency surface, feature-complete core control loop on Android, strong iOS feature parity for auth/devices/billing UI.
 
-**Gaps vs world-class:** No KMP shared core yet (JVM `:shared:model` only), thin unit-test coverage, incomplete security hardening (pinning, biometrics, R8), incomplete product surface (sleep/hibernate/ownership/firmware OTA), iOS push and store distribution unfinished.
+**Gaps vs world-class:** No KMP shared core yet (JVM `:shared:model` only), thin unit-test coverage, incomplete security hardening (pinning, biometrics), incomplete product surface (sleep/hibernate/ownership/firmware OTA), iOS push and store distribution unfinished.
 
 **Recommended posture:** Evolve Android in place; extract shared logic for KMP only after seams and tests exist. Do **not** rewrite the Compose UI or replace SwiftUI wholesale in one jump.
 

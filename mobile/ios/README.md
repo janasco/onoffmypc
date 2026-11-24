@@ -46,7 +46,7 @@ Team (personal), then run. (Free accounts can side-load to your device but can't
 use TestFlight/App Store — that needs the $99/yr Apple Developer Program.)
 
 ## CI
-[`.github/workflows/ios-ci.yml`](../.github/workflows/ios-ci.yml) builds the app
+[`.github/workflows/mobile-ios-ci.yml`](../../.github/workflows/mobile-ios-ci.yml) builds the app
 for the iOS Simulator (unsigned) on a macOS runner on every push touching `ios/`,
 so compile breakages surface without a Mac.
 

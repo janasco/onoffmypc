@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
         <PublicPageHeader
           eyebrow="Legal"
           title="Privacy Policy"
-          description="Last updated: July 2026"
+          description="Last updated: November 2026"
         />
 
         <div className="type-body mt-8 flex max-w-[68ch] flex-col gap-6 text-zinc-300">
@@ -70,10 +70,10 @@ export default function PrivacyPolicyPage() {
           <p>We apply the following retention windows in production:</p>
           <ul className="flex list-disc flex-col gap-1.5 pl-5 marker:text-zinc-500">
             <li><strong>Raw telemetry</strong> — 30 days (max 2,000 rows per device).</li>
-            <li><strong>Hourly telemetry aggregates</strong> — 90 days.</li>
+            <li><strong>Hourly telemetry aggregates</strong> — 30 months.</li>
             <li><strong>Commands &amp; logs</strong> — 30 days.</li>
             <li><strong>Finished scheduled commands</strong> — 30 days after run/cancellation.</li>
-            <li><strong>Security audit logs</strong> — 180 days.</li>
+            <li><strong>Security audit logs</strong> — 180 days for full audit rows, except the newest chained entry, which is kept until a newer entry is written so the integrity chain can still be verified. We also retain a hash-only integrity checkpoint (sequence numbers, cryptographic hashes, and a capture timestamp, with no row contents or personal data) longer so the retained log can still be verified.</li>
             <li><strong>Accounts and devices</strong> — until you delete them; account deletion has a <strong>15-day grace period</strong> before permanent purge.</li>
           </ul>
 

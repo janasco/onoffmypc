@@ -21,7 +21,7 @@ receive device notifications. Both use the shared API at `https://api.onoffmypc.
 | Charts | dependency-free **Compose `Canvas`** (temperature history) |
 | Build | **Gradle** 8.11.1 (Kotlin DSL) + version catalog; **AGP** 8.10.1 |
 | Toolchain | **JDK 17**; `compileSdk 36` · `minSdk 26` · `targetSdk 36` |
-| CI/CD | GitHub Actions — build check on push only; releases are built and published by hand |
+| CI/CD | GitHub Actions — Android/iOS build checks and a static hardening gate; releases are built and published by hand |
 
 Android is the primary mobile target. iOS is generated from `ios/project.yml`
 and currently has simulator build CI; signing, store distribution, push, and
@@ -98,7 +98,7 @@ Ship a store release only after provider credentials are set.
 - **Devices**: separate connection, last-contact freshness, and last-reported PC state; power controls (on / off / force-off / reset); target-specific confirmation for disruptive actions; honest queued/awaiting-ack/device-acknowledged/expired command states; add / rename / delete; pull-to-refresh
 - **Device detail**: explicit online, offline, or unknown presence; telemetry freshness; accessible 7-day temperature chart; command history; 30s auto-refresh
 - **Account and billing**: profile, security settings, deletion, email verification, a 30-day trial for each device, and one-time $15 device unlocks through API-created Polar hosted checkout; existing Lifetime accounts remain supported. Polar credentials are never shipped in either app.
-- **Push notifications (FCM)**: device offline/online, device-acknowledged commands, and commands that expire without acknowledgement
+- **Push notifications (FCM, Android)**: device offline/online, device-acknowledged commands, and commands that expire without acknowledgement
 
 ## Native-store billing policy
 
@@ -137,10 +137,13 @@ Architecture and product evolution (under [`docs/`](docs/)):
 - **[docs/MOBILE_ROADMAP.md](docs/MOBILE_ROADMAP.md)** — prioritized implementation slices
 - **[docs/KMP_MIGRATION_PLAN.md](docs/KMP_MIGRATION_PLAN.md)** — Phases 1–4, exit criteria, do-not-break rules
 - **[docs/SECURITY_ASSESSMENT.md](docs/SECURITY_ASSESSMENT.md)** — private platform assessment link
+- **[docs/DEPENDENCY_PRIVACY_INVENTORY.md](docs/DEPENDENCY_PRIVACY_INVENTORY.md)** — SDKs, permissions, data flows, storage, retention, and privacy risks
+- **[docs/ON_DEVICE_VALIDATION.md](docs/ON_DEVICE_VALIDATION.md)** — repeatable Android/iOS backup, screenshot, clipboard, TLS, session, and push checks
 
 Release and ops:
 
 - **[RELEASE.md](RELEASE.md)** — keystore setup and cutting a signed `app-v*` release
 - **[PUSH.md](PUSH.md)** — Firebase project + backend service-account setup for FCM
 - **[CHANGELOG.md](CHANGELOG.md)** — release notes
+- **[scripts/check-mobile-hardening.mjs](scripts/check-mobile-hardening.mjs)** — static manifest, TLS, storage, SDK denylist, and iOS invariant gate; helper tests in [`scripts/test-mobile-hardening.mjs`](scripts/test-mobile-hardening.mjs)
 - **[ios/README.md](ios/README.md)** — iOS build and current scope

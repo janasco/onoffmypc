@@ -48,7 +48,7 @@ Phases P1–P2 can overlap with early P3 prep (seams, tests) but **UI rewrite is
 |---|---|---|
 | 1.1 Unit tests for `CommandPresentation` + `DeviceStatusPresentation` | S | Lock honesty rules |
 | 1.2 Repository error-mapping tests (`ApiException` / 402) | S | Billing upgrade path |
-| 1.3 Enable R8 on a debug-equivalent build + keep rules | M | Smaller/safer release |
+| 1.3 R8 release hardening + keep-rule coverage, including a minified smoke test | M | Smaller/safer release |
 | 1.4 Replace emoji menu with Material icon top bar | S | A11y / polish |
 | 1.5 Extract Empty/Error/Chart components | S–M | [`COMPONENT_LIBRARY.md`](COMPONENT_LIBRARY.md) |
 | 1.6 Optional: certificate pinning to `api.onoffmypc.com` | M | Security (needs rotate story) |
