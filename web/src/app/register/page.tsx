@@ -64,9 +64,9 @@ export default function RegisterPage() {
       <AuthPanel>
         <div className="flex flex-col gap-6">
           <header className="flex flex-col gap-2">
-            <p className="type-overline text-emerald-400">Get started</p>
-            <h1 className="type-screen-title text-zinc-50">Create your account</h1>
-            <p className="type-body text-zinc-400">
+            <p className="type-overline text-emerald-700">Get started</p>
+            <h1 className="type-screen-title text-foreground">Create your account</h1>
+            <p className="type-body text-muted-foreground">
               Start managing remote power and device health from one calm workspace.
             </p>
           </header>
@@ -75,14 +75,14 @@ export default function RegisterPage() {
             {error && (
               <div
                 role="alert"
-                className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 type-body-sm text-red-300"
+                className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 type-body-sm text-red-700"
               >
                 {error}
               </div>
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="type-label text-zinc-300" htmlFor="email">
+              <label className="type-label text-foreground" htmlFor="email">
                 Email
               </label>
               <input
@@ -98,7 +98,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="type-label text-zinc-300" htmlFor="password">
+              <label className="type-label text-foreground" htmlFor="password">
                 Password
               </label>
               <PasswordInput
@@ -110,8 +110,8 @@ export default function RegisterPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="type-label text-zinc-300" htmlFor="inviteCode">
-                Invite code <span className="font-normal text-zinc-500">(optional)</span>
+              <label className="type-label text-foreground" htmlFor="inviteCode">
+                Invite code <span className="font-normal text-muted-foreground">(optional)</span>
               </label>
               <input
                 id="inviteCode"
@@ -140,17 +140,17 @@ export default function RegisterPage() {
           </form>
 
           <div className="relative text-center">
-            <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-b border-zinc-800" />
-            <span className="relative bg-zinc-900 px-3 type-label text-zinc-400">or</span>
+            <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-b border-border" />
+            <span className="relative bg-card px-3 type-label text-muted-foreground">or</span>
           </div>
 
           <GoogleSignInButton nextPath={nextPath} />
 
-          <p className="border-t border-zinc-800/70 pt-6 text-center type-body-sm text-zinc-400">
+          <p className="border-t border-border pt-6 text-center type-body-sm text-muted-foreground">
             Already have an account?{" "}
             <Link
               href={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login"}
-              className="font-semibold text-emerald-400 transition-colors hover:text-emerald-300"
+              className="inline-flex min-h-11 items-center font-semibold text-emerald-700 transition-colors hover:text-emerald-800"
             >
               Sign in
             </Link>

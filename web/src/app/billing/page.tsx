@@ -89,7 +89,7 @@ export default function BillingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
+    <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-emerald-600/15 selection:text-emerald-900">
       <AppHeader />
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
@@ -101,7 +101,7 @@ export default function BillingPage() {
             <Button
               onClick={handleOpenPortal}
               variant="outline"
-              className="min-h-11 border-zinc-700 px-5 text-zinc-200 hover:bg-zinc-900"
+              className="min-h-11 border-border px-5 text-foreground hover:bg-muted"
             >
               Manage receipts
             </Button>
@@ -109,30 +109,30 @@ export default function BillingPage() {
         />
 
         {loading ? (
-          <div className="py-16 text-center type-body-sm text-zinc-400">Loading billing data…</div>
+          <div className="py-16 text-center type-body-sm text-muted-foreground">Loading billing data…</div>
         ) : (
           <div className="flex flex-col gap-6">
             {/* Device Unlocks */}
-            <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
+            <Card className="ring-border">
               <CardHeader>
-                <CardTitle className="type-card-title text-zinc-100">Device licenses</CardTitle>
-                <p className="type-body-sm text-zinc-400">
+                <CardTitle as="h2" className="type-card-title text-foreground">Device licenses</CardTitle>
+                <p className="type-body-sm text-muted-foreground">
                   Power control licenses configured per device endpoint
                 </p>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 {devices.length === 0 ? (
-                  <p className="py-6 text-center type-body-sm text-zinc-400">No devices found. Add devices in the dashboard first.</p>
+                  <p className="py-6 text-center type-body-sm text-muted-foreground">No devices found. Add devices in the dashboard first.</p>
                 ) : (
                   <div className="flex flex-col gap-3">
                     {devices.map((d) => (
-                      <div key={d.id} className="flex flex-col justify-between gap-3 rounded-xl border border-zinc-800/80 bg-zinc-950/50 p-4 sm:flex-row sm:items-center">
+                      <div key={d.id} className="flex flex-col justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4 sm:flex-row sm:items-center">
                         <div className="flex min-w-0 flex-col gap-1">
-                          <span className="type-label text-zinc-100">{d.name}</span>
-                          <span className="type-mono break-all text-zinc-400">ID: {d.id}</span>
+                          <span className="type-label text-foreground">{d.name}</span>
+                          <span className="type-mono break-all text-muted-foreground">ID: {d.id}</span>
                         </div>
                         <div className="flex flex-wrap items-center gap-4">
-                          <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${d.unlocked ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" : "border-amber-500/20 bg-amber-500/10 text-amber-300"}`}>
+                          <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${d.unlocked ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
                             {d.unlocked ? "Unlocked" : "Trial status"}
                           </span>
                           {!d.unlocked && (
@@ -153,40 +153,40 @@ export default function BillingPage() {
             </Card>
 
             {/* Invoices / Transactions history */}
-            <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
+            <Card className="ring-border">
               <CardHeader>
-                <CardTitle className="type-card-title text-zinc-100">Billing history</CardTitle>
-                <p className="type-body-sm text-zinc-400">
+                <CardTitle as="h2" className="type-card-title text-foreground">Billing history</CardTitle>
+                <p className="type-body-sm text-muted-foreground">
                   Past invoices and checkout requests
                 </p>
               </CardHeader>
               <CardContent className="pt-0">
                 {history.length === 0 ? (
-                  <p className="py-8 text-center type-body-sm text-zinc-400">No transactions recorded yet.</p>
+                  <p className="py-8 text-center type-body-sm text-muted-foreground">No transactions recorded yet.</p>
                 ) : (
-                  <Table className="text-zinc-300">
-                    <TableHeader className="border-zinc-800">
-                      <TableRow>
-                        <TableHead className="type-overline text-zinc-400">Date</TableHead>
-                        <TableHead className="type-overline text-zinc-400">Device ID</TableHead>
-                        <TableHead className="type-overline text-zinc-400">Amount</TableHead>
-                        <TableHead className="type-overline text-zinc-400">Status</TableHead>
+                  <Table className="text-foreground">
+                    <TableHeader className="border-border">
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="type-overline text-muted-foreground">Date</TableHead>
+                        <TableHead className="type-overline text-muted-foreground">Device ID</TableHead>
+                        <TableHead className="type-overline text-muted-foreground">Amount</TableHead>
+                        <TableHead className="type-overline text-muted-foreground">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {history.map((h) => (
-                        <TableRow key={h.id} className="border-zinc-800 hover:bg-zinc-800/30">
-                          <TableCell className="type-metadata text-zinc-300">
+                        <TableRow key={h.id} className="border-border hover:bg-muted/40">
+                          <TableCell className="type-metadata text-foreground">
                             {new Date(h.created_at).toLocaleDateString()}
                           </TableCell>
-                          <TableCell className="type-mono break-all text-zinc-400">
+                          <TableCell className="type-mono break-all text-muted-foreground">
                             {h.device_id}
                           </TableCell>
-                          <TableCell className="type-mono text-zinc-100">
+                          <TableCell className="type-mono text-foreground">
                             ${(h.amount / 100).toFixed(2)}
                           </TableCell>
                           <TableCell>
-                            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${h.status === "paid" || h.status === "approved" ? "bg-emerald-500/10 text-emerald-300" : "bg-zinc-800 text-zinc-300"}`}>
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${h.status === "paid" || h.status === "approved" ? "bg-emerald-50 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
                               {h.status}
                             </span>
                           </TableCell>

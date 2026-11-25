@@ -34,7 +34,7 @@ export function AppHeader({ email }: { email?: string | null }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-border bg-card/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
         <Logo />
 
@@ -48,8 +48,8 @@ export function AppHeader({ email }: { email?: string | null }) {
                 aria-current={active ? "page" : undefined}
                 className={`type-label flex min-h-11 items-center gap-2 rounded-lg px-3 transition-colors ${
                   active
-                    ? "bg-zinc-800 text-zinc-100"
-                    : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
                 <Icon className="h-4 w-4" aria-hidden="true" />
@@ -61,7 +61,7 @@ export function AppHeader({ email }: { email?: string | null }) {
 
         <div className="flex items-center gap-2">
           {email && (
-            <span className="type-metadata hidden max-w-[180px] truncate text-zinc-400 lg:inline">
+            <span className="type-metadata hidden max-w-[180px] truncate text-muted-foreground lg:inline">
               {email}
             </span>
           )}
@@ -69,7 +69,7 @@ export function AppHeader({ email }: { email?: string | null }) {
             variant="ghost"
             size="sm"
             onClick={handleLogout}
-            className="min-h-11 text-zinc-400 hover:text-zinc-100"
+            className="min-h-11 text-muted-foreground hover:text-foreground"
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
             <span className="hidden sm:inline">Log out</span>
@@ -80,7 +80,7 @@ export function AppHeader({ email }: { email?: string | null }) {
 
       <nav
         aria-label="Main mobile"
-        className="flex gap-1 overflow-x-auto border-t border-zinc-800/80 px-3 py-1.5 md:hidden"
+        className="flex gap-1 overflow-x-auto border-t border-border px-3 py-1.5 md:hidden"
       >
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
@@ -91,8 +91,8 @@ export function AppHeader({ email }: { email?: string | null }) {
               aria-current={active ? "page" : undefined}
               className={`type-label flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-3 transition-colors ${
                 active
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <Icon className="h-4 w-4" aria-hidden="true" />

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Source_Sans_3, Sora } from "next/font/google";
 import "./globals.css";
 
@@ -30,6 +30,11 @@ export const metadata: Metadata = {
   description: "Turn your PC on or off from anywhere using an ESP32 and your phone. Free to get started — no subscription.",
 };
 
+export const viewport: Viewport = {
+  themeColor: "#f7f8f5",
+  colorScheme: "light",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,7 +43,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${geistMono.variable} ${sora.variable} ${sourceSans.variable} h-full antialiased`}
+      className={`${geistMono.variable} ${sora.variable} ${sourceSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

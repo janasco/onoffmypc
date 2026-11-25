@@ -72,7 +72,7 @@ export function GoogleSignInButton({ nextPath }: { nextPath?: string | null }) {
     container.current.innerHTML = "";
     id.renderButton(container.current, {
       type: "standard",
-      theme: "filled_black",
+      theme: "outline",
       size: "large",
       text: "continue_with",
       shape: "rectangular",
@@ -151,11 +151,11 @@ export function GoogleSignInButton({ nextPath }: { nextPath?: string | null }) {
         aria-busy={busy}
       />
       {!ready && !error && (
-        <p className="mt-2 text-center text-xs text-zinc-400">Loading Google sign-in…</p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">Loading Google sign-in…</p>
       )}
-      {busy && <p className="mt-2 text-center text-xs text-zinc-400">Signing in…</p>}
+      {busy && <p className="mt-2 text-center text-xs text-muted-foreground">Signing in…</p>}
       {error && (
-        <p role="alert" className="mt-2 text-center text-xs text-red-400">
+        <p role="alert" className="mt-2 text-center text-xs text-red-700">
           {error}
         </p>
       )}

@@ -20,10 +20,10 @@ export function CopyButton({ value, label }: { value: string; label: string }) {
           // Clipboard permission is optional; the hash remains selectable.
         }
       }}
-      className="rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {copied ? (
-        <Check className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
+        <Check className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
       ) : (
         <Copy className="h-3.5 w-3.5" aria-hidden="true" />
       )}

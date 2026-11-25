@@ -51,39 +51,41 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* OnOffMyPC light theme: warm canvas, white surfaces, emerald action. */
+  --background: #f7f8f5;
+  --foreground: #121612;
+  --card: #ffffff;
+  --card-foreground: #121612;
+  --popover: #ffffff;
+  --popover-foreground: #121612;
+  --primary: #047857;
+  --primary-foreground: #ffffff;
+  --secondary: #eef1eb;
+  --secondary-foreground: #1a221d;
+  --muted: #eef1eb;
+  --muted-foreground: #5c675e;
+  --accent: #dcfce7;
+  --accent-foreground: #123b25;
+  --destructive: #b91c1c;
+  --border: #d5dbd0;
+  /* Control outlines need 3:1 against white; the layout border is lighter. */
+  --input: #7f8c81;
+  --ring: #047857;
+  --chart-1: #047857;
+  --chart-2: #2563eb;
+  --chart-3: #b45309;
+  --chart-4: #7c3aed;
+  --chart-5: #be123c;
   --radius: 0.625rem;
-  --focus-outline: #f4f1e8;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --focus-outline: #047857;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #121612;
+  --sidebar-primary: #047857;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef1eb;
+  --sidebar-accent-foreground: #1a221d;
+  --sidebar-border: #d5dbd0;
+  --sidebar-ring: #047857;
 }
 
 .dark {
@@ -133,7 +135,7 @@
   }
   html {
     @apply font-sans;
-    color-scheme: dark;
+    color-scheme: light;
   }
   h1,
   h2,
@@ -150,8 +152,8 @@
     outline-offset: 2px;
   }
   ::selection {
-    background: color-mix(in oklab, #10b981 30%, transparent);
-    color: #fafafa;
+    background: color-mix(in oklab, #047857 22%, transparent);
+    color: #121612;
   }
 }
 /* Respect the OS reduced-motion setting. The design package ships the same

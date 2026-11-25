@@ -8,9 +8,9 @@ import { api } from "@/lib/api";
 type Gate = "loading" | "in" | "out";
 
 const primaryLink =
-  "inline-flex h-9 items-center justify-center rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-400";
+  "inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-emerald-800";
 const secondaryLink =
-  "inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 px-4 text-sm font-semibold text-zinc-200 transition-colors hover:bg-zinc-800";
+  "inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary";
 
 /**
  * Account-gated ESP Web Tools flasher.
@@ -46,18 +46,18 @@ export function FirmwareFlasher() {
   }, []);
 
   if (gate === "loading") {
-    return <p className="text-sm text-zinc-400">Checking your account…</p>;
+    return <p className="text-sm text-muted-foreground">Checking your account…</p>;
   }
 
   if (gate === "out") {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
-        <h3 className="text-lg font-bold text-zinc-100">Create an account to flash</h3>
-        <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
+      <div className="rounded-xl border border-border bg-background p-5 sm:p-6">
+        <h3 className="text-lg font-semibold text-foreground">Create an account to flash</h3>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           You need an OnOffMyPC account to pair the gateway and control it from the app.
           Flashing runs locally in your browser; no account data is sent to the board.
         </p>
-        <div className="flex flex-wrap gap-3 mt-4">
+        <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/register?next=/flash" className={primaryLink}>
             Create account
           </Link>
@@ -71,12 +71,12 @@ export function FirmwareFlasher() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <p className="text-xs text-zinc-400">
-          Signed in as <span className="text-zinc-300">{email ?? "your account"}</span>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          Signed in as <span className="font-medium text-foreground">{email ?? "your account"}</span>
         </p>
         {channel === "rc" && (
-          <span className="rounded-full border border-amber-700/60 bg-amber-950/40 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-300">
+          <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-800">
             Beta 1.4.0-rc1 — bench only
           </span>
         )}
@@ -94,23 +94,23 @@ export function FirmwareFlasher() {
       >
         <button
           slot="activate"
-          className="inline-flex h-11 items-center justify-center rounded-lg bg-emerald-500 px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-400"
+          className="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-emerald-800"
         >
           ⚡ Flash ESP32 gateway
         </button>
-        <span slot="unsupported" className="mt-2 block text-xs text-amber-400">
+        <span slot="unsupported" className="mt-2 block text-xs text-amber-800">
           Your browser does not support Web Serial. Use Chrome or Edge on a desktop
           computer over HTTPS.
         </span>
-        <span slot="not-allowed" className="mt-2 block text-xs text-amber-400">
+        <span slot="not-allowed" className="mt-2 block text-xs text-amber-800">
           Flashing requires an active secure (HTTPS) connection.
         </span>
       {/* @ts-expect-error closing tag of the custom element above */}
       </esp-web-install-button>
 
-      <p className="mt-3 text-xs text-zinc-400">
-        Use a USB <span className="text-zinc-300">data</span> cable, not a charge-only
-        cable. If the board is not detected, hold <span className="text-zinc-300">BOOT</span>{" "}
+      <p className="mt-3 text-xs text-muted-foreground">
+        Use a USB <span className="font-medium text-foreground">data</span> cable, not a charge-only
+        cable. If the board is not detected, hold <span className="font-medium text-foreground">BOOT</span>{" "}
         while plugging it in.
       </p>
     </div>

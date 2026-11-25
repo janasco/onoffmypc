@@ -11,9 +11,9 @@ const NAV = [
 
 export function PublicHeader({ active }: { active?: "home" | "setup" | "flash" | "downloads" }) {
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
-        <Link href="/" className="flex shrink-0 items-center hover:opacity-90" aria-label="OnOffMyPC home">
+        <Link href="/" className="flex shrink-0 items-center hover:opacity-80" aria-label="OnOffMyPC home">
           <BrandLockup size={22} />
         </Link>
 
@@ -27,8 +27,8 @@ export function PublicHeader({ active }: { active?: "home" | "setup" | "flash" |
                 aria-current={current ? "page" : undefined}
                 className={`type-label inline-flex min-h-10 items-center rounded-lg px-2.5 py-2 transition-colors lg:px-3 ${
                   current
-                    ? "bg-zinc-800 text-zinc-100"
-                    : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
                 }`}
               >
                 {label}
@@ -40,13 +40,13 @@ export function PublicHeader({ active }: { active?: "home" | "setup" | "flash" |
         <div className="flex items-center gap-2">
           <Link
             href="/login"
-            className="type-label hidden min-h-10 items-center rounded-lg px-2.5 py-2 text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100 min-[380px]:inline-flex"
+            className="type-label hidden min-h-10 items-center rounded-lg px-2.5 py-2 text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground min-[380px]:inline-flex"
           >
             Log in
           </Link>
           <Link
             href="/register"
-            className="type-label inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-emerald-500 px-3.5 text-zinc-950 transition-colors hover:bg-emerald-400"
+            className="type-label inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-3.5 text-primary-foreground transition-colors hover:bg-emerald-800"
           >
             Get Started
           </Link>
@@ -55,7 +55,7 @@ export function PublicHeader({ active }: { active?: "home" | "setup" | "flash" |
 
       <nav
         aria-label="Main mobile"
-        className="flex gap-0.5 overflow-x-auto border-t border-zinc-800/60 px-3 py-1.5 md:hidden"
+        className="flex gap-0.5 overflow-x-auto border-t border-border bg-background/95 px-3 py-1.5 md:hidden"
       >
         {NAV.filter(({ key }) => key !== "how").map(({ href, label, key }) => {
           const current = key === active;
@@ -66,8 +66,8 @@ export function PublicHeader({ active }: { active?: "home" | "setup" | "flash" |
               aria-current={current ? "page" : undefined}
               className={`type-label inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-lg px-2.5 py-2 transition-colors ${
                 current
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
               }`}
             >
               {label}

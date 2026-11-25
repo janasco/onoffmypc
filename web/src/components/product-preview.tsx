@@ -28,10 +28,10 @@ const devices = [
 function StatusPill({ online }: { online: boolean }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+      className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${
         online
-          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-          : "border-red-500/30 bg-red-500/10 text-red-300"
+          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+          : "border-red-200 bg-red-50 text-red-700"
       }`}
     >
       {online ? "Online" : "Offline"}
@@ -42,47 +42,47 @@ function StatusPill({ online }: { online: boolean }) {
 export function ProductPreview({ className = "" }: { className?: string }) {
   return (
     <div className={`relative ${className}`} aria-hidden="true">
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-700/80 bg-zinc-950 shadow-2xl shadow-black/60">
-        <div className="flex items-center gap-1 border-b border-zinc-800 bg-zinc-900/80 px-3 py-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-zinc-700" />
-          <span className="h-1.5 w-1.5 rounded-full bg-zinc-700" />
-          <span className="h-1.5 w-1.5 rounded-full bg-zinc-700" />
-          <span className="ml-2 min-w-0 flex-1 truncate rounded-md border border-zinc-800 bg-zinc-950 px-2 py-0.5 font-mono text-[11px] text-zinc-400">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-[0_24px_60px_-32px_rgba(18,22,18,0.35)]">
+        <div className="flex items-center gap-1.5 border-b border-border bg-secondary/70 px-3 py-2.5">
+          <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+          <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+          <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+          <span className="ml-2 min-w-0 flex-1 truncate rounded-md border border-border bg-card px-2.5 py-1 font-mono text-xs text-muted-foreground">
             app.onoffmypc.com/devices
           </span>
         </div>
 
-        <div className="p-3 sm:p-5">
+        <div className="bg-background p-3 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <BrandLockup size={22} />
-            <div className="hidden items-center gap-4 text-xs font-medium text-zinc-400 sm:flex">
-              <span className="text-zinc-100">Devices</span>
+            <div className="hidden items-center gap-4 text-xs font-semibold text-muted-foreground sm:flex">
+              <span className="text-foreground">Devices</span>
               <span>Account</span>
               <span>Billing</span>
             </div>
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-[11px] font-semibold text-emerald-300">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-emerald-800">
               JM
             </span>
           </div>
 
           <div className="mt-5 flex items-end justify-between gap-3">
             <div>
-              <p className="type-overline text-emerald-400">Fleet</p>
-              <p className="type-card-title mt-1 text-zinc-100">Devices</p>
+              <p className="type-overline text-primary">Fleet</p>
+              <p className="type-card-title mt-1 text-foreground">Devices</p>
             </div>
-            <span className="rounded-lg bg-emerald-500 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-950">
+            <span className="rounded-lg bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground">
               + Add device
             </span>
           </div>
 
-          <div className="mt-4 grid grid-cols-3 divide-x divide-zinc-800 rounded-xl border border-zinc-800 bg-zinc-900/40">
+          <div className="mt-4 grid grid-cols-3 divide-x divide-border rounded-xl border border-border bg-card">
             {[
-              ["Devices", "3", "text-zinc-100"],
-              ["Online", "2", "text-emerald-400"],
-              ["Offline", "1", "text-zinc-300"],
+              ["Devices", "3", "text-foreground"],
+              ["Online", "2", "text-emerald-700"],
+              ["Offline", "1", "text-foreground"],
             ].map(([label, value, tone]) => (
               <div key={label} className="min-w-0 px-2.5 py-2.5 sm:px-3">
-                <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                <p className="truncate text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   {label}
                 </p>
                 <p className={`mt-0.5 text-lg font-semibold ${tone}`}>{value}</p>
@@ -96,14 +96,14 @@ export function ProductPreview({ className = "" }: { className?: string }) {
               return (
                 <div
                   key={device.name}
-                  className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-zinc-900/40 px-2.5 py-2"
+                  className="flex items-center gap-2.5 rounded-xl border border-border bg-card px-2.5 py-2"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-zinc-400">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
                     <Icon className="h-3.5 w-3.5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-semibold text-zinc-100">{device.name}</p>
-                    <p className="truncate text-[11px] text-zinc-400">
+                    <p className="truncate text-sm font-semibold text-foreground">{device.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
                       {device.platform}
                       <span className="hidden sm:inline"> · {device.last}</span>
                     </p>
@@ -114,21 +114,21 @@ export function ProductPreview({ className = "" }: { className?: string }) {
             })}
           </div>
 
-          <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-3">
+          <div className="mt-3 rounded-xl border border-border bg-card p-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 Power controls
               </p>
-              <p className="truncate text-[11px] text-zinc-400">Studio PC</p>
+              <p className="truncate text-xs text-muted-foreground">Studio PC</p>
             </div>
-            <div className="mt-2 grid grid-cols-3 gap-1.5">
-              <span className="rounded-lg bg-emerald-500 px-2 py-2 text-center text-[11px] font-semibold text-zinc-950">
+            <div className="mt-2 grid grid-cols-3 gap-1">
+              <span className="rounded-lg bg-primary px-1.5 py-2 text-center text-xs font-semibold text-primary-foreground sm:px-2">
                 Power On
               </span>
-              <span className="rounded-lg border border-zinc-700 px-2 py-2 text-center text-[11px] font-semibold text-zinc-200">
+              <span className="rounded-lg border border-border bg-background px-1.5 py-2 text-center text-xs font-semibold text-foreground sm:px-2">
                 Power Off
               </span>
-              <span className="rounded-lg border border-zinc-700 px-2 py-2 text-center text-[11px] font-semibold text-zinc-200">
+              <span className="rounded-lg border border-border bg-background px-1.5 py-2 text-center text-xs font-semibold text-foreground sm:px-2">
                 Reset
               </span>
             </div>

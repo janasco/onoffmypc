@@ -3,7 +3,6 @@
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { AuthPanel, AuthShell } from "@/components/auth-shell";
 import { recoveryTokenFromHash } from "@/lib/recovery-token";
@@ -59,51 +58,79 @@ function VerifyEmailInner() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <p className="type-overline text-emerald-400">Signal / 05</p>
-        <h1 className="type-screen-title text-zinc-50">Email verification</h1>
-        <p className="type-body text-zinc-400">
+        <p className="type-overline text-emerald-700">Signal / 05</p>
+        <h1 className="type-screen-title text-foreground">Email verification</h1>
+        <p className="type-body text-muted-foreground">
           Confirming the address associated with your account.
         </p>
       </header>
 
       <div className="flex flex-col gap-4 py-2 text-center">
         {resolvingToken ? (
-          <p className="py-6 type-body-sm text-zinc-400">Loading verification link…</p>
+          <p className="py-6 type-body-sm text-muted-foreground">Loading verification link…</p>
         ) : verifyingNow ? (
-          <p className="py-6 type-body-sm text-zinc-400">Verifying your email address…</p>
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-muted/40 px-4 py-6">
+            <span
+              aria-hidden="true"
+              className="h-14 w-14 animate-pulse rounded-full border-2 border-primary/30 bg-primary/10"
+            />
+            <p className="type-body-sm text-muted-foreground">Verifying your email address…</p>
+          </div>
         ) : successNow ? (
-          <div className="flex flex-col gap-4">
-            <span aria-hidden="true" className="text-5xl text-emerald-400">✓</span>
-            <p className="type-body text-zinc-300">
-              Your email address has been successfully verified. You can now use all
-              dashboard fleet actions.
-            </p>
-            <Link href="/dashboard" className="mt-2 block w-full">
-              <Button className="h-11 w-full">Go to dashboard</Button>
+          <div
+            role="status"
+            className="flex flex-col items-center gap-4 rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-6"
+          >
+            <span
+              aria-hidden="true"
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-2xl font-semibold text-white"
+            >
+              ✓
+            </span>
+            <div className="flex flex-col gap-1">
+              <p className="type-body-sm text-emerald-800">
+                Your email address has been successfully verified. You can now use all
+                dashboard fleet actions.
+              </p>
+            </div>
+            <Link
+              href="/dashboard"
+              className="type-label mt-2 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-primary-foreground transition-colors hover:bg-emerald-800"
+            >
+              Go to dashboard
             </Link>
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
-            <span aria-hidden="true" className="text-5xl text-red-400">✕</span>
-            <p role="alert" className="type-label text-red-300">
+          <div
+            role="alert"
+            className="flex flex-col items-center gap-4 rounded-xl border border-red-200 bg-red-50/80 px-4 py-6"
+          >
+            <span
+              aria-hidden="true"
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-red-600 text-2xl font-semibold text-white"
+            >
+              ✕
+            </span>
+            <p className="type-label text-red-800">
               {error || "Verification failed"}
             </p>
-            <p className="type-body-sm text-zinc-400">
+            <p className="type-body-sm text-red-700">
               The link may have expired or is invalid. Request a new verification
               link from your account page.
             </p>
-            <Link href="/login" className="mt-2 block w-full">
-              <Button variant="outline" className="h-11 w-full border-zinc-700 text-zinc-300 hover:bg-zinc-950">
-                Return to login
-              </Button>
+            <Link
+              href="/login"
+              className="type-label mt-2 inline-flex h-11 w-full items-center justify-center rounded-lg border border-border bg-card px-4 text-foreground transition-colors hover:bg-muted"
+            >
+              Return to login
             </Link>
           </div>
         )}
       </div>
 
-      <p className="border-t border-zinc-800/70 pt-6 text-center type-body-sm text-zinc-400">
+      <p className="border-t border-border pt-6 text-center type-body-sm text-muted-foreground">
         Need help?{" "}
-        <Link href="/contact" className="font-semibold text-emerald-400 transition-colors hover:text-emerald-300">
+        <Link href="/contact" className="inline-flex min-h-11 items-center font-semibold text-emerald-700 transition-colors hover:text-emerald-800">
           Contact support
         </Link>
       </p>
@@ -115,7 +142,7 @@ export default function VerifyEmailPage() {
   return (
     <AuthShell variant="verify">
       <AuthPanel>
-        <Suspense fallback={<p className="py-8 text-center type-body-sm text-zinc-400">Loading verification link…</p>}>
+        <Suspense fallback={<p className="py-8 text-center type-body-sm text-muted-foreground">Loading verification link…</p>}>
           <VerifyEmailInner />
         </Suspense>
       </AuthPanel>

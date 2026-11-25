@@ -64,12 +64,12 @@ export default function ContactPage() {
   };
 
   const fieldClass =
-    "type-body w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-zinc-100 placeholder:text-zinc-400 transition-colors focus-visible:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40";
+    "type-body w-full rounded-lg border border-input bg-card px-3 text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
   const inputClass = `${fieldClass} h-11`;
   const textareaClass = `${fieldClass} min-h-[132px] py-2.5`;
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-950 text-zinc-50 selection:bg-emerald-500/30 selection:text-emerald-400">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <PublicHeader />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:py-14">
@@ -80,32 +80,32 @@ export default function ContactPage() {
         />
 
         <section aria-labelledby="support-channels" className="mt-8">
-          <h2 id="support-channels" className="type-section-title text-zinc-50">
+          <h2 id="support-channels" className="type-section-title text-foreground">
             Support channels
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-              <h3 className="type-card-title text-zinc-100">Email Support</h3>
-              <p className="type-body-sm mt-1.5 text-zinc-400">
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="type-card-title text-foreground">Email Support</h3>
+              <p className="type-body-sm mt-1.5 text-muted-foreground">
                 For accounts, billing, security disclosures, or enterprise setups.
               </p>
               <a
                 href={`mailto:${SUPPORT_EMAIL}`}
-                className="type-label mt-3 inline-block break-all text-emerald-400 underline-offset-2 hover:underline"
+                className="type-label mt-3 inline-block break-all text-primary underline-offset-2 hover:underline"
               >
                 {SUPPORT_EMAIL}
               </a>
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-              <h3 className="type-card-title text-zinc-100">Report a Bug</h3>
-              <p className="type-body-sm mt-1.5 text-zinc-400">
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="type-card-title text-foreground">Report a Bug</h3>
+              <p className="type-body-sm mt-1.5 text-muted-foreground">
                 Spotted an issue on the firmware, dashboard, or apps? Open a GitHub ticket.
               </p>
               <a
                 href="https://github.com/janasco/onoffmypc/issues"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="type-label mt-3 inline-block break-all text-emerald-400 underline-offset-2 hover:underline"
+                className="type-label mt-3 inline-block break-all text-primary underline-offset-2 hover:underline"
               >
                 github.com/janasco/onoffmypc/issues
               </a>
@@ -114,15 +114,15 @@ export default function ContactPage() {
         </section>
 
         <section aria-labelledby="send-message" className="mt-10">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 sm:p-6">
-            <h2 id="send-message" className="type-section-title text-zinc-50">
+          <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <h2 id="send-message" className="type-section-title text-foreground">
               Send a Message
             </h2>
-            <p className="type-body mt-2 text-zinc-400">Fill in the details below to message support.</p>
+            <p className="type-body mt-2 text-muted-foreground">Fill in the details below to message support.</p>
 
             <form onSubmit={handleSubmit} className="mt-6 flex max-w-xl flex-col gap-5">
               <div className="flex flex-col gap-2">
-                <label htmlFor="name" className="type-label text-zinc-200">
+                <label htmlFor="name" className="type-label text-foreground">
                   Name
                 </label>
                 <input
@@ -137,7 +137,7 @@ export default function ContactPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label htmlFor="email" className="type-label text-zinc-200">
+                <label htmlFor="email" className="type-label text-foreground">
                   Email Address
                 </label>
                 <input
@@ -153,7 +153,7 @@ export default function ContactPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label htmlFor="message" className="type-label text-zinc-200">
+                <label htmlFor="message" className="type-label text-foreground">
                   Message
                 </label>
                 <textarea
@@ -185,10 +185,10 @@ export default function ContactPage() {
                   aria-live={status.type === "error" ? "assertive" : "polite"}
                   className={`type-body-sm rounded-lg border p-3 ${
                     status.type === "success"
-                      ? "border-emerald-900/50 bg-emerald-950/80 text-emerald-300"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-900"
                       : status.type === "error"
-                        ? "border-red-900/50 bg-red-950/80 text-red-300"
-                        : "border-zinc-800 bg-zinc-950/80 text-zinc-300"
+                        ? "border-red-200 bg-red-50 text-red-800"
+                        : "border-border bg-secondary text-secondary-foreground"
                   }`}
                 >
                   {status.text}
@@ -198,7 +198,7 @@ export default function ContactPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="type-label h-11 w-full cursor-pointer bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
+                className="type-label h-11 w-full cursor-pointer"
               >
                 {loading ? "Sending..." : "Send Message"}
               </Button>

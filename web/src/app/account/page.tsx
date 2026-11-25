@@ -18,9 +18,9 @@ interface UserProfile {
 }
 
 const FIELD_CLASS =
-  "h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-base text-zinc-100 placeholder:text-zinc-400 transition-colors focus:border-emerald-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/80 md:text-sm";
+  "h-11 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground shadow-sm placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card md:text-sm";
 
-const FIELD_LABEL_CLASS = "type-label text-zinc-300";
+const FIELD_LABEL_CLASS = "type-label text-foreground";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -237,7 +237,7 @@ export default function AccountPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-400">
+    <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-emerald-600/15 selection:text-emerald-900">
       <AppHeader email={profile?.email} />
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
@@ -249,44 +249,44 @@ export default function AccountPage() {
 
         {/* Deletion Countdown Banner */}
         {profile?.deletion_at && (
-          <div className="flex flex-col gap-4 rounded-xl border border-red-900/50 bg-red-950/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 rounded-xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-0.5">
-              <span className="type-label text-red-200">Account scheduled for deletion</span>
-              <span className="type-metadata text-red-300">
+              <span className="type-label text-red-800">Account scheduled for deletion</span>
+              <span className="type-metadata text-red-700">
                 Your account will be deleted in: <strong className="type-mono font-semibold">{countdown}</strong>
               </span>
             </div>
-            <Button variant="outline" onClick={handleCancelDeletion} className="min-h-11 border-red-900/80 text-red-300 hover:bg-red-900/20">
+            <Button variant="outline" onClick={handleCancelDeletion} className="min-h-11 border-red-300 text-red-700 hover:bg-red-100">
               Cancel deletion
             </Button>
           </div>
         )}
 
         {loading ? (
-          <div className="py-16 text-center type-body-sm text-zinc-400">Loading account settings…</div>
+          <div className="py-16 text-center type-body-sm text-muted-foreground">Loading account settings…</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             {/* Account Details */}
             <div className="flex flex-col gap-6 md:col-span-1">
-              <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
+              <Card className="ring-border">
                 <CardHeader>
-                  <CardTitle className="type-card-title text-zinc-100">Profile info</CardTitle>
+                  <CardTitle as="h2" className="type-card-title text-foreground">Profile info</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4 text-sm">
                   <div className="flex flex-col gap-1">
-                    <span className="type-overline text-zinc-400">Email address</span>
-                    <span className="break-all text-zinc-100">{profile?.email}</span>
+                    <span className="type-overline text-muted-foreground">Email address</span>
+                    <span className="break-all text-foreground">{profile?.email}</span>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="type-overline text-zinc-400">Member since</span>
-                    <span className="type-metadata text-zinc-200">
+                    <span className="type-overline text-muted-foreground">Member since</span>
+                    <span className="type-metadata text-foreground">
                       {profile ? new Date(profile.created_at).toLocaleDateString() : ""}
                     </span>
                   </div>
                   {!profile?.email_verified && (
-                    <div className="mt-2 flex flex-col gap-2 rounded-lg border border-amber-900/40 bg-amber-950/20 p-3">
-                      <span className="type-body-sm text-amber-300">Email is not verified yet. Verify it to unlock all fleet actions.</span>
-                      <Button size="sm" variant="outline" onClick={handleResendVerify} className="min-h-11 w-full border-amber-900/60 text-amber-300 hover:bg-amber-900/10">
+                    <div className="mt-2 flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                      <span className="type-body-sm text-amber-800">Email is not verified yet. Verify it to unlock all fleet actions.</span>
+                      <Button size="sm" variant="outline" onClick={handleResendVerify} className="min-h-11 w-full border-amber-300 text-amber-900 hover:bg-amber-100">
                         Resend email
                       </Button>
                     </div>
@@ -295,15 +295,15 @@ export default function AccountPage() {
               </Card>
 
               {/* GDPR Portability & Export */}
-              <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
+              <Card className="ring-border">
                 <CardHeader>
-                  <CardTitle className="type-card-title text-zinc-100">Data privacy</CardTitle>
-                  <p className="type-body-sm text-zinc-400">
+                  <CardTitle as="h2" className="type-card-title text-foreground">Data privacy</CardTitle>
+                  <p className="type-body-sm text-muted-foreground">
                     GDPR data portability
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <Button onClick={handleExportData} className="min-h-11 w-full bg-zinc-800 text-zinc-100 hover:bg-zinc-700">
+                  <Button onClick={handleExportData} className="min-h-11 w-full bg-secondary text-secondary-foreground hover:bg-secondary/80">
                     Download my data
                   </Button>
                 </CardContent>
@@ -311,11 +311,11 @@ export default function AccountPage() {
 
               {/* Danger Zone */}
               {!profile?.deletion_at && (
-                <Card className="bg-zinc-900 p-4 ring-1 ring-red-900/40">
+                <Card className="p-4 ring-red-200">
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1">
-                      <span className="type-card-title text-zinc-100">Delete account</span>
-                      <span className="type-body-sm text-zinc-400">
+                      <span className="type-card-title text-foreground">Delete account</span>
+                      <span className="type-body-sm text-muted-foreground">
                         Permanently delete your profile and telemetry logs.
                       </span>
                     </div>
@@ -334,22 +334,22 @@ export default function AccountPage() {
             {/* Forms section */}
             <div className="flex flex-col gap-6 md:col-span-2">
               {/* Update Email */}
-              <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
+              <Card className="ring-border">
                 <CardHeader>
-                  <CardTitle className="type-card-title text-zinc-100">Update email</CardTitle>
-                  <p className="type-body-sm text-zinc-400">
+                  <CardTitle as="h2" className="type-card-title text-foreground">Update email</CardTitle>
+                  <p className="type-body-sm text-muted-foreground">
                     Change the email address used to log in
                   </p>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleUpdateEmail} className="flex flex-col gap-4">
                     {emailError && (
-                      <div role="alert" className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 type-body-sm text-red-300">
+                      <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 type-body-sm text-red-700">
                         {emailError}
                       </div>
                     )}
                     {emailSuccess && (
-                      <div role="status" className="rounded-lg border border-emerald-900/50 bg-emerald-950/40 px-3.5 py-2.5 type-body-sm text-emerald-300">
+                      <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 type-body-sm text-emerald-700">
                         {emailSuccess}
                       </div>
                     )}
@@ -385,40 +385,40 @@ export default function AccountPage() {
               </Card>
 
               {/* Active sessions */}
-              <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
+              <Card className="ring-border">
                 <CardHeader>
-                  <CardTitle className="type-card-title text-zinc-100">Active sessions</CardTitle>
-                  <p className="type-body-sm text-zinc-400">
+                  <CardTitle as="h2" className="type-card-title text-foreground">Active sessions</CardTitle>
+                  <p className="type-body-sm text-muted-foreground">
                     Where your account is signed in. Revoke anything you do not recognise.
                   </p>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                   {sessionsError && (
-                    <div role="alert" className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 type-body-sm text-red-300">
+                    <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 type-body-sm text-red-700">
                       {sessionsError}
                     </div>
                   )}
 
                   {sessionsLoading ? (
-                    <p className="type-body-sm text-zinc-400">Loading sessions…</p>
+                    <p className="type-body-sm text-muted-foreground">Loading sessions…</p>
                   ) : sessions.length === 0 ? (
-                    <p className="type-body-sm text-zinc-400">No active sessions.</p>
+                    <p className="type-body-sm text-muted-foreground">No active sessions.</p>
                   ) : (
-                    <ul className="flex flex-col divide-y divide-zinc-800 rounded-lg border border-zinc-800">
+                    <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
                       {sessions.map((session) => (
                         <li key={session.id} className="flex flex-col justify-between gap-3 p-3 sm:flex-row sm:items-center">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="type-label text-zinc-100">
+                              <span className="type-label text-foreground">
                                 {describeUserAgent(session.user_agent)}
                               </span>
                               {session.current && (
-                                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                                   This device
                                 </span>
                               )}
                             </div>
-                            <div className="type-metadata mt-0.5 text-zinc-400">
+                            <div className="type-metadata mt-0.5 text-muted-foreground">
                               <span className="type-mono">{session.ip ?? "IP unknown"}</span> · active {formatWhen(session.last_seen_at, now)}
                             </div>
                           </div>
@@ -427,7 +427,7 @@ export default function AccountPage() {
                             variant="outline"
                             disabled={sessionsBusy !== null}
                             onClick={() => handleRevokeSession(session.id)}
-                            className="min-h-11 whitespace-nowrap border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                            className="min-h-11 whitespace-nowrap border-border text-foreground hover:bg-muted"
                           >
                             {sessionsBusy === session.id
                               ? "Revoking…"
@@ -444,11 +444,11 @@ export default function AccountPage() {
                       variant="outline"
                       disabled={sessionsBusy !== null || sessions.length < 2}
                       onClick={handleRevokeOtherSessions}
-                      className="min-h-11 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                      className="min-h-11 border-border text-foreground hover:bg-muted"
                     >
                       {sessionsBusy === "others" ? "Signing out…" : "Sign out other devices"}
                     </Button>
-                    <span className="type-metadata text-zinc-400">
+                    <span className="type-metadata text-muted-foreground">
                       Revoking takes effect immediately, even for a copied token.
                     </span>
                   </div>
@@ -456,22 +456,22 @@ export default function AccountPage() {
               </Card>
 
               {/* Update Password */}
-              <Card className="bg-zinc-900 ring-1 ring-zinc-800/80">
+              <Card className="ring-border">
                 <CardHeader>
-                  <CardTitle className="type-card-title text-zinc-100">Change password</CardTitle>
-                  <p className="type-body-sm text-zinc-400">
+                  <CardTitle as="h2" className="type-card-title text-foreground">Change password</CardTitle>
+                  <p className="type-body-sm text-muted-foreground">
                     Change password and sign out other sessions
                   </p>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
                     {pwError && (
-                      <div role="alert" className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 type-body-sm text-red-300">
+                      <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 type-body-sm text-red-700">
                         {pwError}
                       </div>
                     )}
                     {pwSuccess && (
-                      <div role="status" className="rounded-lg border border-emerald-900/50 bg-emerald-950/40 px-3.5 py-2.5 type-body-sm text-emerald-300">
+                      <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 type-body-sm text-emerald-700">
                         {pwSuccess}
                       </div>
                     )}
@@ -525,23 +525,23 @@ export default function AccountPage() {
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteOpen} onOpenChange={(open) => { setDeleteOpen(open); setDeleteError(null); }}>
-        <DialogContent className="bg-zinc-900 text-zinc-100 ring-zinc-800/80">
+        <DialogContent className="ring-border">
           <DialogHeader>
-            <DialogTitle className="text-red-400">Delete account</DialogTitle>
-            <DialogDescription className="text-zinc-400">
+            <DialogTitle className="text-red-700">Delete account</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               This will permanently delete your account, paired devices, and history logs after a 30-day grace period.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleConfirmDeletion} className="flex flex-col gap-4 py-4">
             {deleteError && (
-              <div role="alert" className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 type-body-sm text-red-300">
+              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 type-body-sm text-red-700">
                 {deleteError}
               </div>
             )}
             <div className="flex flex-col gap-1.5">
               <label className={FIELD_LABEL_CLASS} htmlFor="confirmEmail">
-                Type your email <strong className="type-mono font-semibold text-zinc-100">{profile?.email}</strong> to confirm:
+                Type your email <strong className="type-mono font-semibold text-foreground">{profile?.email}</strong> to confirm:
               </label>
               <input
                 id="confirmEmail"
@@ -554,7 +554,7 @@ export default function AccountPage() {
               />
             </div>
             <DialogFooter className="mt-2 gap-2 sm:gap-0">
-              <Button type="button" variant="ghost" onClick={() => setDeleteOpen(false)} className="min-h-11 text-zinc-400 hover:text-zinc-100">
+              <Button type="button" variant="ghost" onClick={() => setDeleteOpen(false)} className="min-h-11 text-muted-foreground hover:text-foreground">
                 Cancel
               </Button>
               <Button type="submit" disabled={deleteLoading} variant="destructive" className="min-h-11">

@@ -8,10 +8,10 @@ export function PublicPageHeader({
   description: string;
 }) {
   return (
-    <header className="border-b border-zinc-900 pb-6">
-      <p className="type-overline text-emerald-400">{eyebrow}</p>
-      <h1 className="type-screen-title mt-2 text-zinc-50">{title}</h1>
-      <p className="type-body mt-3 max-w-2xl text-zinc-400">{description}</p>
+    <header className="border-b border-border pb-6">
+      <p className="type-overline text-primary">{eyebrow}</p>
+      <h1 className="type-screen-title mt-2 text-foreground">{title}</h1>
+      <p className="type-body mt-3 max-w-[68ch] text-muted-foreground">{description}</p>
     </header>
   );
 }

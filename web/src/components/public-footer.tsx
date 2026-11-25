@@ -41,26 +41,26 @@ const columns = [
 
 export function PublicFooter() {
   return (
-    <footer className="border-t border-zinc-900 bg-zinc-950">
+    <footer className="border-t border-border bg-card">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-9 px-4 py-12 md:grid-cols-5 md:py-14">
         <div className="col-span-2 flex flex-col gap-3 md:col-span-1">
           <Link href="/" className="w-fit" aria-label="OnOffMyPC home">
             <BrandLockup size={22} />
           </Link>
-          <p className="type-body-sm max-w-xs text-zinc-400">
+          <p className="type-body-sm max-w-xs text-muted-foreground">
             Remote power and out-of-band management for the desktop PC you rely on.
           </p>
         </div>
 
         {columns.map((column) => (
           <div key={column.title} className="flex flex-col gap-2">
-            <p className="type-overline text-zinc-400">{column.title}</p>
+            <p className="type-overline text-foreground">{column.title}</p>
             <nav aria-label={column.title} className="flex flex-col">
               {column.links.map((link) => (
                 <Link
                   key={`${column.title}-${link.href}-${link.label}`}
                   href={link.href}
-                  className="type-body-sm w-fit py-1.5 text-zinc-400 transition-colors hover:text-zinc-100"
+                  className="type-body-sm w-fit py-1.5 text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
                 >
                   {link.label}
                 </Link>
@@ -70,7 +70,7 @@ export function PublicFooter() {
         ))}
       </div>
 
-      <div className="mx-auto flex max-w-6xl flex-col justify-between gap-2 border-t border-zinc-900/70 px-4 py-5 type-metadata text-zinc-400 sm:flex-row">
+      <div className="mx-auto flex max-w-6xl flex-col justify-between gap-2 border-t border-border px-4 py-5 type-metadata text-muted-foreground sm:flex-row">
         <span>© 2026 OnOffMyPC. All rights reserved.</span>
         <span>Built for Windows, Linux, Android, and ESP32.</span>
       </div>

@@ -88,7 +88,15 @@ export function TurnstileWidget({ onToken, onEnabled, resetKey = 0 }: TurnstileW
       try {
         const { data, error: apiError } = await api.registrationStatus<{ turnstile_site_key?: string | null }>();
         const siteKey = data?.turnstile_site_key;
-        if (apiError || !siteKey) {
+        if (apiError) {
+          // Do not fail open: an unavailable status check must not make login
+          // look unverified when the server may still require a token.
+          enabledRef.current(true);
+          setLoading(false);
+          setError("Could not check browser verification. Reload and try again.");
+          return;
+        }
+        if (!siteKey) {
           enabledRef.current(false);
           setLoading(false);
           return;
@@ -100,8 +108,10 @@ export function TurnstileWidget({ onToken, onEnabled, resetKey = 0 }: TurnstileW
 
         widgetId = turnstile.render(container.current, {
           sitekey: siteKey,
-          theme: "dark",
-          size: "flexible",
+          theme: "light",
+          // Flexible has a 300px minimum; compact keeps the widget inside the
+          // auth card at 320px and 360px viewports.
+          size: "compact",
           callback: (token: string) => tokenRef.current(token),
           "expired-callback": () => tokenRef.current(null),
           "error-callback": () => {
@@ -130,9 +140,9 @@ export function TurnstileWidget({ onToken, onEnabled, resetKey = 0 }: TurnstileW
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div ref={container} className="min-h-16 w-full" aria-label="Browser verification" />
-      {loading && <p className="type-metadata text-zinc-400">Loading browser verification…</p>}
-      {error && <p role="alert" className="type-metadata text-red-300">{error}</p>}
+      <div ref={container} className="flex min-h-16 w-full items-center justify-center" aria-label="Browser verification" />
+      {loading && <p className="type-metadata text-muted-foreground">Loading browser verification…</p>}
+      {error && <p role="alert" className="type-metadata text-red-700">{error}</p>}
     </div>
   );
 }

@@ -4,10 +4,10 @@ export function ConnectionPill({ online, label }: { online: boolean; label: stri
   // failure. Only a known controller that has gone quiet is red.
   const unknown = !online && (normalized.includes("unknown") || normalized.includes("never"));
   const tone = unknown
-    ? "border-zinc-700 bg-zinc-800/60 text-zinc-300"
+    ? "border-border bg-muted text-muted-foreground"
     : online
-      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-      : "border-red-500/30 bg-red-500/10 text-red-300";
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : "border-red-200 bg-red-50 text-red-700";
 
   return (
     <span

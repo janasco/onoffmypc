@@ -77,14 +77,14 @@ function ResetPasswordInner() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <p className="type-overline text-emerald-700">Key change / 04</p>
-        <h1 className="type-screen-title text-[#121612]">Choose a new password</h1>
-        <p className="type-body text-[#5C675E]">
+        <h1 className="type-screen-title text-foreground">Choose a new password</h1>
+        <p className="type-body text-muted-foreground">
           Use at least 8 characters. This will sign out other active sessions.
         </p>
       </header>
 
       {resolvingToken ? (
-        <p className="py-6 text-center type-body-sm text-[#5C675E]">Loading recovery link…</p>
+        <p className="py-6 text-center type-body-sm text-muted-foreground">Loading recovery link…</p>
       ) : !token ? (
         <div
           role="alert"
@@ -111,7 +111,7 @@ function ResetPasswordInner() {
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <label className="type-label text-[#3A463E]" htmlFor="password">
+            <label className="type-label text-foreground" htmlFor="password">
               New password
             </label>
             <PasswordInput
@@ -120,11 +120,10 @@ function ResetPasswordInner() {
               onChange={setPassword}
               placeholder="At least 8 characters"
               autoComplete="new-password"
-              tone="light"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="type-label text-[#3A463E]" htmlFor="confirmPassword">
+            <label className="type-label text-foreground" htmlFor="confirmPassword">
               Confirm password
             </label>
             <PasswordInput
@@ -132,7 +131,6 @@ function ResetPasswordInner() {
               value={confirmPassword}
               onChange={setConfirmPassword}
               autoComplete="new-password"
-              tone="light"
             />
           </div>
           <Button type="submit" disabled={loading} className="mt-2 h-11 w-full">
@@ -141,8 +139,8 @@ function ResetPasswordInner() {
         </form>
       )}
 
-      <p className="border-t border-[#D5DBD0] pt-6 text-center type-body-sm text-[#5C675E]">
-        <Link href="/login" className="font-semibold text-emerald-700 transition-colors hover:text-emerald-800">
+      <p className="border-t border-border pt-6 text-center type-body-sm text-muted-foreground">
+        <Link href="/login" className="inline-flex min-h-11 items-center font-semibold text-emerald-700 transition-colors hover:text-emerald-800">
           Return to sign in
         </Link>
       </p>
@@ -153,8 +151,8 @@ function ResetPasswordInner() {
 export default function ResetPasswordPage() {
   return (
     <AuthShell variant="reset">
-      <AuthPanel tone="light">
-        <Suspense fallback={<p className="py-8 text-center type-body-sm text-[#5C675E]">Loading recovery link…</p>}>
+      <AuthPanel raised>
+        <Suspense fallback={<p className="py-8 text-center type-body-sm text-muted-foreground">Loading recovery link…</p>}>
           <ResetPasswordInner />
         </Suspense>
       </AuthPanel>
