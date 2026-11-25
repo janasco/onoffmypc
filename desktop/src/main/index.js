@@ -2,8 +2,10 @@
 
 const { app, Tray, Menu, BrowserWindow, ipcMain, nativeImage, dialog } = require('electron')
 const path = require('node:path')
+const fs = require('node:fs')
 
 const tokenStore = require('./tokenStore')
+const { shouldConfirmExistingPairing } = require('./startup')
 const { pairWithCode, unpairDevice } = require('./pairing')
 const { DeviceRelayClient } = require('./relay')
 const { collectTelemetry } = require('./telemetry')
@@ -24,6 +26,26 @@ let pairingWindow = null
 let relay = null
 let telemetryTimer = null
 let connected = false
+
+function pairingNoticePath() {
+  return path.join(app.getPath('userData'), 'pairing-notice-seen')
+}
+
+function pairingNoticeVersion() {
+  try {
+    return fs.readFileSync(pairingNoticePath(), 'utf8').trim() || null
+  } catch {
+    return null
+  }
+}
+
+function markPairingNoticeSeen() {
+  try {
+    fs.writeFileSync(pairingNoticePath(), `${app.getVersion()}\n`, { mode: 0o600 })
+  } catch (err) {
+    console.error('onoffmypc: could not record pairing notice acknowledgement', err)
+  }
+}
 
 function trayIcon() {
   return path.join(__dirname, 'assets', 'icon-16.png')
@@ -187,6 +209,7 @@ ipcMain.handle('pair', async (_event, code) => {
   try {
     const { deviceId, token } = await pairWithCode(API_BASE_URL, code)
     tokenStore.save({ deviceId, token, deviceName: null })
+    markPairingNoticeSeen()
     startRelay()
     updateTrayMenu()
     setTimeout(() => pairingWindow?.close(), 1200)
@@ -217,6 +240,30 @@ async function unpair() {
   }
   tokenStore.clear()
   updateTrayMenu()
+}
+
+async function confirmExistingPairing(creds) {
+  const { response } = await dialog.showMessageBox({
+    type: 'warning',
+    title: 'Existing pairing found',
+    message: 'This computer is already paired with an OnOffMyPC account.',
+    detail:
+      `Device ID: ${creds.deviceId}\n\n` +
+      'Continue connecting to that account, or unpair this computer and pair it ' +
+      'to a different account. Normal restarts will reconnect automatically after ' +
+      'you make a choice.',
+    buttons: ['Continue connected', 'Unpair this computer'],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true,
+  })
+
+  if (response === 1) {
+    await unpair()
+    openPairingWindow()
+    return
+  }
+  startRelay()
 }
 
 function startRelay() {
@@ -282,7 +329,7 @@ app.on('second-instance', () => {
   if (pairingWindow) pairingWindow.focus()
 })
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Menu-bar/tray-only app — no dock icon, no main window.
   if (app.dock) app.dock.hide()
 
@@ -290,8 +337,26 @@ app.whenReady().then(() => {
   updateTrayMenu()
 
   const creds = tokenStore.load()
-  if (creds) startRelay()
-  else openPairingWindow()
+  if (!creds) {
+    openPairingWindow()
+  } else if (
+    shouldConfirmExistingPairing({
+      hasCredentials: true,
+      markerVersion: pairingNoticeVersion(),
+      appVersion: app.getVersion(),
+    })
+  ) {
+    try {
+      await confirmExistingPairing(creds)
+      markPairingNoticeSeen()
+    } catch (err) {
+      // Do not silently connect if the confirmation UI itself fails.
+      console.error('onoffmypc: pairing confirmation failed', err)
+      openPairingWindow()
+    }
+  } else {
+    startRelay()
+  }
 
   checkForUpdates()
 })

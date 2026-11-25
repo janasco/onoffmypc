@@ -49,6 +49,18 @@ ESP32 would.
 The pairing token is the only real secret and is stored via Electron's
 `safeStorage` (OS keychain-backed encryption), never in plaintext.
 
+On a normal restart the agent reconnects automatically, which is required for
+the relay/watchdog behavior. On the first launch after a fresh install or app
+update, if saved credentials already exist, the agent shows a confirmation with
+the existing device ID and an explicit **Continue connected** / **Unpair this
+computer** choice before opening the relay. Pairing a device writes an
+acknowledgement marker in the user-data directory, so ordinary restarts and
+immediately following launches do not prompt again.
+
+Uninstalling the desktop app does not currently delete the Windows user-data
+directory. Use **Unpair this computer** from the tray before uninstalling to
+revoke the server credential, or remove the app-data directory after uninstall.
+
 ## Known limitation: one physical PC, two device rows
 
 Since this agent and a firmware unit each pair independently, a machine with
