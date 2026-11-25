@@ -59,7 +59,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <AuthShell>
+    <AuthShell variant="register">
       <AuthHostRedirect />
       <AuthPanel>
         <div className="flex flex-col gap-6">

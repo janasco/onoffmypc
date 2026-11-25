@@ -59,7 +59,7 @@ function VerifyEmailInner() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <p className="type-overline text-emerald-400">Account security</p>
+        <p className="type-overline text-emerald-400">Signal / 05</p>
         <h1 className="type-screen-title text-zinc-50">Email verification</h1>
         <p className="type-body text-zinc-400">
           Confirming the address associated with your account.
@@ -113,7 +113,7 @@ function VerifyEmailInner() {
 
 export default function VerifyEmailPage() {
   return (
-    <AuthShell>
+    <AuthShell variant="verify">
       <AuthPanel>
         <Suspense fallback={<p className="py-8 text-center type-body-sm text-zinc-400">Loading verification link…</p>}>
           <VerifyEmailInner />

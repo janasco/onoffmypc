@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <AuthShell>
+    <AuthShell variant="forgot">
       <AuthPanel>
         <div className="flex flex-col gap-6">
           <header className="flex flex-col gap-2">

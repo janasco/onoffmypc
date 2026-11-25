@@ -76,26 +76,26 @@ function ResetPasswordInner() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <p className="type-overline text-emerald-400">Account recovery</p>
-        <h1 className="type-screen-title text-zinc-50">Choose a new password</h1>
-        <p className="type-body text-zinc-400">
+        <p className="type-overline text-emerald-700">Key change / 04</p>
+        <h1 className="type-screen-title text-[#121612]">Choose a new password</h1>
+        <p className="type-body text-[#5C675E]">
           Use at least 8 characters. This will sign out other active sessions.
         </p>
       </header>
 
       {resolvingToken ? (
-        <p className="py-6 text-center type-body-sm text-zinc-400">Loading recovery link…</p>
+        <p className="py-6 text-center type-body-sm text-[#5C675E]">Loading recovery link…</p>
       ) : !token ? (
         <div
           role="alert"
-          className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-3 text-center type-body-sm text-red-300"
+          className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-center type-body-sm text-red-700"
         >
           Recovery token is invalid or missing. Request a new reset link.
         </div>
       ) : success ? (
         <div
           role="status"
-          className="flex flex-col gap-2 rounded-lg border border-emerald-900/50 bg-emerald-950/40 px-4 py-4 type-body-sm text-emerald-300"
+          className="flex flex-col gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-4 type-body-sm text-emerald-800"
         >
           <span className="type-label">Password updated successfully</span>
           <span>Redirecting to the login screen…</span>
@@ -105,13 +105,13 @@ function ResetPasswordInner() {
           {error && (
             <div
               role="alert"
-              className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 type-body-sm text-red-300"
+              className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 type-body-sm text-red-700"
             >
               {error}
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <label className="type-label text-zinc-300" htmlFor="password">
+            <label className="type-label text-[#3A463E]" htmlFor="password">
               New password
             </label>
             <PasswordInput
@@ -120,10 +120,11 @@ function ResetPasswordInner() {
               onChange={setPassword}
               placeholder="At least 8 characters"
               autoComplete="new-password"
+              tone="light"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="type-label text-zinc-300" htmlFor="confirmPassword">
+            <label className="type-label text-[#3A463E]" htmlFor="confirmPassword">
               Confirm password
             </label>
             <PasswordInput
@@ -131,6 +132,7 @@ function ResetPasswordInner() {
               value={confirmPassword}
               onChange={setConfirmPassword}
               autoComplete="new-password"
+              tone="light"
             />
           </div>
           <Button type="submit" disabled={loading} className="mt-2 h-11 w-full">
@@ -139,8 +141,8 @@ function ResetPasswordInner() {
         </form>
       )}
 
-      <p className="border-t border-zinc-800/70 pt-6 text-center type-body-sm text-zinc-400">
-        <Link href="/login" className="font-semibold text-emerald-400 transition-colors hover:text-emerald-300">
+      <p className="border-t border-[#D5DBD0] pt-6 text-center type-body-sm text-[#5C675E]">
+        <Link href="/login" className="font-semibold text-emerald-700 transition-colors hover:text-emerald-800">
           Return to sign in
         </Link>
       </p>
@@ -150,9 +152,9 @@ function ResetPasswordInner() {
 
 export default function ResetPasswordPage() {
   return (
-    <AuthShell>
-      <AuthPanel>
-        <Suspense fallback={<p className="py-8 text-center type-body-sm text-zinc-400">Loading recovery link…</p>}>
+    <AuthShell variant="reset">
+      <AuthPanel tone="light">
+        <Suspense fallback={<p className="py-8 text-center type-body-sm text-[#5C675E]">Loading recovery link…</p>}>
           <ResetPasswordInner />
         </Suspense>
       </AuthPanel>
