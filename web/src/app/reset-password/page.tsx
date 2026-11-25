@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { BrandLockup } from "@/components/brand-lockup";
+import { recoveryTokenFromHash } from "@/lib/recovery-token";
 
 const FIELD_CLASS =
   "h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-base text-zinc-100 placeholder:text-zinc-400 transition-colors focus:border-emerald-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/80 md:text-sm";
@@ -14,7 +15,33 @@ const FIELD_CLASS =
 function ResetPasswordInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const queryToken = searchParams.get("token");
+  const [token, setToken] = useState<string | null>(queryToken);
+  const [resolvingToken, setResolvingToken] = useState(!queryToken);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (queryToken) {
+      setToken(queryToken);
+      setResolvingToken(false);
+      return;
+    }
+    const fromHash = recoveryTokenFromHash(window.location.hash);
+    if (fromHash) {
+      // The fragment is only available client-side; this is the bridge from
+      // the email link to the form state.
+      setToken(fromHash);
+      // The token is already in browser history; removing it from the visible
+      // URL prevents accidental copying/leaking while the form is open.
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}`,
+      );
+    }
+    setResolvingToken(false);
+  }, [queryToken]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -62,7 +89,9 @@ function ResetPasswordInner() {
         </p>
       </CardHeader>
       <CardContent>
-        {!token ? (
+        {resolvingToken ? (
+          <p className="py-6 text-center type-body-sm text-zinc-400">Loading recovery link…</p>
+        ) : !token ? (
           <div role="alert" className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-3 text-center type-body-sm text-red-300">
             Recovery token is invalid or missing. The link may have expired.
           </div>

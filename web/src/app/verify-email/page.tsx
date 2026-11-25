@@ -7,23 +7,48 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { BrandLockup } from "@/components/brand-lockup";
+import { recoveryTokenFromHash } from "@/lib/recovery-token";
 
 function VerifyEmailInner() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const queryToken = searchParams.get("token");
+  const [token, setToken] = useState<string | null>(queryToken);
+  const [resolvingToken, setResolvingToken] = useState(!queryToken);
   const [verifying, setVerifying] = useState(true);
   const [success, setSuccess] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (queryToken) {
+      setToken(queryToken);
+      setResolvingToken(false);
+      return;
+    }
+    const fromHash = recoveryTokenFromHash(window.location.hash);
+    if (fromHash) {
+      // The fragment is only available client-side; this is the bridge from
+      // the email link to the verification request.
+      setToken(fromHash);
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}`,
+      );
+    }
+    setResolvingToken(false);
+  }, [queryToken]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   // A missing token is a render-time concern, so it is derived rather than
   // written into state from an effect (which would cause a cascading render).
-  const missingToken = !token;
-  const verifyingNow = !missingToken && verifying;
-  const successNow = !missingToken && success;
+  const missingToken = !resolvingToken && !token;
+  const verifyingNow = !resolvingToken && !missingToken && verifying;
+  const successNow = !resolvingToken && !missingToken && success;
   const error = apiError ?? (missingToken ? "Verification token is missing." : null);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || resolvingToken) return;
 
     let cancelled = false;
     void (async () => {
@@ -34,7 +59,7 @@ function VerifyEmailInner() {
       else setSuccess(true);
     })();
     return () => { cancelled = true; };
-  }, [token]);
+  }, [token, resolvingToken]);
 
   return (
     <Card className="w-full bg-zinc-900 ring-1 ring-zinc-800/80">
@@ -45,7 +70,9 @@ function VerifyEmailInner() {
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 text-center">
-        {verifyingNow ? (
+        {resolvingToken ? (
+          <p className="py-6 type-body-sm text-zinc-400">Loading verification link…</p>
+        ) : verifyingNow ? (
           <p className="py-6 type-body-sm text-zinc-400">Verifying your email address, please wait…</p>
         ) : successNow ? (
           <div className="flex flex-col gap-4 py-4">
