@@ -12,28 +12,28 @@
     ]
   },
   "desktop": {
-    "version": "0.1.5",
+    "version": "0.1.6",
     "assets": [
       {
-        "file": "OnOffMyPC.Setup.0.1.5.exe",
-        "label": "Windows installer",
-        "platform": "Windows 10/11, x64",
-        "sizeBytes": 99711384,
-        "sha256": "26458774bf42c48417f282f58488c2255a6bab69f857820c07802af3dbd98ed8"
-      },
-      {
-        "file": "OnOffMyPC-0.1.5.AppImage",
+        "file": "OnOffMyPC-0.1.6.AppImage",
         "label": "Linux AppImage",
         "platform": "Any distro, x64",
-        "sizeBytes": 127113870,
-        "sha256": "9730a4314c20ef01f496758837d633ccbe7f63dd15a57c85dbe931bd5f0ef36c"
+        "sizeBytes": 127113886,
+        "sha256": "b525fc91570e325ba03e2617c82340879689ddc20e75857aaea5eab6c5f41607"
       },
       {
-        "file": "onoffmypc-desktop_0.1.5_amd64.deb",
+        "file": "onoffmypc-desktop_0.1.6_amd64.deb",
         "label": "Linux .deb",
         "platform": "Debian / Ubuntu, amd64",
-        "sizeBytes": 99933336,
-        "sha256": "c7f1709fd69352da9643c83d2fbeaca6f2a6df4429c2182cb33f84d884572324"
+        "sizeBytes": 99935172,
+        "sha256": "63fb513bc7ecef975403b89883152d9718f9867d0482839550a1292a93501d65"
+      },
+      {
+        "file": "OnOffMyPC.Setup.0.1.6.exe",
+        "label": "Windows installer",
+        "platform": "Windows 10/11, x64",
+        "sizeBytes": 99711968,
+        "sha256": "dd372f0544d58852d65993dff6061b6da81a0bec403f64d63b2055955c8e8aac"
       }
     ]
   }
